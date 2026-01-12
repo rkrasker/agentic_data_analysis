@@ -1,0 +1,66 @@
+# Sandbox Configuration
+# Controls file system access and code execution safety
+
+file_system:
+  # Directories allowed for reading
+  allowed_read_dirs:
+    - data/raw
+    - data/processed
+    - config
+    - hierarchies
+    - resolvers
+    - prompts
+
+  # Directories allowed for writing
+  allowed_write_dirs:
+    - data/processed
+    - data/outputs
+    - data/validation
+
+  # Maximum file size in MB
+  max_file_size_mb: 500
+
+  # Strict mode: raise errors vs warnings on violations
+  strict_mode: true
+
+code_execution:
+  # Maximum execution time in seconds
+  max_execution_time_sec: 30
+
+  # Maximum memory in MB (null = unlimited, requires resource module)
+  max_memory_mb: null
+
+  # Python modules allowed in generated code
+  allowed_imports:
+    - re
+    - json
+    - typing
+    - dataclasses
+    - datetime
+    - collections
+    - itertools
+    - functools
+
+  # Strict mode: raise errors vs warnings
+  strict_mode: true
+
+# Resolver-specific sandbox settings
+resolver:
+  # Enable sandboxing for resolver execution
+  enabled: true
+
+  # Use temporary directory for resolver execution
+  use_temp_dir: false
+
+  # Log all resolver executions
+  log_executions: true
+
+# Strategy-specific overrides
+strategy_overrides:
+  # Resolver strategy may need more time
+  resolver:
+    max_execution_time_sec: 60
+
+  # Multi-pass may process larger files
+  multi_pass:
+    max_file_size_mb: 1000

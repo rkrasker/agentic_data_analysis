@@ -30,6 +30,7 @@ python -m src.main --config config/default.yaml
 - **Architecture:** `docs/architecture/CURRENT.md`
 - **Components:** `docs/components/[name]/CURRENT.md`
 - **Data structures:** `docs/data-structures/CURRENT.md`
+- **Sandboxing:** `docs/components/sandboxing/CURRENT.md`
 
 ## Quick Reference
 
@@ -66,6 +67,16 @@ python -m src.main --config config/default.yaml
 | Architecture iteration | `vX.Y_YYYY-MM-DD.md` | `v3.0_2026-01-11.md` |
 | ADR | `ADR-NNN_[title].md` | `ADR-001_raw-text-as-primary-input.md` |
 
+## Security
+
+The project implements comprehensive sandboxing for:
+- **File system access control** - Restricts read/write to authorized directories
+- **Code execution isolation** - Safely executes LLM-generated resolvers with timeout and import restrictions
+
+See `docs/components/sandboxing/CURRENT.md` for details.
+
+Example usage in `examples/sandbox_usage.py`.
+
 ## Current Status
 
 <!-- Update with current focus and blockers -->
@@ -74,4 +85,4 @@ python -m src.main --config config/default.yaml
 
 **Blockers:** [Any blocking issues]
 
-**Recent:** [Recent completions]
+**Recent:** Sandboxing implementation (2026-01-12)
