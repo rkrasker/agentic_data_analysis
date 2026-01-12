@@ -22,7 +22,7 @@ python -m src.main --config config/default.yaml
 | `data/` | Data files (gitignored) |
 | `docs/` | Canonical design documentation |
 | `instructions/` | Task handoffs for Claude Code |
-| `.history/` | Process artifacts (extracts, logs, synthesis) |
+| `.project_history/` | Process artifacts (extracts, logs, synthesis) |
 | `scripts/` | Utility scripts |
 
 ## Documentation
@@ -40,21 +40,21 @@ python -m src.main --config config/default.yaml
 | See design for a component | `docs/components/[name]/CURRENT.md` |
 | Give Claude Code a task | `instructions/active/` |
 | Find implementation code | `src/[component]/` |
-| See what was discussed today | `.history/extracts/daily/` |
-| Find a past thread extract | `.history/extracts/raw/` |
-| Check what Claude Code did | `.history/code-activity/` |
+| See what was discussed today | `.project_history/extracts/daily/` |
+| Find a past thread extract | `.project_history/extracts/raw/` |
+| Check what Claude Code did | `.project_history/code-activity/` |
 | Bootstrap a new LLM session | `docs/context-packets/` |
 | Find runtime hierarchies/resolvers | `config/` |
 
 ## Workflow
 
 1. Design ideation in GUI LLMs
-2. Extract → `.history/extracts/raw/`
-3. Reconcile → `.history/extracts/daily/`
+2. Extract → `.project_history/extracts/raw/`
+3. Reconcile → `.project_history/extracts/daily/`
 4. Update → `docs/.../CURRENT.md`
 5. Create instruction → `instructions/active/`
 6. Claude Code implements → `src/`
-7. Log activity → `.history/code-activity/`
+7. Log activity → `.project_history/code-activity/`
 
 ## File Naming Conventions
 
