@@ -1,0 +1,660 @@
+{
+  "meta": {
+    "version": "2.0.0",
+    "created_utc": "2026-01-13T00:00:00Z",
+    "description": "Canonical hierarchy reference for LLM parsing and validation. Designed with deliberate designator collisions to force multi-signal disambiguation.",
+    "designator_collision_note": "Multiple components share subunit designators. Parser must use unit_type, component signals, and contextual vocabulary to disambiguate."
+  },
+
+  "components": {
+    "1st_infantry_division": {
+      "component_id": "1st_infantry_division",
+      "component_type": "infantry_division",
+      "canonical_name": "1st Infantry Division",
+      "service_branch": "army",
+      "aliases": [
+        {
+          "alias_id": "1id_short",
+          "alias_name": "1st ID",
+          "alias_type": "informal"
+        },
+        {
+          "alias_id": "1id_div_only",
+          "alias_name": "1st Division",
+          "alias_type": "informal"
+        }
+      ],
+      "organizational_structure": {
+        "hierarchy_pattern": "division -> regiment -> battalion -> company",
+        "levels": {
+          "regiment": {
+            "designator_convention": "numeric_discrete",
+            "designators": ["1", "5", "7"]
+          },
+          "battalion": {
+            "designator_convention": "numeric_sequential",
+            "designators": ["1", "2", "3"]
+          },
+          "company": {
+            "designator_convention": "alpha_gapped",
+            "designators": ["A", "B", "C", "D", "E", "F", "G", "H", "I", "K", "L", "M"]
+          }
+        }
+      },
+      "known_subordinate_units": {
+        "regiments": [
+          {"designator": "1", "unit_type": "regiment", "canonical_name": "1st Infantry Regiment"},
+          {"designator": "5", "unit_type": "regiment", "canonical_name": "5th Infantry Regiment"},
+          {"designator": "7", "unit_type": "regiment", "canonical_name": "7th Infantry Regiment"}
+        ]
+      }
+    },
+
+    "2nd_infantry_division": {
+      "component_id": "2nd_infantry_division",
+      "component_type": "infantry_division",
+      "canonical_name": "2nd Infantry Division",
+      "service_branch": "army",
+      "aliases": [
+        {
+          "alias_id": "2id_short",
+          "alias_name": "2nd ID",
+          "alias_type": "informal"
+        },
+        {
+          "alias_id": "2id_indianhead",
+          "alias_name": "Indianhead Division",
+          "alias_type": "nickname",
+          "period": {"start": "1918-01-01", "end": "1945-12-31"}
+        }
+      ],
+      "organizational_structure": {
+        "hierarchy_pattern": "division -> regiment -> battalion -> company",
+        "levels": {
+          "regiment": {
+            "designator_convention": "numeric_discrete",
+            "designators": ["1", "3", "9"]
+          },
+          "battalion": {
+            "designator_convention": "numeric_sequential",
+            "designators": ["1", "2", "3", "4"]
+          },
+          "company": {
+            "designator_convention": "alpha_gapped",
+            "designators": ["A", "B", "C", "D", "E", "F", "G", "H", "I", "K", "L", "M"]
+          }
+        }
+      },
+      "known_subordinate_units": {
+        "regiments": [
+          {"designator": "1", "unit_type": "regiment", "canonical_name": "1st Infantry Regiment"},
+          {"designator": "3", "unit_type": "regiment", "canonical_name": "3rd Infantry Regiment"},
+          {"designator": "9", "unit_type": "regiment", "canonical_name": "9th Infantry Regiment"}
+        ]
+      }
+    },
+
+    "3rd_infantry_division": {
+      "component_id": "3rd_infantry_division",
+      "component_type": "infantry_division",
+      "canonical_name": "3rd Infantry Division",
+      "service_branch": "army",
+      "aliases": [
+        {
+          "alias_id": "3id_short",
+          "alias_name": "3rd ID",
+          "alias_type": "informal"
+        }
+      ],
+      "organizational_structure": {
+        "hierarchy_pattern": "division -> regiment -> battalion -> company",
+        "levels": {
+          "regiment": {
+            "designator_convention": "numeric_discrete",
+            "designators": ["5", "7", "11"]
+          },
+          "battalion": {
+            "designator_convention": "numeric_sequential",
+            "designators": ["1", "2", "3"]
+          },
+          "company": {
+            "designator_convention": "alpha_gapped",
+            "designators": ["A", "B", "C", "D", "E", "F", "G", "H", "I", "K", "L", "M"]
+          }
+        }
+      },
+      "known_subordinate_units": {
+        "regiments": [
+          {"designator": "5", "unit_type": "regiment", "canonical_name": "5th Infantry Regiment"},
+          {"designator": "7", "unit_type": "regiment", "canonical_name": "7th Infantry Regiment"},
+          {"designator": "11", "unit_type": "regiment", "canonical_name": "11th Infantry Regiment"}
+        ]
+      }
+    },
+
+    "82nd_airborne_division": {
+      "component_id": "82nd_airborne_division",
+      "component_type": "airborne_division",
+      "canonical_name": "82nd Airborne Division",
+      "service_branch": "army",
+      "aliases": [
+        {
+          "alias_id": "82ab_short",
+          "alias_name": "82nd AB",
+          "alias_type": "informal"
+        },
+        {
+          "alias_id": "82nd_infantry",
+          "alias_name": "82nd Infantry Division",
+          "alias_type": "redesignation",
+          "period": {"start": "1917-08-25", "end": "1942-08-15"}
+        }
+      ],
+      "organizational_structure": {
+        "hierarchy_pattern": "division -> regiment -> battalion -> company",
+        "levels": {
+          "regiment": {
+            "designator_convention": "numeric_discrete",
+            "designators": ["3", "5", "7"]
+          },
+          "battalion": {
+            "designator_convention": "alpha_sequential",
+            "designators": ["A", "B", "C"]
+          },
+          "company": {
+            "designator_convention": "numeric_sequential",
+            "designators": ["1", "2", "3", "4"]
+          }
+        }
+      },
+      "known_subordinate_units": {
+        "regiments": [
+          {"designator": "3", "unit_type": "regiment", "canonical_name": "3rd Parachute Infantry Regiment"},
+          {"designator": "5", "unit_type": "regiment", "canonical_name": "5th Parachute Infantry Regiment"},
+          {"designator": "7", "unit_type": "regiment", "canonical_name": "7th Glider Infantry Regiment"}
+        ]
+      }
+    },
+
+    "101st_airborne_division": {
+      "component_id": "101st_airborne_division",
+      "component_type": "airborne_division",
+      "canonical_name": "101st Airborne Division",
+      "service_branch": "army",
+      "aliases": [
+        {
+          "alias_id": "101ab_short",
+          "alias_name": "101st AB",
+          "alias_type": "informal"
+        },
+        {
+          "alias_id": "101_screaming_eagles",
+          "alias_name": "Screaming Eagles",
+          "alias_type": "nickname"
+        }
+      ],
+      "organizational_structure": {
+        "hierarchy_pattern": "division -> regiment -> battalion -> company",
+        "levels": {
+          "regiment": {
+            "designator_convention": "numeric_discrete",
+            "designators": ["1", "3", "6"]
+          },
+          "battalion": {
+            "designator_convention": "alpha_sequential",
+            "designators": ["A", "B", "C"]
+          },
+          "company": {
+            "designator_convention": "numeric_sequential",
+            "designators": ["1", "2", "3", "4"]
+          }
+        }
+      },
+      "known_subordinate_units": {
+        "regiments": [
+          {"designator": "1", "unit_type": "regiment", "canonical_name": "1st Parachute Infantry Regiment"},
+          {"designator": "3", "unit_type": "regiment", "canonical_name": "3rd Glider Infantry Regiment"},
+          {"designator": "6", "unit_type": "regiment", "canonical_name": "6th Parachute Infantry Regiment"}
+        ]
+      }
+    },
+
+    "1st_marine_division": {
+      "component_id": "1st_marine_division",
+      "component_type": "marine_division",
+      "canonical_name": "1st Marine Division",
+      "service_branch": "marines",
+      "aliases": [
+        {
+          "alias_id": "1mardiv_short",
+          "alias_name": "1st MarDiv",
+          "alias_type": "informal"
+        }
+      ],
+      "organizational_structure": {
+        "hierarchy_pattern": "division -> regiment -> battalion -> company",
+        "levels": {
+          "regiment": {
+            "designator_convention": "numeric_discrete",
+            "designators": ["1", "5", "7"]
+          },
+          "battalion": {
+            "designator_convention": "numeric_sequential",
+            "designators": ["1", "2", "3"]
+          },
+          "company": {
+            "designator_convention": "alpha_sequential",
+            "designators": ["A", "B", "C", "D", "E", "F", "G", "H"]
+          }
+        }
+      },
+      "known_subordinate_units": {
+        "regiments": [
+          {"designator": "1", "unit_type": "regiment", "canonical_name": "1st Marine Regiment"},
+          {"designator": "5", "unit_type": "regiment", "canonical_name": "5th Marine Regiment"},
+          {"designator": "7", "unit_type": "regiment", "canonical_name": "7th Marine Regiment"}
+        ]
+      }
+    },
+
+    "2nd_marine_division": {
+      "component_id": "2nd_marine_division",
+      "component_type": "marine_division",
+      "canonical_name": "2nd Marine Division",
+      "service_branch": "marines",
+      "aliases": [
+        {
+          "alias_id": "2mardiv_short",
+          "alias_name": "2nd MarDiv",
+          "alias_type": "informal"
+        }
+      ],
+      "organizational_structure": {
+        "hierarchy_pattern": "division -> regiment -> battalion -> company",
+        "levels": {
+          "regiment": {
+            "designator_convention": "numeric_discrete",
+            "designators": ["2", "6", "8"]
+          },
+          "battalion": {
+            "designator_convention": "numeric_sequential",
+            "designators": ["1", "2", "3"]
+          },
+          "company": {
+            "designator_convention": "alpha_sequential",
+            "designators": ["A", "B", "C", "D", "E", "F", "G", "H"]
+          }
+        }
+      },
+      "known_subordinate_units": {
+        "regiments": [
+          {"designator": "2", "unit_type": "regiment", "canonical_name": "2nd Marine Regiment"},
+          {"designator": "6", "unit_type": "regiment", "canonical_name": "6th Marine Regiment"},
+          {"designator": "8", "unit_type": "regiment", "canonical_name": "8th Marine Regiment"}
+        ]
+      }
+    },
+
+    "3rd_marine_division": {
+      "component_id": "3rd_marine_division",
+      "component_type": "marine_division",
+      "canonical_name": "3rd Marine Division",
+      "service_branch": "marines",
+      "aliases": [
+        {
+          "alias_id": "3mardiv_short",
+          "alias_name": "3rd MarDiv",
+          "alias_type": "informal"
+        }
+      ],
+      "organizational_structure": {
+        "hierarchy_pattern": "division -> regiment -> battalion -> company",
+        "levels": {
+          "regiment": {
+            "designator_convention": "numeric_discrete",
+            "designators": ["3", "9", "11"]
+          },
+          "battalion": {
+            "designator_convention": "numeric_sequential",
+            "designators": ["1", "2", "3"]
+          },
+          "company": {
+            "designator_convention": "alpha_sequential",
+            "designators": ["A", "B", "C", "D", "E", "F", "G", "H"]
+          }
+        }
+      },
+      "known_subordinate_units": {
+        "regiments": [
+          {"designator": "3", "unit_type": "regiment", "canonical_name": "3rd Marine Regiment"},
+          {"designator": "9", "unit_type": "regiment", "canonical_name": "9th Marine Regiment"},
+          {"designator": "11", "unit_type": "regiment", "canonical_name": "11th Marine Regiment"}
+        ]
+      }
+    },
+
+    "1st_armored_division": {
+      "component_id": "1st_armored_division",
+      "component_type": "armored_division",
+      "canonical_name": "1st Armored Division",
+      "service_branch": "army",
+      "aliases": [
+        {
+          "alias_id": "1ad_short",
+          "alias_name": "1st AD",
+          "alias_type": "informal"
+        }
+      ],
+      "organizational_structure": {
+        "hierarchy_pattern": "division -> combat_command -> battalion -> company",
+        "levels": {
+          "combat_command": {
+            "designator_convention": "alpha_discrete",
+            "designators": ["A", "B", "R"]
+          },
+          "battalion": {
+            "designator_convention": "numeric_discrete",
+            "designators": ["1", "4", "13"]
+          },
+          "company": {
+            "designator_convention": "alpha_sequential",
+            "designators": ["A", "B", "C", "D", "E", "F"]
+          }
+        }
+      },
+      "known_subordinate_units": {
+        "combat_commands": [
+          {"designator": "A", "unit_type": "combat_command", "canonical_name": "Combat Command A"},
+          {"designator": "B", "unit_type": "combat_command", "canonical_name": "Combat Command B"},
+          {"designator": "R", "unit_type": "combat_command", "canonical_name": "Combat Command Reserve"}
+        ],
+        "battalions": [
+          {"designator": "1", "unit_type": "battalion", "canonical_name": "1st Tank Battalion"},
+          {"designator": "4", "unit_type": "battalion", "canonical_name": "4th Tank Battalion"},
+          {"designator": "13", "unit_type": "battalion", "canonical_name": "13th Armored Infantry Battalion"}
+        ]
+      }
+    },
+
+    "2nd_armored_division": {
+      "component_id": "2nd_armored_division",
+      "component_type": "armored_division",
+      "canonical_name": "2nd Armored Division",
+      "service_branch": "army",
+      "aliases": [
+        {
+          "alias_id": "2ad_short",
+          "alias_name": "2nd AD",
+          "alias_type": "informal"
+        },
+        {
+          "alias_id": "2ad_hell_on_wheels",
+          "alias_name": "Hell on Wheels",
+          "alias_type": "nickname"
+        }
+      ],
+      "organizational_structure": {
+        "hierarchy_pattern": "division -> combat_command -> battalion -> company",
+        "levels": {
+          "combat_command": {
+            "designator_convention": "alpha_discrete",
+            "designators": ["A", "B", "R"]
+          },
+          "battalion": {
+            "designator_convention": "numeric_discrete",
+            "designators": ["2", "6", "14"]
+          },
+          "company": {
+            "designator_convention": "alpha_sequential",
+            "designators": ["A", "B", "C", "D", "E", "F"]
+          }
+        }
+      },
+      "known_subordinate_units": {
+        "combat_commands": [
+          {"designator": "A", "unit_type": "combat_command", "canonical_name": "Combat Command A"},
+          {"designator": "B", "unit_type": "combat_command", "canonical_name": "Combat Command B"},
+          {"designator": "R", "unit_type": "combat_command", "canonical_name": "Combat Command Reserve"}
+        ],
+        "battalions": [
+          {"designator": "2", "unit_type": "battalion", "canonical_name": "2nd Tank Battalion"},
+          {"designator": "6", "unit_type": "battalion", "canonical_name": "6th Tank Battalion"},
+          {"designator": "14", "unit_type": "battalion", "canonical_name": "14th Armored Infantry Battalion"}
+        ]
+      }
+    },
+
+    "10th_mountain_division": {
+      "component_id": "10th_mountain_division",
+      "component_type": "mountain_division",
+      "canonical_name": "10th Mountain Division",
+      "service_branch": "army",
+      "aliases": [
+        {
+          "alias_id": "10mtn_short",
+          "alias_name": "10th Mtn",
+          "alias_type": "informal"
+        },
+        {
+          "alias_id": "10th_light_alpine",
+          "alias_name": "10th Light Division (Alpine)",
+          "alias_type": "redesignation",
+          "period": {"start": "1943-07-15", "end": "1944-11-06"}
+        }
+      ],
+      "organizational_structure": {
+        "hierarchy_pattern": "division -> regiment -> battalion -> company",
+        "levels": {
+          "regiment": {
+            "designator_convention": "numeric_discrete",
+            "designators": ["5", "7", "9"]
+          },
+          "battalion": {
+            "designator_convention": "numeric_sequential",
+            "designators": ["1", "2", "3"]
+          },
+          "company": {
+            "designator_convention": "alpha_sequential",
+            "designators": ["A", "B", "C", "D", "E", "F", "G", "H"]
+          }
+        }
+      },
+      "known_subordinate_units": {
+        "regiments": [
+          {"designator": "5", "unit_type": "regiment", "canonical_name": "5th Mountain Infantry Regiment"},
+          {"designator": "7", "unit_type": "regiment", "canonical_name": "7th Mountain Infantry Regiment"},
+          {"designator": "9", "unit_type": "regiment", "canonical_name": "9th Mountain Infantry Regiment"}
+        ]
+      }
+    },
+
+    "8th_air_force": {
+      "component_id": "8th_air_force",
+      "component_type": "air_force",
+      "canonical_name": "8th Air Force",
+      "service_branch": "army_air_forces",
+      "aliases": [
+        {
+          "alias_id": "8af_short",
+          "alias_name": "8th AF",
+          "alias_type": "informal"
+        },
+        {
+          "alias_id": "8af_mighty_eighth",
+          "alias_name": "Mighty Eighth",
+          "alias_type": "nickname"
+        }
+      ],
+      "organizational_structure": {
+        "hierarchy_pattern": "air_force -> bomb_group -> squadron",
+        "levels": {
+          "bomb_group": {
+            "designator_convention": "numeric_discrete",
+            "designators": ["91", "100", "303", "351", "379", "398"]
+          },
+          "squadron": {
+            "designator_convention": "numeric_sequential",
+            "designators": ["1", "2", "3", "4"]
+          }
+        }
+      },
+      "known_subordinate_units": {
+        "bomb_groups": [
+          {"designator": "91", "unit_type": "bomb_group", "canonical_name": "91st Bombardment Group"},
+          {"designator": "100", "unit_type": "bomb_group", "canonical_name": "100th Bombardment Group"},
+          {"designator": "303", "unit_type": "bomb_group", "canonical_name": "303rd Bombardment Group"},
+          {"designator": "351", "unit_type": "bomb_group", "canonical_name": "351st Bombardment Group"},
+          {"designator": "379", "unit_type": "bomb_group", "canonical_name": "379th Bombardment Group"},
+          {"designator": "398", "unit_type": "bomb_group", "canonical_name": "398th Bombardment Group"}
+        ]
+      }
+    },
+
+    "9th_air_force": {
+      "component_id": "9th_air_force",
+      "component_type": "air_force",
+      "canonical_name": "9th Air Force",
+      "service_branch": "army_air_forces",
+      "aliases": [
+        {
+          "alias_id": "9af_short",
+          "alias_name": "9th AF",
+          "alias_type": "informal"
+        }
+      ],
+      "organizational_structure": {
+        "hierarchy_pattern": "air_force -> bomb_group -> squadron",
+        "levels": {
+          "bomb_group": {
+            "designator_convention": "numeric_discrete",
+            "designators": ["322", "344", "387", "391", "394", "409"]
+          },
+          "squadron": {
+            "designator_convention": "numeric_sequential",
+            "designators": ["1", "2", "3", "4"]
+          }
+        }
+      },
+      "known_subordinate_units": {
+        "bomb_groups": [
+          {"designator": "322", "unit_type": "bomb_group", "canonical_name": "322nd Bombardment Group"},
+          {"designator": "344", "unit_type": "bomb_group", "canonical_name": "344th Bombardment Group"},
+          {"designator": "387", "unit_type": "bomb_group", "canonical_name": "387th Bombardment Group"},
+          {"designator": "391", "unit_type": "bomb_group", "canonical_name": "391st Bombardment Group"},
+          {"designator": "394", "unit_type": "bomb_group", "canonical_name": "394th Bombardment Group"},
+          {"designator": "409", "unit_type": "bomb_group", "canonical_name": "409th Bombardment Group"}
+        ]
+      }
+    },
+
+    "15th_air_force": {
+      "component_id": "15th_air_force",
+      "component_type": "air_force",
+      "canonical_name": "15th Air Force",
+      "service_branch": "army_air_forces",
+      "aliases": [
+        {
+          "alias_id": "15af_short",
+          "alias_name": "15th AF",
+          "alias_type": "informal"
+        }
+      ],
+      "organizational_structure": {
+        "hierarchy_pattern": "air_force -> bomb_group -> squadron",
+        "levels": {
+          "bomb_group": {
+            "designator_convention": "numeric_discrete",
+            "designators": ["2", "97", "99", "301", "376", "449"]
+          },
+          "squadron": {
+            "designator_convention": "numeric_sequential",
+            "designators": ["1", "2", "3", "4"]
+          }
+        }
+      },
+      "known_subordinate_units": {
+        "bomb_groups": [
+          {"designator": "2", "unit_type": "bomb_group", "canonical_name": "2nd Bombardment Group"},
+          {"designator": "97", "unit_type": "bomb_group", "canonical_name": "97th Bombardment Group"},
+          {"designator": "99", "unit_type": "bomb_group", "canonical_name": "99th Bombardment Group"},
+          {"designator": "301", "unit_type": "bomb_group", "canonical_name": "301st Bombardment Group"},
+          {"designator": "376", "unit_type": "bomb_group", "canonical_name": "376th Bombardment Group"},
+          {"designator": "449", "unit_type": "bomb_group", "canonical_name": "449th Bombardment Group"}
+        ]
+      }
+    },
+
+    "36th_infantry_division": {
+      "component_id": "36th_infantry_division",
+      "component_type": "infantry_division",
+      "canonical_name": "36th Infantry Division",
+      "service_branch": "army",
+      "aliases": [
+        {
+          "alias_id": "36id_short",
+          "alias_name": "36th ID",
+          "alias_type": "informal"
+        },
+        {
+          "alias_id": "36id_texas",
+          "alias_name": "Texas Division",
+          "alias_type": "nickname"
+        }
+      ],
+      "organizational_structure": {
+        "hierarchy_pattern": "division -> regiment -> battalion -> company",
+        "levels": {
+          "regiment": {
+            "designator_convention": "numeric_discrete",
+            "designators": ["1", "2", "3"]
+          },
+          "battalion": {
+            "designator_convention": "numeric_sequential",
+            "designators": ["1", "2", "3"]
+          },
+          "company": {
+            "designator_convention": "alpha_gapped",
+            "designators": ["A", "B", "C", "D", "E", "F", "G", "H", "I", "K", "L", "M"]
+          }
+        }
+      },
+      "known_subordinate_units": {
+        "regiments": [
+          {"designator": "1", "unit_type": "regiment", "canonical_name": "1st Infantry Regiment"},
+          {"designator": "2", "unit_type": "regiment", "canonical_name": "2nd Infantry Regiment"},
+          {"designator": "3", "unit_type": "regiment", "canonical_name": "3rd Infantry Regiment"}
+        ]
+      }
+    }
+  },
+
+  "collision_index": {
+    "description": "Index of designator collisions requiring disambiguation",
+    "regiment_collisions": {
+      "1": ["1st_infantry_division", "2nd_infantry_division", "101st_airborne_division", "1st_marine_division", "36th_infantry_division"],
+      "3": ["2nd_infantry_division", "82nd_airborne_division", "101st_airborne_division", "3rd_marine_division", "36th_infantry_division"],
+      "5": ["1st_infantry_division", "3rd_infantry_division", "82nd_airborne_division", "1st_marine_division", "10th_mountain_division"],
+      "7": ["1st_infantry_division", "3rd_infantry_division", "82nd_airborne_division", "1st_marine_division", "10th_mountain_division"],
+      "9": ["2nd_infantry_division", "3rd_marine_division", "10th_mountain_division"],
+      "11": ["3rd_infantry_division", "3rd_marine_division"]
+    },
+    "battalion_collisions": {
+      "A": ["82nd_airborne_division", "101st_airborne_division", "1st_armored_division", "2nd_armored_division"],
+      "B": ["82nd_airborne_division", "101st_airborne_division", "1st_armored_division", "2nd_armored_division"],
+      "1": ["1st_infantry_division", "2nd_infantry_division", "3rd_infantry_division", "1st_marine_division", "2nd_marine_division", "3rd_marine_division", "10th_mountain_division", "1st_armored_division", "36th_infantry_division"]
+    },
+    "cross_branch_collisions": {
+      "regiment_1": {
+        "army_infantry": ["1st_infantry_division", "2nd_infantry_division", "36th_infantry_division"],
+        "army_airborne": ["101st_airborne_division"],
+        "marines": ["1st_marine_division"]
+      },
+      "regiment_5": {
+        "army_infantry": ["1st_infantry_division", "3rd_infantry_division"],
+        "army_airborne": ["82nd_airborne_division"],
+        "army_mountain": ["10th_mountain_division"],
+        "marines": ["1st_marine_division"]
+      }
+    }
+  }
+}

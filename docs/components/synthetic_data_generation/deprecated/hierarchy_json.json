@@ -1,0 +1,587 @@
+{
+  "1st_infantry_division": {
+    "component_id": "1st_infantry_division",
+    "component_type": "division",
+    "canonical_name": "1st Infantry Division",
+    "service_branch": "army",
+    "period_active": "1917-1945",
+    "organizational_structure": {
+      "subdivision_types": ["regiment", "battalion", "company"],
+      "hierarchy_pattern": "division → regiment → battalion → company",
+      "naming_conventions": {
+        "regiment": {"designator_type": "numerical"},
+        "battalion": {"designator_type": "numerical", "examples": ["1st", "2nd", "3rd"]},
+        "company": {"designator_type": "alphabetical", "examples": ["A", "B", "C", "D", "E", "F", "G", "H", "I", "K", "L", "M"]}
+      }
+    },
+    "known_subordinate_units": {
+      "regiments": [
+        {"designator": "16", "canonical_name": "16th Infantry Regiment"},
+        {"designator": "18", "canonical_name": "18th Infantry Regiment"},
+        {"designator": "26", "canonical_name": "26th Infantry Regiment"}
+      ]
+    }
+  },
+  
+  "2nd_infantry_division": {
+    "component_id": "2nd_infantry_division",
+    "component_type": "division",
+    "canonical_name": "2nd Infantry Division",
+    "service_branch": "army",
+    "period_active": "1917-1945",
+    "organizational_structure": {
+      "subdivision_types": ["regiment", "battalion", "company"],
+      "hierarchy_pattern": "division → regiment → battalion → company",
+      "naming_conventions": {
+        "regiment": {"designator_type": "numerical"},
+        "battalion": {"designator_type": "numerical", "examples": ["1st", "2nd", "3rd"]},
+        "company": {"designator_type": "alphabetical", "examples": ["A", "B", "C", "D", "E", "F", "G", "H", "I", "K", "L", "M"]}
+      }
+    },
+    "known_subordinate_units": {
+      "regiments": [
+        {"designator": "9", "canonical_name": "9th Infantry Regiment"},
+        {"designator": "23", "canonical_name": "23rd Infantry Regiment"},
+        {"designator": "38", "canonical_name": "38th Infantry Regiment"}
+      ]
+    }
+  },
+
+  "3rd_infantry_division": {
+    "component_id": "3rd_infantry_division",
+    "component_type": "division",
+    "canonical_name": "3rd Infantry Division",
+    "service_branch": "army",
+    "period_active": "1917-1945",
+    "organizational_structure": {
+      "subdivision_types": ["regiment", "battalion", "company"],
+      "hierarchy_pattern": "division → regiment → battalion → company",
+      "naming_conventions": {
+        "regiment": {"designator_type": "numerical"},
+        "battalion": {"designator_type": "numerical", "examples": ["1st", "2nd", "3rd"]},
+        "company": {"designator_type": "alphabetical", "examples": ["A", "B", "C", "D", "E", "F", "G", "H", "I", "K", "L", "M"]}
+      }
+    },
+    "known_subordinate_units": {
+      "regiments": [
+        {"designator": "7", "canonical_name": "7th Infantry Regiment"},
+        {"designator": "15", "canonical_name": "15th Infantry Regiment"},
+        {"designator": "30", "canonical_name": "30th Infantry Regiment"}
+      ]
+    }
+  },
+
+  "4th_infantry_division": {
+    "component_id": "4th_infantry_division",
+    "component_type": "division",
+    "canonical_name": "4th Infantry Division",
+    "service_branch": "army",
+    "period_active": "1917-1945",
+    "organizational_structure": {
+      "subdivision_types": ["regiment", "battalion", "company"],
+      "hierarchy_pattern": "division → regiment → battalion → company",
+      "naming_conventions": {
+        "regiment": {"designator_type": "numerical"},
+        "battalion": {"designator_type": "numerical", "examples": ["1st", "2nd", "3rd"]},
+        "company": {"designator_type": "alphabetical", "examples": ["A", "B", "C", "D", "E", "F", "G", "H", "I", "K", "L", "M"]}
+      }
+    },
+    "known_subordinate_units": {
+      "regiments": [
+        {"designator": "8", "canonical_name": "8th Infantry Regiment"},
+        {"designator": "12", "canonical_name": "12th Infantry Regiment"},
+        {"designator": "22", "canonical_name": "22nd Infantry Regiment"}
+      ]
+    }
+  },
+
+  "29th_infantry_division": {
+    "component_id": "29th_infantry_division",
+    "component_type": "division",
+    "canonical_name": "29th Infantry Division",
+    "service_branch": "army",
+    "period_active": "1917-1945",
+    "organizational_structure": {
+      "subdivision_types": ["regiment", "battalion", "company"],
+      "hierarchy_pattern": "division → regiment → battalion → company",
+      "naming_conventions": {
+        "regiment": {"designator_type": "numerical"},
+        "battalion": {"designator_type": "numerical", "examples": ["1st", "2nd", "3rd"]},
+        "company": {"designator_type": "alphabetical", "examples": ["A", "B", "C", "D", "E", "F", "G", "H", "I", "K", "L", "M"]}
+      }
+    },
+    "known_subordinate_units": {
+      "regiments": [
+        {"designator": "115", "canonical_name": "115th Infantry Regiment"},
+        {"designator": "116", "canonical_name": "116th Infantry Regiment"},
+        {"designator": "175", "canonical_name": "175th Infantry Regiment"}
+      ]
+    }
+  },
+
+  "82nd_airborne_division": {
+    "component_id": "82nd_airborne_division",
+    "component_type": "division",
+    "canonical_name": "82nd Airborne Division",
+    "service_branch": "army",
+    "period_active": "1942-1945",
+    "organizational_structure": {
+      "subdivision_types": ["regiment", "battalion", "company"],
+      "hierarchy_pattern": "division → regiment → battalion → company",
+      "naming_conventions": {
+        "regiment": {"designator_type": "numerical", "note": "Parachute Infantry Regiments (PIR)"},
+        "battalion": {"designator_type": "numerical", "examples": ["1st", "2nd", "3rd"]},
+        "company": {"designator_type": "alphabetical", "examples": ["A", "B", "C", "D", "E", "F", "G", "H", "I"]}
+      }
+    },
+    "known_subordinate_units": {
+      "regiments": [
+        {"designator": "325", "canonical_name": "325th Glider Infantry Regiment"},
+        {"designator": "504", "canonical_name": "504th Parachute Infantry Regiment"},
+        {"designator": "505", "canonical_name": "505th Parachute Infantry Regiment"},
+        {"designator": "507", "canonical_name": "507th Parachute Infantry Regiment"},
+        {"designator": "508", "canonical_name": "508th Parachute Infantry Regiment"}
+      ]
+    }
+  },
+
+  "101st_airborne_division": {
+    "component_id": "101st_airborne_division",
+    "component_type": "division",
+    "canonical_name": "101st Airborne Division",
+    "service_branch": "army",
+    "period_active": "1942-1945",
+    "organizational_structure": {
+      "subdivision_types": ["regiment", "battalion", "company"],
+      "hierarchy_pattern": "division → regiment → battalion → company",
+      "naming_conventions": {
+        "regiment": {"designator_type": "numerical", "note": "Parachute Infantry Regiments (PIR) and Glider Infantry Regiments (GIR)"},
+        "battalion": {"designator_type": "numerical", "examples": ["1st", "2nd", "3rd"]},
+        "company": {"designator_type": "alphabetical", "examples": ["A", "B", "C", "D", "E", "F", "G", "H", "I"]}
+      }
+    },
+    "known_subordinate_units": {
+      "regiments": [
+        {"designator": "327", "canonical_name": "327th Glider Infantry Regiment"},
+        {"designator": "401", "canonical_name": "401st Glider Infantry Regiment"},
+        {"designator": "501", "canonical_name": "501st Parachute Infantry Regiment"},
+        {"designator": "502", "canonical_name": "502nd Parachute Infantry Regiment"},
+        {"designator": "506", "canonical_name": "506th Parachute Infantry Regiment"}
+      ]
+    }
+  },
+
+  "1st_marine_division": {
+    "component_id": "1st_marine_division",
+    "component_type": "division",
+    "canonical_name": "1st Marine Division",
+    "service_branch": "marines",
+    "period_active": "1941-1945",
+    "organizational_structure": {
+      "subdivision_types": ["regiment", "battalion", "company"],
+      "hierarchy_pattern": "division → regiment → battalion → company",
+      "naming_conventions": {
+        "regiment": {"designator_type": "numerical", "note": "Marine regiments"},
+        "battalion": {"designator_type": "numerical", "examples": ["1st", "2nd", "3rd"]},
+        "company": {"designator_type": "alphabetical", "examples": ["A", "B", "C", "D", "E", "F", "G", "H"]}
+      }
+    },
+    "known_subordinate_units": {
+      "regiments": [
+        {"designator": "1", "canonical_name": "1st Marine Regiment"},
+        {"designator": "5", "canonical_name": "5th Marine Regiment"},
+        {"designator": "7", "canonical_name": "7th Marine Regiment"},
+        {"designator": "11", "canonical_name": "11th Marine Regiment", "note": "Artillery"}
+      ]
+    }
+  },
+
+  "2nd_marine_division": {
+    "component_id": "2nd_marine_division",
+    "component_type": "division",
+    "canonical_name": "2nd Marine Division",
+    "service_branch": "marines",
+    "period_active": "1941-1945",
+    "organizational_structure": {
+      "subdivision_types": ["regiment", "battalion", "company"],
+      "hierarchy_pattern": "division → regiment → battalion → company",
+      "naming_conventions": {
+        "regiment": {"designator_type": "numerical"},
+        "battalion": {"designator_type": "numerical", "examples": ["1st", "2nd", "3rd"]},
+        "company": {"designator_type": "alphabetical", "examples": ["A", "B", "C", "D", "E", "F", "G", "H"]}
+      }
+    },
+    "known_subordinate_units": {
+      "regiments": [
+        {"designator": "2", "canonical_name": "2nd Marine Regiment"},
+        {"designator": "6", "canonical_name": "6th Marine Regiment"},
+        {"designator": "8", "canonical_name": "8th Marine Regiment"},
+        {"designator": "10", "canonical_name": "10th Marine Regiment", "note": "Artillery"}
+      ]
+    }
+  },
+
+  "3rd_marine_division": {
+    "component_id": "3rd_marine_division",
+    "component_type": "division",
+    "canonical_name": "3rd Marine Division",
+    "service_branch": "marines",
+    "period_active": "1942-1945",
+    "organizational_structure": {
+      "subdivision_types": ["regiment", "battalion", "company"],
+      "hierarchy_pattern": "division → regiment → battalion → company",
+      "naming_conventions": {
+        "regiment": {"designator_type": "numerical"},
+        "battalion": {"designator_type": "numerical", "examples": ["1st", "2nd", "3rd"]},
+        "company": {"designator_type": "alphabetical", "examples": ["A", "B", "C", "D", "E", "F", "G", "H"]}
+      }
+    },
+    "known_subordinate_units": {
+      "regiments": [
+        {"designator": "3", "canonical_name": "3rd Marine Regiment"},
+        {"designator": "9", "canonical_name": "9th Marine Regiment"},
+        {"designator": "21", "canonical_name": "21st Marine Regiment"},
+        {"designator": "12", "canonical_name": "12th Marine Regiment", "note": "Artillery"}
+      ]
+    }
+  },
+
+  "4th_marine_division": {
+    "component_id": "4th_marine_division",
+    "component_type": "division",
+    "canonical_name": "4th Marine Division",
+    "service_branch": "marines",
+    "period_active": "1943-1945",
+    "organizational_structure": {
+      "subdivision_types": ["regiment", "battalion", "company"],
+      "hierarchy_pattern": "division → regiment → battalion → company",
+      "naming_conventions": {
+        "regiment": {"designator_type": "numerical"},
+        "battalion": {"designator_type": "numerical", "examples": ["1st", "2nd", "3rd"]},
+        "company": {"designator_type": "alphabetical", "examples": ["A", "B", "C", "D", "E", "F", "G", "H"]}
+      }
+    },
+    "known_subordinate_units": {
+      "regiments": [
+        {"designator": "23", "canonical_name": "23rd Marine Regiment"},
+        {"designator": "24", "canonical_name": "24th Marine Regiment"},
+        {"designator": "25", "canonical_name": "25th Marine Regiment"},
+        {"designator": "14", "canonical_name": "14th Marine Regiment", "note": "Artillery"}
+      ]
+    }
+  },
+
+  "5th_marine_division": {
+    "component_id": "5th_marine_division",
+    "component_type": "division",
+    "canonical_name": "5th Marine Division",
+    "service_branch": "marines",
+    "period_active": "1943-1945",
+    "organizational_structure": {
+      "subdivision_types": ["regiment", "battalion", "company"],
+      "hierarchy_pattern": "division → regiment → battalion → company",
+      "naming_conventions": {
+        "regiment": {"designator_type": "numerical"},
+        "battalion": {"designator_type": "numerical", "examples": ["1st", "2nd", "3rd"]},
+        "company": {"designator_type": "alphabetical", "examples": ["A", "B", "C", "D", "E", "F", "G", "H"]}
+      }
+    },
+    "known_subordinate_units": {
+      "regiments": [
+        {"designator": "26", "canonical_name": "26th Marine Regiment"},
+        {"designator": "27", "canonical_name": "27th Marine Regiment"},
+        {"designator": "28", "canonical_name": "28th Marine Regiment"},
+        {"designator": "13", "canonical_name": "13th Marine Regiment", "note": "Artillery"}
+      ]
+    }
+  },
+
+  "6th_marine_division": {
+    "component_id": "6th_marine_division",
+    "component_type": "division",
+    "canonical_name": "6th Marine Division",
+    "service_branch": "marines",
+    "period_active": "1944-1945",
+    "organizational_structure": {
+      "subdivision_types": ["regiment", "battalion", "company"],
+      "hierarchy_pattern": "division → regiment → battalion → company",
+      "naming_conventions": {
+        "regiment": {"designator_type": "numerical"},
+        "battalion": {"designator_type": "numerical", "examples": ["1st", "2nd", "3rd"]},
+        "company": {"designator_type": "alphabetical", "examples": ["A", "B", "C", "D", "E", "F", "G", "H"]}
+      }
+    },
+    "known_subordinate_units": {
+      "regiments": [
+        {"designator": "4", "canonical_name": "4th Marine Regiment"},
+        {"designator": "22", "canonical_name": "22nd Marine Regiment"},
+        {"designator": "29", "canonical_name": "29th Marine Regiment"},
+        {"designator": "15", "canonical_name": "15th Marine Regiment", "note": "Artillery"}
+      ]
+    }
+  },
+
+  "8th_air_force": {
+    "component_id": "8th_air_force",
+    "component_type": "air_force",
+    "canonical_name": "8th Air Force",
+    "service_branch": "army_air_forces",
+    "period_active": "1942-1945",
+    "organizational_structure": {
+      "subdivision_types": ["air_division", "bomb_wing", "bomb_group", "squadron"],
+      "hierarchy_pattern": "air force → air division → bomb wing → bomb group → squadron",
+      "naming_conventions": {
+        "air_division": {"designator_type": "ordinal", "examples": ["1st", "2nd", "3rd"]},
+        "bomb_wing": {"designator_type": "numerical"},
+        "bomb_group": {"designator_type": "numerical", "note": "Primary operational unit"},
+        "squadron": {"designator_type": "numerical", "note": "Typically 4 squadrons per group"}
+      }
+    },
+    "known_subordinate_units": {
+      "bomb_groups": [
+        {"designator": "91", "canonical_name": "91st Bombardment Group"},
+        {"designator": "92", "canonical_name": "92nd Bombardment Group"},
+        {"designator": "100", "canonical_name": "100th Bombardment Group"},
+        {"designator": "303", "canonical_name": "303rd Bombardment Group"},
+        {"designator": "305", "canonical_name": "305th Bombardment Group"},
+        {"designator": "306", "canonical_name": "306th Bombardment Group"},
+        {"designator": "351", "canonical_name": "351st Bombardment Group"},
+        {"designator": "379", "canonical_name": "379th Bombardment Group"},
+        {"designator": "381", "canonical_name": "381st Bombardment Group"},
+        {"designator": "384", "canonical_name": "384th Bombardment Group"},
+        {"designator": "390", "canonical_name": "390th Bombardment Group"},
+        {"designator": "398", "canonical_name": "398th Bombardment Group"},
+        {"designator": "445", "canonical_name": "445th Bombardment Group"},
+        {"designator": "446", "canonical_name": "446th Bombardment Group"},
+        {"designator": "447", "canonical_name": "447th Bombardment Group"}
+      ],
+      "fighter_groups": [
+        {"designator": "4", "canonical_name": "4th Fighter Group"},
+        {"designator": "20", "canonical_name": "20th Fighter Group"},
+        {"designator": "56", "canonical_name": "56th Fighter Group"},
+        {"designator": "78", "canonical_name": "78th Fighter Group"},
+        {"designator": "352", "canonical_name": "352nd Fighter Group"},
+        {"designator": "353", "canonical_name": "353rd Fighter Group"},
+        {"designator": "355", "canonical_name": "355th Fighter Group"},
+        {"designator": "357", "canonical_name": "357th Fighter Group"},
+        {"designator": "361", "canonical_name": "361st Fighter Group"}
+      ]
+    }
+  },
+
+  "9th_air_force": {
+    "component_id": "9th_air_force",
+    "component_type": "air_force",
+    "canonical_name": "9th Air Force",
+    "service_branch": "army_air_forces",
+    "period_active": "1942-1945",
+    "organizational_structure": {
+      "subdivision_types": ["bomb_wing", "bomb_group", "squadron"],
+      "hierarchy_pattern": "air force → bomb wing → bomb group → squadron",
+      "naming_conventions": {
+        "bomb_wing": {"designator_type": "numerical"},
+        "bomb_group": {"designator_type": "numerical", "note": "Tactical/medium bomber groups"},
+        "squadron": {"designator_type": "numerical"}
+      }
+    },
+    "known_subordinate_units": {
+      "bomb_groups": [
+        {"designator": "322", "canonical_name": "322nd Bombardment Group"},
+        {"designator": "323", "canonical_name": "323rd Bombardment Group"},
+        {"designator": "344", "canonical_name": "344th Bombardment Group"},
+        {"designator": "387", "canonical_name": "387th Bombardment Group"},
+        {"designator": "391", "canonical_name": "391st Bombardment Group"},
+        {"designator": "394", "canonical_name": "394th Bombardment Group"},
+        {"designator": "397", "canonical_name": "397th Bombardment Group"},
+        {"designator": "409", "canonical_name": "409th Bombardment Group"}
+      ],
+      "fighter_groups": [
+        {"designator": "48", "canonical_name": "48th Fighter Group"},
+        {"designator": "354", "canonical_name": "354th Fighter Group"},
+        {"designator": "358", "canonical_name": "358th Fighter Group"},
+        {"designator": "362", "canonical_name": "362nd Fighter Group"},
+        {"designator": "363", "canonical_name": "363rd Fighter Group"},
+        {"designator": "365", "canonical_name": "365th Fighter Group"},
+        {"designator": "366", "canonical_name": "366th Fighter Group"},
+        {"designator": "368", "canonical_name": "368th Fighter Group"},
+        {"designator": "370", "canonical_name": "370th Fighter Group"}
+      ]
+    }
+  },
+
+  "15th_air_force": {
+    "component_id": "15th_air_force",
+    "component_type": "air_force",
+    "canonical_name": "15th Air Force",
+    "service_branch": "army_air_forces",
+    "period_active": "1943-1945",
+    "organizational_structure": {
+      "subdivision_types": ["bomb_wing", "bomb_group", "squadron"],
+      "hierarchy_pattern": "air force → bomb wing → bomb group → squadron",
+      "naming_conventions": {
+        "bomb_wing": {"designator_type": "numerical"},
+        "bomb_group": {"designator_type": "numerical"},
+        "squadron": {"designator_type": "numerical"}
+      }
+    },
+    "known_subordinate_units": {
+      "bomb_groups": [
+        {"designator": "2", "canonical_name": "2nd Bombardment Group"},
+        {"designator": "97", "canonical_name": "97th Bombardment Group"},
+        {"designator": "99", "canonical_name": "99th Bombardment Group"},
+        {"designator": "301", "canonical_name": "301st Bombardment Group"},
+        {"designator": "376", "canonical_name": "376th Bombardment Group"},
+        {"designator": "449", "canonical_name": "449th Bombardment Group"},
+        {"designator": "450", "canonical_name": "450th Bombardment Group"},
+        {"designator": "451", "canonical_name": "451st Bombardment Group"},
+        {"designator": "454", "canonical_name": "454th Bombardment Group"},
+        {"designator": "455", "canonical_name": "455th Bombardment Group"},
+        {"designator": "456", "canonical_name": "456th Bombardment Group"},
+        {"designator": "459", "canonical_name": "459th Bombardment Group"},
+        {"designator": "460", "canonical_name": "460th Bombardment Group"},
+        {"designator": "461", "canonical_name": "461st Bombardment Group"},
+        {"designator": "463", "canonical_name": "463rd Bombardment Group"},
+        {"designator": "464", "canonical_name": "464th Bombardment Group"},
+        {"designator": "465", "canonical_name": "465th Bombardment Group"},
+        {"designator": "483", "canonical_name": "483rd Bombardment Group"},
+        {"designator": "484", "canonical_name": "484th Bombardment Group"},
+        {"designator": "485", "canonical_name": "485th Bombardment Group"}
+      ],
+      "fighter_groups": [
+        {"designator": "1", "canonical_name": "1st Fighter Group"},
+        {"designator": "14", "canonical_name": "14th Fighter Group"},
+        {"designator": "31", "canonical_name": "31st Fighter Group"},
+        {"designator": "52", "canonical_name": "52nd Fighter Group"},
+        {"designator": "82", "canonical_name": "82nd Fighter Group"},
+        {"designator": "325", "canonical_name": "325th Fighter Group"},
+        {"designator": "332", "canonical_name": "332nd Fighter Group"}
+      ]
+    }
+  },
+
+  "2nd_armored_division": {
+    "component_id": "2nd_armored_division",
+    "component_type": "division",
+    "canonical_name": "2nd Armored Division",
+    "service_branch": "army",
+    "period_active": "1940-1945",
+    "organizational_structure": {
+      "subdivision_types": ["combat_command", "tank_battalion", "armored_infantry_battalion", "company"],
+      "hierarchy_pattern": "division → combat command → battalion → company",
+      "naming_conventions": {
+        "combat_command": {"designator_type": "alphabetical", "examples": ["A", "B", "Reserve"], "note": "CCA, CCB, CCR"},
+        "tank_battalion": {"designator_type": "numerical"},
+        "armored_infantry_battalion": {"designator_type": "numerical"},
+        "company": {"designator_type": "alphabetical", "examples": ["A", "B", "C", "D", "E", "F"]}
+      }
+    },
+    "known_subordinate_units": {
+      "tank_battalions": [
+        {"designator": "66", "canonical_name": "66th Armored Regiment"},
+        {"designator": "67", "canonical_name": "67th Armored Regiment"}
+      ],
+      "armored_infantry": [
+        {"designator": "41", "canonical_name": "41st Armored Infantry Regiment"}
+      ]
+    }
+  },
+
+  "3rd_armored_division": {
+    "component_id": "3rd_armored_division",
+    "component_type": "division",
+    "canonical_name": "3rd Armored Division",
+    "service_branch": "army",
+    "period_active": "1941-1945",
+    "organizational_structure": {
+      "subdivision_types": ["combat_command", "tank_battalion", "armored_infantry_battalion", "company"],
+      "hierarchy_pattern": "division → combat command → battalion → company",
+      "naming_conventions": {
+        "combat_command": {"designator_type": "alphabetical", "examples": ["A", "B", "Reserve"]},
+        "tank_battalion": {"designator_type": "numerical"},
+        "armored_infantry_battalion": {"designator_type": "numerical"},
+        "company": {"designator_type": "alphabetical", "examples": ["A", "B", "C", "D", "E", "F"]}
+      }
+    },
+    "known_subordinate_units": {
+      "tank_battalions": [
+        {"designator": "32", "canonical_name": "32nd Armored Regiment"},
+        {"designator": "33", "canonical_name": "33rd Armored Regiment"}
+      ],
+      "armored_infantry": [
+        {"designator": "36", "canonical_name": "36th Armored Infantry Regiment"}
+      ]
+    }
+  },
+
+  "45th_infantry_division": {
+    "component_id": "45th_infantry_division",
+    "component_type": "division",
+    "canonical_name": "45th Infantry Division",
+    "service_branch": "army",
+    "period_active": "1940-1945",
+    "organizational_structure": {
+      "subdivision_types": ["regiment", "battalion", "company"],
+      "hierarchy_pattern": "division → regiment → battalion → company",
+      "naming_conventions": {
+        "regiment": {"designator_type": "numerical"},
+        "battalion": {"designator_type": "numerical", "examples": ["1st", "2nd", "3rd"]},
+        "company": {"designator_type": "alphabetical", "examples": ["A", "B", "C", "D", "E", "F", "G", "H", "I", "K", "L", "M"]}
+      }
+    },
+    "known_subordinate_units": {
+      "regiments": [
+        {"designator": "157", "canonical_name": "157th Infantry Regiment"},
+        {"designator": "179", "canonical_name": "179th Infantry Regiment"},
+        {"designator": "180", "canonical_name": "180th Infantry Regiment"}
+      ]
+    }
+  },
+
+  "36th_infantry_division": {
+    "component_id": "36th_infantry_division",
+    "component_type": "division",
+    "canonical_name": "36th Infantry Division",
+    "service_branch": "army",
+    "period_active": "1940-1945",
+    "organizational_structure": {
+      "subdivision_types": ["regiment", "battalion", "company"],
+      "hierarchy_pattern": "division → regiment → battalion → company",
+      "naming_conventions": {
+        "regiment": {"designator_type": "numerical"},
+        "battalion": {"designator_type": "numerical", "examples": ["1st", "2nd", "3rd"]},
+        "company": {"designator_type": "alphabetical", "examples": ["A", "B", "C", "D", "E", "F", "G", "H", "I", "K", "L", "M"]}
+      }
+    },
+    "known_subordinate_units": {
+      "regiments": [
+        {"designator": "141", "canonical_name": "141st Infantry Regiment"},
+        {"designator": "142", "canonical_name": "142nd Infantry Regiment"},
+        {"designator": "143", "canonical_name": "143rd Infantry Regiment"}
+      ]
+    }
+  },
+
+  "10th_mountain_division": {
+    "component_id": "10th_mountain_division",
+    "component_type": "division",
+    "canonical_name": "10th Mountain Division",
+    "service_branch": "army",
+    "period_active": "1943-1945",
+    "organizational_structure": {
+      "subdivision_types": ["regiment", "battalion", "company"],
+      "hierarchy_pattern": "division → regiment → battalion → company",
+      "naming_conventions": {
+        "regiment": {"designator_type": "numerical"},
+        "battalion": {"designator_type": "numerical", "examples": ["1st", "2nd", "3rd"]},
+        "company": {"designator_type": "alphabetical", "examples": ["A", "B", "C", "D", "E", "F", "G", "H"]}
+      }
+    },
+    "known_subordinate_units": {
+      "regiments": [
+        {"designator": "85", "canonical_name": "85th Mountain Infantry Regiment"},
+        {"designator": "86", "canonical_name": "86th Mountain Infantry Regiment"},
+        {"designator": "87", "canonical_name": "87th Mountain Infantry Regiment"}
+      ]
+    }
+  }
+}

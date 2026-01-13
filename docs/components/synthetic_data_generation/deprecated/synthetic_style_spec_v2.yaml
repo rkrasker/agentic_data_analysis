@@ -1,0 +1,442 @@
+# Synthetic Manifest Shorthand Style Spec (v2)
+# Generated to match the EXACT component_ids and truth schema produced by generate_synthetic_data.py
+# Inputs: hierarchy_json.json, standard_patterns.json, validation.parquet
+
+meta:
+  spec_name: "manifest_shorthand_v2"
+  spec_version: "1.1.0"
+  created_utc: "2026-01-11T00:00:00Z"
+  notes:
+    - "Highly compressed shorthand is the rule; clerk/source clustering is mandatory."
+    - "Component affinities are defined for every component_id present in hierarchy_json.json."
+    - "Truth schema matches validation.parquet produced by generate_synthetic_data.py."
+
+schema:
+  truth_input_required_columns:
+    - primary_id
+    - name_first
+    - name_middle
+    - name_last
+    - rank
+    - division
+    - regiment
+    - battalion
+    - company
+    - platoon
+    - squadron
+    - bomb_group
+    - component_id
+  raw_output_columns_target:
+    - source_id
+    - soldier_id
+    - raw_text
+    - quality_tier
+    - pattern_tier
+    - has_error
+    - has_confounding
+  compatibility_note:
+    - "raw_output_columns_target matches current generator raw.parquet/raw.csv schema; do not change without downstream updates."
+
+global_distributions:
+  records_per_soldier:
+    distribution: "shifted_geometric"
+    min: 1
+    max: 10
+    p_stop: 0.42
+    notes:
+      - "Manifest-style: median ~2–3 entries per soldier; long tail is rare."
+  sources_per_soldier:
+    distribution: "categorical"
+    weights:
+      "1": 0.82
+      "2": 0.17
+      "3": 0.01
+  quality_tier_weights:
+    "1": 0.25
+    "2": 0.3
+    "3": 0.25
+    "4": 0.15
+    "5": 0.05
+
+rendering:
+  separators:
+    joiner_weights:
+      " ": 0.4
+      "  ": 0.15
+      ",": 0.15
+      ", ": 0.1
+      "/": 0.1
+      "-": 0.1
+
+  name:
+    formats:
+      - id: "LAST_FIRST_MI"
+        template: "{LAST}, {FIRST} {MI}."
+        weight: 0.24
+      - id: "LAST_FIRST"
+        template: "{LAST}, {FIRST}"
+        weight: 0.18
+      - id: "FIRST_LAST"
+        template: "{FIRST} {LAST}"
+        weight: 0.18
+      - id: "LAST_INITIALS"
+        template: "{LAST}, {FI}.{MI}."
+        weight: 0.14
+      - id: "LAST_FI"
+        template: "{LAST}, {FI}."
+        weight: 0.12
+      - id: "LAST_ONLY"
+        template: "{LAST}"
+        weight: 0.14
+    truncation_by_quality_tier:
+      "1": {drop_first: 0.05, drop_middle: 0.2}
+      "2": {drop_first: 0.1, drop_middle: 0.35}
+      "3": {drop_first: 0.18, drop_middle: 0.45}
+      "4": {drop_first: 0.28, drop_middle: 0.55}
+      "5": {drop_first: 0.4, drop_middle: 0.65}
+
+  rank:
+    canonical_to_variants:
+      "Private": ['Pvt', 'PVT', 'pvt']
+      "Corporal": ['Cpl', 'CPL', 'cpl']
+      "Sergeant": ['Sgt', 'SGT', 'sgt']
+      "Staff Sergeant": ['S/Sgt', 'SSgt', 'Ssgt', 'ssgt']
+      "Lieutenant": ['Lt', 'LT', 'lt']
+      "Captain": ['Capt', 'CPT', 'capt']
+      "Major": ['Maj', 'MAJ', 'maj']
+    placement_weights: {prefix: 0.55, infix: 0.30, suffix: 0.15}
+
+  unit_shorthand:
+    families:
+      - id: "A_labeled_micro"
+        description: "Minimal labels; very short tokens."
+        examples: ["CCo 3Bn 16Inf"]
+      - id: "B_slash_positional"
+        description: "Slash positional tokens; labels rare."
+        examples: ["C/3/16INF"]
+      - id: "C_runon"
+        description: "Run-on or hyphenated compressed blocks."
+        examples: ["C316INF"]
+      - id: "D_reversal"
+        description: "Same as B/C but orientation reversed within source."
+        examples: ["16/3/C"]
+      - id: "E_idiosyncratic"
+        description: "Rare quirks: odd suffixes/punct."
+        examples: ["16thInf-3Bn CCo"]
+
+    slash_semantics:
+      default_orientation: "child_over_parent"
+      reversed_orientation_sources_share: 0.03
+      allowed_levels_by_component_category:
+        infantry_division: ['company', 'battalion', 'regiment', 'division']
+        airborne_division: ['company', 'battalion', 'regiment', 'division']
+        marine_division: ['company', 'battalion', 'regiment', 'division']
+        armored_division: ['company', 'battalion', 'regiment', 'division']
+        mountain_division: ['company', 'battalion', 'regiment', 'division']
+        air_force: ['bomb_group', 'squadron', 'division']
+
+    tokens:
+      labels:
+        company: ['company', 'COMPANY', 'Company', 'co', 'CO', 'Co', 'coy', 'COY', 'Coy']
+        battalion: ['battalion', 'BATTALION', 'Battalion', 'bn', 'BN', 'Bn', 'bat', 'BAT', 'Bat', 'batt', 'BATT', 'Batt', 'battn', 'BATTN', 'Battn']
+        regiment: ['regiment', 'REGIMENT', 'Regiment', 'regt', 'REGT', 'Regt', 'reg', 'REG', 'Reg', 'regmt', 'REGMT', 'Regmt', 'Inf', 'INF', 'Rgt', 'RGT']
+        division: ['Div', 'DIV', 'ID', 'AD', 'AB', 'MARDIV', 'mardiv', 'Mtn', 'MTN']
+        platoon: ['platoon', 'PLATOON', 'Platoon', 'plt', 'PLT', 'Plt', 'plat', 'PLAT', 'Plat']
+        squadron: ['squadron', 'SQUADRON', 'Squadron', 'sqdn', 'SQDN', 'Sqdn', 'sqn', 'SQN', 'Sqn', 'sq', 'SQ', 'Sq']
+        bomb_group: ['bomb group', 'BOMB GROUP', 'Bomb Group', 'bombardment group', 'BOMBARDMENT GROUP', 'Bombardment Group', 'BG', 'Bg', 'bomb grp', 'BOMB GRP', 'Bomb Grp', 'bmb grp', 'BMB GRP', 'Bmb Grp']
+        fighter_group: ['fighter group', 'FIGHTER GROUP', 'Fighter Group', 'FG', 'Fg', 'fighter grp', 'FIGHTER GRP', 'Fighter Grp', 'ftr grp', 'FTR GRP', 'Ftr Grp']
+      division_compact_rules:
+        infantry_division: "{DIV_NUM}ID"
+        airborne_division: "{DIV_NUM}AB"
+        armored_division: "{DIV_NUM}AD"
+        marine_division: "{DIV_NUM}MARDIV"
+        mountain_division: "{DIV_NUM}MTN"
+        air_force: "{AF_NUM}AF"
+
+  extra_text:
+    mixture_weights: {domain_context: 0.55, component_signal: 0.35, confounders: 0.10}
+    snippet_families:
+      - id: "berth_letter"
+        description: "Bare single-letter berth/section marker (confounds with company letters)."
+        surface_forms: ["A", "B", "C", "D", "E", "F", "G", "H"]
+        labeled_rate: 0.15
+        labeled_prefixes: ["Berth", "Bth", "Bunk"]
+        placement: ["suffix", "infix"]
+      - id: "deck_compartment"
+        description: "Deck/hold/compartment codes; unit-like noise."
+        surface_forms_templates: ["Dk{N}", "Deck{N}", "Hold{N}", "Cmp{N}", "C-{N}"]
+        N_range: [1, 9]
+        placement: ["suffix"]
+      - id: "movement_port"
+        description: "Embark/disembark shorthand; weak domain signal."
+        surface_forms: ["EMB", "DEB", "XFR", "TRNS"]
+        placement: ["suffix", "infix"]
+      - id: "admin_marks"
+        description: "Clerk marks and column bleed artifacts."
+        surface_forms: ["*", "x", "??", "#"]
+        placement: ["suffix"]
+      - id: "serial_like"
+        description: "Short serial fragments that resemble IDs/codes."
+        surface_forms_templates: ["SN{NN}-{L}", "{NN}{L}{NN}"]
+        placement: ["suffix", "infix"]
+      - id: "naval_flavor"
+        description: "Naval-ish tokens; category signal."
+        surface_forms: ["USN", "DECK", "BM", "PO"]
+        placement: ["suffix", "infix"]
+      - id: "air_flavor"
+        description: "Air-force-ish tokens; category signal."
+        surface_forms: ["AAF", "FLT", "OPS", "Sqd"]
+        placement: ["suffix", "infix"]
+      - id: "airborne_flavor"
+        description: "Airborne-ish tokens; signal for airborne components."
+        surface_forms: ["ABN", "PIR", "PARA"]
+        placement: ["suffix", "infix"]
+      - id: "marine_flavor"
+        description: "Marine-ish tokens; signal for marine components."
+        surface_forms: ["USMC", "FMF", "MARDIV"]
+        placement: ["suffix", "infix"]
+      - id: "armored_flavor"
+        description: "Armored-ish tokens; signal for armored components."
+        surface_forms: ["ARMD", "TK", "TD"]
+        placement: ["suffix", "infix"]
+      - id: "mountain_flavor"
+        description: "Mountain-ish tokens; signal for mountain components."
+        surface_forms: ["MTN", "SKI", "ALP"]
+        placement: ["suffix", "infix"]
+
+    component_affinities:
+      default_leak_rate_to_other_components: 0.10
+      by_component_id:
+        101st_airborne_division:
+          airborne_flavor: strong
+          air_flavor: medium
+          naval_flavor: weak
+          marine_flavor: none
+          armored_flavor: none
+          mountain_flavor: none
+        10th_mountain_division:
+          mountain_flavor: strong
+          air_flavor: weak
+          naval_flavor: weak
+          marine_flavor: none
+          airborne_flavor: none
+          armored_flavor: none
+        15th_air_force:
+          air_flavor: strong
+          naval_flavor: weak
+          marine_flavor: none
+          airborne_flavor: none
+          armored_flavor: none
+          mountain_flavor: none
+        1st_infantry_division:
+          naval_flavor: weak
+          air_flavor: weak
+          marine_flavor: none
+          airborne_flavor: none
+          armored_flavor: none
+          mountain_flavor: none
+        1st_marine_division:
+          marine_flavor: strong
+          naval_flavor: medium
+          air_flavor: weak
+          airborne_flavor: none
+          armored_flavor: none
+          mountain_flavor: none
+        29th_infantry_division:
+          naval_flavor: medium
+          air_flavor: weak
+          marine_flavor: none
+          airborne_flavor: none
+          armored_flavor: none
+          mountain_flavor: none
+        2nd_armored_division:
+          armored_flavor: strong
+          air_flavor: weak
+          naval_flavor: weak
+          marine_flavor: none
+          airborne_flavor: none
+          mountain_flavor: none
+        2nd_infantry_division:
+          naval_flavor: weak
+          air_flavor: weak
+          marine_flavor: none
+          airborne_flavor: none
+          armored_flavor: none
+          mountain_flavor: none
+        2nd_marine_division:
+          marine_flavor: strong
+          naval_flavor: medium
+          air_flavor: weak
+          airborne_flavor: none
+          armored_flavor: none
+          mountain_flavor: none
+        36th_infantry_division:
+          naval_flavor: weak
+          air_flavor: weak
+          marine_flavor: none
+          airborne_flavor: none
+          armored_flavor: none
+          mountain_flavor: none
+        3rd_armored_division:
+          armored_flavor: strong
+          air_flavor: weak
+          naval_flavor: weak
+          marine_flavor: none
+          airborne_flavor: none
+          mountain_flavor: none
+        3rd_infantry_division:
+          naval_flavor: weak
+          air_flavor: weak
+          marine_flavor: none
+          airborne_flavor: none
+          armored_flavor: none
+          mountain_flavor: none
+        3rd_marine_division:
+          marine_flavor: strong
+          naval_flavor: medium
+          air_flavor: weak
+          airborne_flavor: none
+          armored_flavor: none
+          mountain_flavor: none
+        45th_infantry_division:
+          naval_flavor: weak
+          air_flavor: weak
+          marine_flavor: none
+          airborne_flavor: none
+          armored_flavor: none
+          mountain_flavor: none
+        4th_infantry_division:
+          naval_flavor: weak
+          air_flavor: weak
+          marine_flavor: none
+          airborne_flavor: none
+          armored_flavor: none
+          mountain_flavor: none
+        4th_marine_division:
+          marine_flavor: strong
+          naval_flavor: medium
+          air_flavor: weak
+          airborne_flavor: none
+          armored_flavor: none
+          mountain_flavor: none
+        5th_marine_division:
+          marine_flavor: strong
+          naval_flavor: medium
+          air_flavor: weak
+          airborne_flavor: none
+          armored_flavor: none
+          mountain_flavor: none
+        6th_marine_division:
+          marine_flavor: strong
+          naval_flavor: medium
+          air_flavor: weak
+          airborne_flavor: none
+          armored_flavor: none
+          mountain_flavor: none
+        82nd_airborne_division:
+          airborne_flavor: strong
+          air_flavor: medium
+          naval_flavor: weak
+          marine_flavor: none
+          armored_flavor: none
+          mountain_flavor: none
+        8th_air_force:
+          air_flavor: strong
+          naval_flavor: weak
+          marine_flavor: none
+          airborne_flavor: none
+          armored_flavor: none
+          mountain_flavor: none
+        9th_air_force:
+          air_flavor: strong
+          naval_flavor: weak
+          marine_flavor: none
+          airborne_flavor: none
+          armored_flavor: none
+          mountain_flavor: none
+
+source_profiles:
+  # Starter profiles. In production, expand to ~20–80 profiles and weight them when assigning to source_id batches.
+  - id: "S01_standard_compact"
+    domain_context: "army_transport"
+    unit_family_weights: {"A_labeled_micro": 0.25, "B_slash_positional": 0.55, "C_runon": 0.15, "E_idiosyncratic": 0.05}
+    slash_orientation: "child_over_parent"
+    label_usage_rate: 0.2
+    caps_style: "mixed"
+    extra_text_density: 0.45
+    extra_text_label_rate: 0.12
+    noise_profile: "typewriter_light"
+  - id: "S02_runon_heavy"
+    domain_context: "army_transport"
+    unit_family_weights: {"A_labeled_micro": 0.15, "B_slash_positional": 0.35, "C_runon": 0.45, "E_idiosyncratic": 0.05}
+    slash_orientation: "child_over_parent"
+    label_usage_rate: 0.1
+    caps_style: "upper_bias"
+    extra_text_density: 0.35
+    extra_text_label_rate: 0.08
+    noise_profile: "typewriter_medium"
+  - id: "S03_reversal_clerk"
+    domain_context: "army_transport"
+    unit_family_weights: {"B_slash_positional": 0.65, "C_runon": 0.2, "D_reversal": 0.1, "E_idiosyncratic": 0.05}
+    slash_orientation: "parent_over_child"
+    label_usage_rate: 0.08
+    caps_style: "mixed"
+    extra_text_density: 0.4
+    extra_text_label_rate: 0.1
+    noise_profile: "typewriter_medium"
+  - id: "S04_navalish_page"
+    domain_context: "naval_transport"
+    unit_family_weights: {"A_labeled_micro": 0.2, "B_slash_positional": 0.55, "C_runon": 0.15, "E_idiosyncratic": 0.1}
+    slash_orientation: "child_over_parent"
+    label_usage_rate: 0.15
+    caps_style: "upper_bias"
+    extra_text_density: 0.6
+    extra_text_label_rate: 0.2
+    noise_profile: "ocr_light"
+
+noise_profiles:
+  typewriter_light:
+    spacing_jitter: {enabled: true, max_spaces: 2, rate: 0.20}
+    punctuation_drop: {enabled: true, rate: 0.03}
+    truncation: {enabled: false}
+    ocr_confusions: {enabled: false}
+  typewriter_medium:
+    spacing_jitter: {enabled: true, max_spaces: 3, rate: 0.35}
+    punctuation_drop: {enabled: true, rate: 0.07}
+    truncation: {enabled: true, rate: 0.06, drop_tail_pct_range: [0.10, 0.30]}
+    ocr_confusions: {enabled: false}
+  ocr_light:
+    spacing_jitter: {enabled: true, max_spaces: 2, rate: 0.25}
+    punctuation_drop: {enabled: true, rate: 0.05}
+    truncation: {enabled: true, rate: 0.04, drop_tail_pct_range: [0.10, 0.25]}
+    ocr_confusions:
+      enabled: true
+      rate: 0.06
+      map: {'0':'O','O':'0','1':'I','I':'1','rn':'m','m':'rn'}
+
+templates:
+  - id: "T1_NAME_UNIT"
+    pattern: ['NAME', 'UNIT', 'EXTRA']
+    weight: 0.34
+  - id: "T2_RANK_NAME_UNIT"
+    pattern: ['RANK', 'NAME', 'UNIT', 'EXTRA']
+    weight: 0.28
+  - id: "T3_NAME_RANK_UNIT"
+    pattern: ['NAME', 'RANK', 'UNIT', 'EXTRA']
+    weight: 0.18
+  - id: "T4_NAME_UNIT_UNITFRAG"
+    pattern: ['NAME', 'UNIT', 'UNITFRAG', 'EXTRA']
+    weight: 0.12
+    notes:
+      - "Adds a second unit-like fragment without relationship text (core ambiguity driver)."
+  - id: "T5_NAME_EXTRA_UNIT"
+    pattern: ['NAME', 'EXTRA', 'UNIT']
+    weight: 0.08
+
+error_injection:
+  has_error_rate: 0.07
+  error_types: {company_letter_swap: 0.45, battalion_digit_swap: 0.35, digit_confusion: 0.20}
+
+confounding_controls:
+  max_extra_snippets_per_record: 2
+  has_confounding_definition: "true iff at least one extra_text snippet was inserted"

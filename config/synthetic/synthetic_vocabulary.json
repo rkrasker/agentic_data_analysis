@@ -1,0 +1,663 @@
+{
+  "meta": {
+    "version": "1.0.0",
+    "created_utc": "2026-01-13T00:00:00Z",
+    "description": "Vocabulary terms for synthetic data generation. NOT provided to parsing LLM.",
+    "usage": "Terms are injected into raw text based on theme associations and frequency weights."
+  },
+
+  "term_types": {
+    "transport_code": "Ship, aircraft, or vehicle designations",
+    "equipment_code": "Weapons, gear, or materiel codes",
+    "zone_designator": "Beach, drop zone, or area codes",
+    "manifest_code": "Clerk processing and manifest notations",
+    "admin_code": "Administrative and organizational codes",
+    "status_code": "Personnel status indicators",
+    "base_code": "Station or base identifiers",
+    "position_code": "Crew or duty position codes",
+    "process_code": "Processing or movement codes"
+  },
+
+  "frequency_weights": {
+    "common": 0.60,
+    "uncommon": 0.30,
+    "rare": 0.10
+  },
+
+  "vocabulary": [
+
+    {
+      "term": "AGF",
+      "term_type": "admin_code",
+      "theme_ref": "army_ground_general",
+      "specificity": "service",
+      "frequency": "common",
+      "context": "Army Ground Forces",
+      "placement": ["suffix"]
+    },
+    {
+      "term": "ETOUSA",
+      "term_type": "admin_code",
+      "theme_ref": "army_ground_general",
+      "specificity": "service",
+      "frequency": "uncommon",
+      "context": "European Theater of Operations",
+      "placement": ["suffix"]
+    },
+    {
+      "term": "REPL",
+      "term_type": "process_code",
+      "theme_ref": "army_ground_general",
+      "specificity": "service",
+      "frequency": "common",
+      "context": "Replacement depot processing",
+      "placement": ["suffix", "infix"]
+    },
+    {
+      "term": "POE",
+      "term_type": "process_code",
+      "theme_ref": "army_ground_general",
+      "specificity": "service",
+      "frequency": "uncommon",
+      "context": "Port of embarkation",
+      "placement": ["suffix"]
+    },
+
+    {
+      "term": "FMF",
+      "term_type": "admin_code",
+      "theme_ref": "marine_fmf_admin",
+      "specificity": "type",
+      "frequency": "common",
+      "context": "Fleet Marine Force",
+      "placement": ["suffix", "infix"]
+    },
+    {
+      "term": "USMC",
+      "term_type": "admin_code",
+      "theme_ref": "marine_amphibious",
+      "specificity": "service",
+      "frequency": "common",
+      "context": "United States Marine Corps",
+      "placement": ["suffix"]
+    },
+    {
+      "term": "APA",
+      "term_type": "transport_code",
+      "theme_ref": "marine_naval_transport",
+      "specificity": "type",
+      "frequency": "common",
+      "context": "Attack transport ship designation",
+      "placement": ["suffix", "infix"]
+    },
+    {
+      "term": "AKA",
+      "term_type": "transport_code",
+      "theme_ref": "marine_naval_transport",
+      "specificity": "type",
+      "frequency": "uncommon",
+      "context": "Attack cargo ship designation",
+      "placement": ["suffix"]
+    },
+    {
+      "term": "LVT",
+      "term_type": "equipment_code",
+      "theme_ref": "marine_amphibious",
+      "specificity": "type",
+      "frequency": "uncommon",
+      "context": "Landing vehicle tracked",
+      "placement": ["suffix"]
+    },
+    {
+      "term": "LCVP",
+      "term_type": "equipment_code",
+      "theme_ref": "marine_amphibious",
+      "specificity": "type",
+      "frequency": "uncommon",
+      "context": "Landing craft vehicle personnel",
+      "placement": ["suffix"]
+    },
+    {
+      "term": "NAV-DET",
+      "term_type": "admin_code",
+      "theme_ref": "marine_naval_transport",
+      "specificity": "type",
+      "frequency": "rare",
+      "context": "Naval detachment indicator",
+      "placement": ["suffix"]
+    },
+    {
+      "term": "PMO",
+      "term_type": "admin_code",
+      "theme_ref": "marine_fmf_admin",
+      "specificity": "type",
+      "frequency": "uncommon",
+      "context": "Provost Marshal Office notation",
+      "placement": ["suffix"]
+    },
+
+    {
+      "term": "AAF",
+      "term_type": "admin_code",
+      "theme_ref": "aaf_strategic",
+      "specificity": "service",
+      "frequency": "common",
+      "context": "Army Air Forces",
+      "placement": ["suffix", "infix"]
+    },
+    {
+      "term": "B-17",
+      "term_type": "equipment_code",
+      "theme_ref": "air_force_heavy_bomb",
+      "specificity": "type",
+      "frequency": "common",
+      "context": "Heavy bomber type",
+      "placement": ["suffix", "infix"]
+    },
+    {
+      "term": "B-24",
+      "term_type": "equipment_code",
+      "theme_ref": "air_force_heavy_bomb",
+      "specificity": "type",
+      "frequency": "common",
+      "context": "Heavy bomber type",
+      "placement": ["suffix", "infix"]
+    },
+    {
+      "term": "MOS-7",
+      "term_type": "position_code",
+      "theme_ref": "air_force_aircrew",
+      "specificity": "type",
+      "frequency": "common",
+      "context": "Crew position code",
+      "placement": ["suffix"]
+    },
+    {
+      "term": "RTD",
+      "term_type": "status_code",
+      "theme_ref": "air_force_aircrew",
+      "specificity": "type",
+      "frequency": "uncommon",
+      "context": "Returned to duty",
+      "placement": ["suffix"]
+    },
+    {
+      "term": "MIA",
+      "term_type": "status_code",
+      "theme_ref": "air_force_aircrew",
+      "specificity": "type",
+      "frequency": "rare",
+      "context": "Missing in action",
+      "placement": ["suffix"]
+    },
+    {
+      "term": "FLK",
+      "term_type": "status_code",
+      "theme_ref": "air_force_heavy_bomb",
+      "specificity": "type",
+      "frequency": "rare",
+      "context": "Flak damage notation",
+      "placement": ["suffix"]
+    },
+
+    {
+      "term": "C-47",
+      "term_type": "transport_code",
+      "theme_ref": "airborne_air_transport",
+      "specificity": "type",
+      "frequency": "common",
+      "context": "Troop carrier aircraft",
+      "placement": ["suffix", "infix"]
+    },
+    {
+      "term": "TCG",
+      "term_type": "admin_code",
+      "theme_ref": "airborne_air_transport",
+      "specificity": "type",
+      "frequency": "common",
+      "context": "Troop Carrier Group",
+      "placement": ["suffix"]
+    },
+    {
+      "term": "TCC",
+      "term_type": "admin_code",
+      "theme_ref": "airborne_air_transport",
+      "specificity": "type",
+      "frequency": "uncommon",
+      "context": "Troop Carrier Command",
+      "placement": ["suffix"]
+    },
+    {
+      "term": "CG-4A",
+      "term_type": "equipment_code",
+      "theme_ref": "airborne_vertical",
+      "specificity": "type",
+      "frequency": "uncommon",
+      "context": "Waco glider designation",
+      "placement": ["suffix"]
+    },
+    {
+      "term": "SER-JMP",
+      "term_type": "manifest_code",
+      "theme_ref": "airborne_vertical",
+      "specificity": "type",
+      "frequency": "uncommon",
+      "context": "Serial jump manifest notation",
+      "placement": ["suffix"]
+    },
+    {
+      "term": "ABN",
+      "term_type": "admin_code",
+      "theme_ref": "airborne_vertical",
+      "specificity": "type",
+      "frequency": "common",
+      "context": "Airborne indicator",
+      "placement": ["suffix", "infix"]
+    },
+    {
+      "term": "PIR",
+      "term_type": "admin_code",
+      "theme_ref": "airborne_vertical",
+      "specificity": "type",
+      "frequency": "uncommon",
+      "context": "Parachute Infantry Regiment",
+      "placement": ["suffix"]
+    },
+    {
+      "term": "GIR",
+      "term_type": "admin_code",
+      "theme_ref": "airborne_vertical",
+      "specificity": "type",
+      "frequency": "rare",
+      "context": "Glider Infantry Regiment",
+      "placement": ["suffix"]
+    },
+
+    {
+      "term": "ARMD",
+      "term_type": "admin_code",
+      "theme_ref": "armored_mechanized",
+      "specificity": "type",
+      "frequency": "common",
+      "context": "Armored indicator",
+      "placement": ["suffix", "infix"]
+    },
+    {
+      "term": "TK",
+      "term_type": "equipment_code",
+      "theme_ref": "armored_vehicle_ops",
+      "specificity": "type",
+      "frequency": "common",
+      "context": "Tank unit indicator",
+      "placement": ["suffix"]
+    },
+    {
+      "term": "TD",
+      "term_type": "equipment_code",
+      "theme_ref": "armored_vehicle_ops",
+      "specificity": "type",
+      "frequency": "uncommon",
+      "context": "Tank destroyer",
+      "placement": ["suffix"]
+    },
+    {
+      "term": "HT",
+      "term_type": "equipment_code",
+      "theme_ref": "armored_mechanized",
+      "specificity": "type",
+      "frequency": "uncommon",
+      "context": "Half-track vehicle",
+      "placement": ["suffix"]
+    },
+    {
+      "term": "CC-A",
+      "term_type": "admin_code",
+      "theme_ref": "armored_mechanized",
+      "specificity": "type",
+      "frequency": "uncommon",
+      "context": "Combat Command A notation",
+      "placement": ["suffix"]
+    },
+    {
+      "term": "CC-B",
+      "term_type": "admin_code",
+      "theme_ref": "armored_mechanized",
+      "specificity": "type",
+      "frequency": "uncommon",
+      "context": "Combat Command B notation",
+      "placement": ["suffix"]
+    },
+
+    {
+      "term": "MTN",
+      "term_type": "admin_code",
+      "theme_ref": "mountain_alpine",
+      "specificity": "type",
+      "frequency": "common",
+      "context": "Mountain unit indicator",
+      "placement": ["suffix", "infix"]
+    },
+    {
+      "term": "SKI",
+      "term_type": "equipment_code",
+      "theme_ref": "mountain_specialized_equip",
+      "specificity": "type",
+      "frequency": "uncommon",
+      "context": "Ski troop indicator",
+      "placement": ["suffix"]
+    },
+    {
+      "term": "MULE",
+      "term_type": "equipment_code",
+      "theme_ref": "mountain_specialized_equip",
+      "specificity": "type",
+      "frequency": "rare",
+      "context": "Pack animal notation",
+      "placement": ["suffix"]
+    },
+    {
+      "term": "ALP",
+      "term_type": "admin_code",
+      "theme_ref": "mountain_alpine",
+      "specificity": "type",
+      "frequency": "rare",
+      "context": "Alpine unit indicator",
+      "placement": ["suffix"]
+    },
+
+    {
+      "term": "OMAHA",
+      "term_type": "zone_designator",
+      "theme_ref": "1id_eto_assault",
+      "specificity": "component",
+      "frequency": "rare",
+      "context": "Beach sector, 1st ID operations",
+      "placement": ["suffix"]
+    },
+    {
+      "term": "DOG-G",
+      "term_type": "zone_designator",
+      "theme_ref": "1id_eto_assault",
+      "specificity": "component",
+      "frequency": "rare",
+      "context": "Beach subsector code",
+      "placement": ["suffix"]
+    },
+    {
+      "term": "HUERTGEN",
+      "term_type": "zone_designator",
+      "theme_ref": "2id_eto_campaign",
+      "specificity": "component",
+      "frequency": "rare",
+      "context": "Operational area, 2nd ID",
+      "placement": ["suffix"]
+    },
+
+    {
+      "term": "DZ-O",
+      "term_type": "zone_designator",
+      "theme_ref": "82ab_normandy_drops",
+      "specificity": "component",
+      "frequency": "rare",
+      "context": "Drop zone O, 82nd operations",
+      "placement": ["suffix"]
+    },
+    {
+      "term": "DZ-N",
+      "term_type": "zone_designator",
+      "theme_ref": "82ab_normandy_drops",
+      "specificity": "component",
+      "frequency": "rare",
+      "context": "Drop zone N, 82nd operations",
+      "placement": ["suffix"]
+    },
+    {
+      "term": "CHK-42",
+      "term_type": "manifest_code",
+      "theme_ref": "82ab_normandy_drops",
+      "specificity": "component",
+      "frequency": "rare",
+      "context": "Chalk number, 82nd stick assignment",
+      "placement": ["suffix"]
+    },
+    {
+      "term": "DZ-C",
+      "term_type": "zone_designator",
+      "theme_ref": "101ab_bastogne",
+      "specificity": "component",
+      "frequency": "rare",
+      "context": "Drop zone C, 101st operations",
+      "placement": ["suffix"]
+    },
+    {
+      "term": "CHK-67",
+      "term_type": "manifest_code",
+      "theme_ref": "101ab_bastogne",
+      "specificity": "component",
+      "frequency": "rare",
+      "context": "Chalk number, 101st stick assignment",
+      "placement": ["suffix"]
+    },
+
+    {
+      "term": "LUNGA",
+      "term_type": "zone_designator",
+      "theme_ref": "1mardiv_guadalcanal",
+      "specificity": "component",
+      "frequency": "rare",
+      "context": "Operational area, 1st MarDiv",
+      "placement": ["suffix"]
+    },
+    {
+      "term": "RED-1",
+      "term_type": "zone_designator",
+      "theme_ref": "1mardiv_guadalcanal",
+      "specificity": "component",
+      "frequency": "rare",
+      "context": "Beach code, 1st MarDiv operations",
+      "placement": ["suffix"]
+    },
+    {
+      "term": "BETIO",
+      "term_type": "zone_designator",
+      "theme_ref": "2mardiv_tarawa",
+      "specificity": "component",
+      "frequency": "rare",
+      "context": "Operational area, 2nd MarDiv",
+      "placement": ["suffix"]
+    },
+    {
+      "term": "RED-2",
+      "term_type": "zone_designator",
+      "theme_ref": "2mardiv_tarawa",
+      "specificity": "component",
+      "frequency": "rare",
+      "context": "Beach code, 2nd MarDiv operations",
+      "placement": ["suffix"]
+    },
+    {
+      "term": "SURIBACHI",
+      "term_type": "zone_designator",
+      "theme_ref": "3mardiv_iwo",
+      "specificity": "component",
+      "frequency": "rare",
+      "context": "Objective area, 3rd MarDiv",
+      "placement": ["suffix"]
+    },
+    {
+      "term": "GREEN-1",
+      "term_type": "zone_designator",
+      "theme_ref": "3mardiv_iwo",
+      "specificity": "component",
+      "frequency": "rare",
+      "context": "Beach code, 3rd MarDiv operations",
+      "placement": ["suffix"]
+    },
+
+    {
+      "term": "KASSERINE",
+      "term_type": "zone_designator",
+      "theme_ref": "1ad_north_africa",
+      "specificity": "component",
+      "frequency": "rare",
+      "context": "Operational area, 1st AD",
+      "placement": ["suffix"]
+    },
+    {
+      "term": "COBRA",
+      "term_type": "zone_designator",
+      "theme_ref": "2ad_normandy_breakout",
+      "specificity": "component",
+      "frequency": "rare",
+      "context": "Operation code, 2nd AD",
+      "placement": ["suffix"]
+    },
+    {
+      "term": "RIVA",
+      "term_type": "zone_designator",
+      "theme_ref": "10mtn_italian_alps",
+      "specificity": "component",
+      "frequency": "rare",
+      "context": "Operational area, 10th Mtn",
+      "placement": ["suffix"]
+    },
+    {
+      "term": "BELVEDERE",
+      "term_type": "zone_designator",
+      "theme_ref": "10mtn_italian_alps",
+      "specificity": "component",
+      "frequency": "rare",
+      "context": "Objective area, 10th Mtn",
+      "placement": ["suffix"]
+    },
+
+    {
+      "term": "STATION-121",
+      "term_type": "base_code",
+      "theme_ref": "8af_daylight_precision",
+      "specificity": "component",
+      "frequency": "rare",
+      "context": "AAF station number, 8th AF",
+      "placement": ["suffix"]
+    },
+    {
+      "term": "THORPE",
+      "term_type": "base_code",
+      "theme_ref": "8af_daylight_precision",
+      "specificity": "component",
+      "frequency": "rare",
+      "context": "Base name, 8th AF operations",
+      "placement": ["suffix"]
+    },
+    {
+      "term": "STATION-416",
+      "term_type": "base_code",
+      "theme_ref": "9af_tactical_support",
+      "specificity": "component",
+      "frequency": "rare",
+      "context": "AAF station number, 9th AF",
+      "placement": ["suffix"]
+    },
+    {
+      "term": "A-26",
+      "term_type": "equipment_code",
+      "theme_ref": "9af_tactical_support",
+      "specificity": "component",
+      "frequency": "uncommon",
+      "context": "Medium bomber, 9th AF",
+      "placement": ["suffix"]
+    },
+    {
+      "term": "FOGGIA",
+      "term_type": "base_code",
+      "theme_ref": "15af_mediterranean",
+      "specificity": "component",
+      "frequency": "rare",
+      "context": "Base area, 15th AF",
+      "placement": ["suffix"]
+    },
+    {
+      "term": "BARI",
+      "term_type": "base_code",
+      "theme_ref": "15af_mediterranean",
+      "specificity": "component",
+      "frequency": "rare",
+      "context": "Port/base area, 15th AF",
+      "placement": ["suffix"]
+    },
+
+    {
+      "term": "SALERNO",
+      "term_type": "zone_designator",
+      "theme_ref": "36id_anzio",
+      "specificity": "component",
+      "frequency": "rare",
+      "context": "Operational area, 36th ID",
+      "placement": ["suffix"]
+    },
+    {
+      "term": "RAPIDO",
+      "term_type": "zone_designator",
+      "theme_ref": "36id_anzio",
+      "specificity": "component",
+      "frequency": "rare",
+      "context": "Objective area, 36th ID",
+      "placement": ["suffix"]
+    },
+
+    {
+      "term": "HQ",
+      "term_type": "admin_code",
+      "theme_ref": "army_ground_general",
+      "specificity": "universal",
+      "frequency": "common",
+      "context": "Headquarters notation",
+      "placement": ["suffix", "infix"]
+    },
+    {
+      "term": "DET",
+      "term_type": "admin_code",
+      "theme_ref": "army_ground_general",
+      "specificity": "universal",
+      "frequency": "common",
+      "context": "Detachment notation",
+      "placement": ["suffix"]
+    },
+    {
+      "term": "ATCH",
+      "term_type": "admin_code",
+      "theme_ref": "army_ground_general",
+      "specificity": "universal",
+      "frequency": "uncommon",
+      "context": "Attached unit notation",
+      "placement": ["suffix"]
+    },
+    {
+      "term": "TDY",
+      "term_type": "status_code",
+      "theme_ref": "army_ground_general",
+      "specificity": "universal",
+      "frequency": "uncommon",
+      "context": "Temporary duty",
+      "placement": ["suffix"]
+    },
+    {
+      "term": "WIA",
+      "term_type": "status_code",
+      "theme_ref": "army_ground_general",
+      "specificity": "universal",
+      "frequency": "rare",
+      "context": "Wounded in action",
+      "placement": ["suffix"]
+    },
+    {
+      "term": "KIA",
+      "term_type": "status_code",
+      "theme_ref": "army_ground_general",
+      "specificity": "universal",
+      "frequency": "rare",
+      "context": "Killed in action",
+      "placement": ["suffix"]
+    }
+  ]
+}
