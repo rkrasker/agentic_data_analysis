@@ -79,10 +79,16 @@ Example usage in `examples/sandbox_usage.py`.
 
 ## Current Status
 
-<!-- Update with current focus and blockers -->
+**Focus:** Synthetic data generation - building generator for collision-heavy hierarchy
 
-**Focus:** [Current primary work area]
+**Recent:**
+- Hierarchy redesign with designator collisions (2026-01-13)
+- Created hierarchy_reference.json, synthetic_themes.json, synthetic_vocabulary.json
+- Sandboxing implementation (2026-01-12)
 
-**Blockers:** [Any blocking issues]
+**Next:**
+- Build synthetic data generator (see `instructions/active/001_synthetic-data-generator.md`)
+- Create updated style spec for new hierarchy structure
+- Generate seed set and validate collision coverage
 
-**Recent:** Sandboxing implementation (2026-01-12)
+**Blockers:** None
