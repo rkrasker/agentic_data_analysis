@@ -18,7 +18,8 @@
   "specificity_levels": {
     "universal": "Applies to all military records",
     "service": "Applies to a service branch (army, marines, army_air_forces)",
-    "type": "Applies to a component type (infantry_division, airborne_division, etc.)",
+    "type": "Applies to a component type (division, air_force)",
+    "subtype": "Applies to a division subtype via component_id list (e.g., all airborne divisions)",
     "component": "Applies to a specific component_id"
   },
 
@@ -48,64 +49,64 @@
     {
       "theme_id": "infantry_standard",
       "theme_type": "organizational",
-      "specificity": "type",
-      "applies_to": {"component_type": ["infantry_division"]},
+      "specificity": "subtype",
+      "applies_to": {"component_id": ["1st_infantry_division", "2nd_infantry_division", "3rd_infantry_division", "36th_infantry_division"]},
       "description": "Standard infantry division organization and operations"
     },
     {
       "theme_id": "airborne_vertical",
       "theme_type": "operational_context",
-      "specificity": "type",
-      "applies_to": {"component_type": ["airborne_division"]},
+      "specificity": "subtype",
+      "applies_to": {"component_id": ["82nd_airborne_division", "101st_airborne_division"]},
       "description": "Airborne vertical envelopment operations"
     },
     {
       "theme_id": "airborne_air_transport",
       "theme_type": "logistics",
-      "specificity": "type",
-      "applies_to": {"component_type": ["airborne_division"]},
+      "specificity": "subtype",
+      "applies_to": {"component_id": ["82nd_airborne_division", "101st_airborne_division"]},
       "description": "Troop carrier aircraft transport patterns"
     },
     {
       "theme_id": "marine_naval_transport",
       "theme_type": "logistics",
-      "specificity": "type",
-      "applies_to": {"component_type": ["marine_division"]},
+      "specificity": "subtype",
+      "applies_to": {"component_id": ["1st_marine_division", "2nd_marine_division", "3rd_marine_division"]},
       "description": "Navy ship-based transport and embarkation"
     },
     {
       "theme_id": "marine_fmf_admin",
       "theme_type": "administrative",
-      "specificity": "type",
-      "applies_to": {"component_type": ["marine_division"]},
+      "specificity": "subtype",
+      "applies_to": {"component_id": ["1st_marine_division", "2nd_marine_division", "3rd_marine_division"]},
       "description": "Fleet Marine Force administrative patterns"
     },
     {
       "theme_id": "armored_mechanized",
       "theme_type": "organizational",
-      "specificity": "type",
-      "applies_to": {"component_type": ["armored_division"]},
+      "specificity": "subtype",
+      "applies_to": {"component_id": ["1st_armored_division", "2nd_armored_division"]},
       "description": "Armored and mechanized unit patterns"
     },
     {
       "theme_id": "armored_vehicle_ops",
       "theme_type": "equipment",
-      "specificity": "type",
-      "applies_to": {"component_type": ["armored_division"]},
+      "specificity": "subtype",
+      "applies_to": {"component_id": ["1st_armored_division", "2nd_armored_division"]},
       "description": "Tank and armored vehicle operations"
     },
     {
       "theme_id": "mountain_alpine",
       "theme_type": "operational_context",
-      "specificity": "type",
-      "applies_to": {"component_type": ["mountain_division"]},
+      "specificity": "subtype",
+      "applies_to": {"component_id": ["10th_mountain_division"]},
       "description": "Mountain and alpine warfare operations"
     },
     {
       "theme_id": "mountain_specialized_equip",
       "theme_type": "equipment",
-      "specificity": "type",
-      "applies_to": {"component_type": ["mountain_division"]},
+      "specificity": "subtype",
+      "applies_to": {"component_id": ["10th_mountain_division"]},
       "description": "Specialized mountain warfare equipment"
     },
     {

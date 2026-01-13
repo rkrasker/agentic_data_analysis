@@ -21,11 +21,15 @@ Redesigned the unit hierarchy system for synthetic data generation. The previous
 | `synthetic_themes.json` | `config/synthetic/` |
 | `synthetic_vocabulary.json` | `config/synthetic/` |
 
-### Files Deprecated
+### Files Deprecated (moved to deprecated/)
 
 | File | Status |
 |------|--------|
-| `docs/components/synthetic_data_generation/hierarchy_json.json` | Superseded by new structure |
+| `hierarchy_json.json` | Superseded by new structure |
+| `synthetic_style_spec_v2.yaml` | Superseded, needs update for new hierarchy |
+| `seed_set_v2.jsonl` | Superseded, needs regeneration |
+| `README_synthetic_workflow.md` | Superseded by CURRENT.md |
+| `AGENT_BUILD_INSTRUCTIONS.md` | Superseded, needs update |
 
 ---
 
@@ -36,6 +40,7 @@ Redesigned the unit hierarchy system for synthetic data generation. The previous
 3. **Three-file separation**: LLM-facing hierarchy separate from generation-only themes/vocabulary
 4. **Structured aliases**: Temporal naming variations captured in structured fields
 5. **Signal gradient vocabulary**: Terms range from universal (no signal) to component-specific (strong signal)
+6. **Unified component_type**: All divisions use `component_type: "division"` (not infantry_division, marine_division, etc.); subtypes differentiated by service_branch and component_id
 
 ---
 

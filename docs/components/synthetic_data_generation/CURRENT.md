@@ -1,6 +1,6 @@
 # Synthetic Data Generation
 
-**Version:** 2.0.0
+**Version:** 2.0.1
 **Last Updated:** 2026-01-13
 
 ---
@@ -68,7 +68,7 @@ hierarchy_reference.json
 ├── components
 │   └── {component_id}
 │       ├── component_id
-│       ├── component_type (infantry_division, airborne_division, marine_division, armored_division, mountain_division, air_force)
+│       ├── component_type (division, air_force)
 │       ├── canonical_name
 │       ├── service_branch (army, marines, army_air_forces)
 │       ├── aliases[]
@@ -125,11 +125,11 @@ synthetic_themes.json
 └── themes[]
     ├── theme_id
     ├── theme_type (operational_context, logistics, administrative, organizational, equipment, geographic)
-    ├── specificity (universal, service, type, component)
+    ├── specificity (universal, service, type, subtype, component)
     ├── applies_to
     │   ├── service_branch[] (if specificity=service)
     │   ├── component_type[] (if specificity=type)
-    │   └── component_id[] (if specificity=component)
+    │   └── component_id[] (if specificity=subtype or component)
     └── description
 ```
 
@@ -160,7 +160,8 @@ synthetic_vocabulary.json
 |-------------|-----------------|---------------|
 | `universal` | None | HQ, DET, WIA |
 | `service` | Branch-level | USMC, AAF, AGF |
-| `type` | Component-type | ABN, TK, FMF, C-47 |
+| `type` | Component-type (division vs air_force) | B-17, MOS-7 |
+| `subtype` | Division subtype (airborne, marine, etc.) | ABN, TK, FMF, C-47 |
 | `component` | Specific component | DZ-O, OMAHA, FOGGIA |
 
 ---
@@ -263,6 +264,11 @@ Raw text: "B/2/5INF"
 ---
 
 ## Changelog
+
+### v2.0.1 (2026-01-13)
+- Unified component_type to `division` (was infantry_division, marine_division, etc.)
+- Added `subtype` specificity level for themes targeting division subtypes
+- Division subtypes now differentiated by service_branch + component_id, not component_type
 
 ### v2.0.0 (2026-01-13)
 - Redesigned hierarchy with deliberate designator collisions

@@ -9,7 +9,7 @@
   "components": {
     "1st_infantry_division": {
       "component_id": "1st_infantry_division",
-      "component_type": "infantry_division",
+      "component_type": "division",
       "canonical_name": "1st Infantry Division",
       "service_branch": "army",
       "aliases": [
@@ -52,7 +52,7 @@
 
     "2nd_infantry_division": {
       "component_id": "2nd_infantry_division",
-      "component_type": "infantry_division",
+      "component_type": "division",
       "canonical_name": "2nd Infantry Division",
       "service_branch": "army",
       "aliases": [
@@ -96,7 +96,7 @@
 
     "3rd_infantry_division": {
       "component_id": "3rd_infantry_division",
-      "component_type": "infantry_division",
+      "component_type": "division",
       "canonical_name": "3rd Infantry Division",
       "service_branch": "army",
       "aliases": [
@@ -134,7 +134,7 @@
 
     "82nd_airborne_division": {
       "component_id": "82nd_airborne_division",
-      "component_type": "airborne_division",
+      "component_type": "division",
       "canonical_name": "82nd Airborne Division",
       "service_branch": "army",
       "aliases": [
@@ -178,7 +178,7 @@
 
     "101st_airborne_division": {
       "component_id": "101st_airborne_division",
-      "component_type": "airborne_division",
+      "component_type": "division",
       "canonical_name": "101st Airborne Division",
       "service_branch": "army",
       "aliases": [
@@ -221,7 +221,7 @@
 
     "1st_marine_division": {
       "component_id": "1st_marine_division",
-      "component_type": "marine_division",
+      "component_type": "division",
       "canonical_name": "1st Marine Division",
       "service_branch": "marines",
       "aliases": [
@@ -259,7 +259,7 @@
 
     "2nd_marine_division": {
       "component_id": "2nd_marine_division",
-      "component_type": "marine_division",
+      "component_type": "division",
       "canonical_name": "2nd Marine Division",
       "service_branch": "marines",
       "aliases": [
@@ -297,7 +297,7 @@
 
     "3rd_marine_division": {
       "component_id": "3rd_marine_division",
-      "component_type": "marine_division",
+      "component_type": "division",
       "canonical_name": "3rd Marine Division",
       "service_branch": "marines",
       "aliases": [
@@ -335,7 +335,7 @@
 
     "1st_armored_division": {
       "component_id": "1st_armored_division",
-      "component_type": "armored_division",
+      "component_type": "division",
       "canonical_name": "1st Armored Division",
       "service_branch": "army",
       "aliases": [
@@ -378,7 +378,7 @@
 
     "2nd_armored_division": {
       "component_id": "2nd_armored_division",
-      "component_type": "armored_division",
+      "component_type": "division",
       "canonical_name": "2nd Armored Division",
       "service_branch": "army",
       "aliases": [
@@ -426,7 +426,7 @@
 
     "10th_mountain_division": {
       "component_id": "10th_mountain_division",
-      "component_type": "mountain_division",
+      "component_type": "division",
       "canonical_name": "10th Mountain Division",
       "service_branch": "army",
       "aliases": [
@@ -586,7 +586,7 @@
 
     "36th_infantry_division": {
       "component_id": "36th_infantry_division",
-      "component_type": "infantry_division",
+      "component_type": "division",
       "canonical_name": "36th Infantry Division",
       "service_branch": "army",
       "aliases": [
