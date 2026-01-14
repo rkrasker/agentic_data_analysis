@@ -79,16 +79,18 @@ Example usage in `examples/sandbox_usage.py`.
 
 ## Current Status
 
-**Focus:** Synthetic data generation - building generator for collision-heavy hierarchy
+**Focus:** Synthetic data generation - v3 clerk-as-character philosophy
 
 **Recent:**
+- v3 style spec created with clerk archetypes and situational vocabulary (2026-01-13)
+- Seed set created with 38 hand-crafted entries (2026-01-13)
+- Vocabulary updated with contextual clutter and confounders (2026-01-13)
 - Hierarchy redesign with designator collisions (2026-01-13)
-- Created hierarchy_reference.json, synthetic_themes.json, synthetic_vocabulary.json
 - Sandboxing implementation (2026-01-12)
 
 **Next:**
 - Build synthetic data generator (see `instructions/active/001_synthetic-data-generator.md`)
-- Create updated style spec for new hierarchy structure
-- Generate seed set and validate collision coverage
+- Implement ClerkFactory, SituationManager, VocabularyInjector
+- Validate within-source consistency and collision coverage
 
 **Blockers:** None

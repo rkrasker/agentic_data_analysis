@@ -81,15 +81,28 @@ Same as canonical.parquet plus:
 ---
 
 ### unit_changes.parquet
-**Purpose:** Documents known unit transfers
+**Purpose:** Documents known unit transfers (25% of soldiers)
 
 | Field | Type | Description |
 |-------|------|-------------|
 | soldier_id | string | Links to primary_id |
 | original_assignment | object | Previous unit path |
 | new_assignment | object | Current unit path |
-| change_date | date | When transfer occurred |
-| change_type | string | Level of change (company/battalion/etc) |
+| change_type | string | Level: company/battalion/regiment/division |
+
+**Transfer Type Distribution:**
+| Type | Frequency | Example |
+|------|-----------|---------|
+| company_level | 50% | E Co → F Co within 2nd Bn |
+| battalion_level | 30% | 2nd Bn → 3rd Bn within 16th Inf |
+| regiment_level | 15% | 16th Inf → 18th Inf within 1st ID |
+| division_level | 5% | 1st ID → 29th ID via replacement |
+
+**Notes:**
+- Documents are undated; no temporal consistency to rely on
+- Both assignments are valid "truth" for disambiguation purposes
+- Creates hardest disambiguation cases: same soldier, different units
+- Cross-branch transfers (Army ↔ Marines) not modeled
 
 ---
 
