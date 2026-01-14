@@ -1,0 +1,966 @@
+{
+  "meta": {
+    "version": "3.0.0",
+    "created_utc": "2026-01-13T00:00:00Z",
+    "description": "Hand-crafted seed set demonstrating v3 clerk-as-character philosophy",
+    "purpose": [
+      "Validate spec produces realistic output",
+      "Serve as test cases for generator",
+      "Calibrate collision difficulty",
+      "Demonstrate within-source consistency"
+    ],
+    "statistics": {
+      "soldiers": 13,
+      "sources": 6,
+      "total_entries": 41,
+      "collision_cases": 5,
+      "clutter_examples": 8,
+      "confounder_examples": 4,
+      "transfer_cases": 1
+    }
+  },
+
+  "soldiers": {
+    "_comment": "Canonical truth records for 12 soldiers across components with deliberate collisions",
+
+    "S001": {
+      "primary_id": "S001",
+      "name_first": "Stanley",
+      "name_middle": "Joseph",
+      "name_last": "Kowalski",
+      "rank": "Staff Sergeant",
+      "component_id": "1st_infantry_division",
+      "regiment": "16",
+      "battalion": "2",
+      "company": "E"
+    },
+
+    "S002": {
+      "primary_id": "S002",
+      "name_first": "James",
+      "name_middle": "Robert",
+      "name_last": "Murphy",
+      "rank": "Private First Class",
+      "component_id": "1st_infantry_division",
+      "regiment": "16",
+      "battalion": "2",
+      "company": "E"
+    },
+
+    "S003": {
+      "primary_id": "S003",
+      "name_first": "William",
+      "name_middle": null,
+      "name_last": "Chen",
+      "rank": "Sergeant",
+      "component_id": "1st_infantry_division",
+      "regiment": "16",
+      "battalion": "2",
+      "company": "F"
+    },
+
+    "S004": {
+      "primary_id": "S004",
+      "name_first": "Robert",
+      "name_middle": "Lee",
+      "name_last": "Thompson",
+      "rank": "Corporal",
+      "component_id": "82nd_airborne_division",
+      "regiment": "505",
+      "battalion": "A",
+      "company": "2",
+      "_collision_note": "Regiment 505 PIR, Battalion is alpha (A), Company is numeric (2)"
+    },
+
+    "S005": {
+      "primary_id": "S005",
+      "name_first": "Michael",
+      "name_middle": "Francis",
+      "name_last": "O'Brien",
+      "rank": "Private",
+      "component_id": "82nd_airborne_division",
+      "regiment": "505",
+      "battalion": "A",
+      "company": "2"
+    },
+
+    "S006": {
+      "primary_id": "S006",
+      "name_first": "Anthony",
+      "name_middle": "Vincent",
+      "name_last": "Russo",
+      "rank": "Technician Fifth Grade",
+      "component_id": "82nd_airborne_division",
+      "regiment": "507",
+      "battalion": "B",
+      "company": "1"
+    },
+
+    "S007": {
+      "primary_id": "S007",
+      "name_first": "John",
+      "name_middle": "Patrick",
+      "name_last": "Sullivan",
+      "rank": "Sergeant",
+      "component_id": "1st_marine_division",
+      "regiment": "1",
+      "battalion": "2",
+      "company": "E",
+      "_collision_note": "Regiment 1 collides with 1st ID, 2nd ID, 101st AB, 36th ID"
+    },
+
+    "S008": {
+      "primary_id": "S008",
+      "name_first": "Richard",
+      "name_middle": null,
+      "name_last": "Davis",
+      "rank": "Private First Class",
+      "component_id": "1st_marine_division",
+      "regiment": "1",
+      "battalion": "2",
+      "company": "E"
+    },
+
+    "S009": {
+      "primary_id": "S009",
+      "name_first": "Edward",
+      "name_middle": "Thomas",
+      "name_last": "Nowak",
+      "rank": "Second Lieutenant",
+      "component_id": "10th_mountain_division",
+      "regiment": "85",
+      "battalion": "2",
+      "company": "F"
+    },
+
+    "S010": {
+      "primary_id": "S010",
+      "name_first": "Frank",
+      "name_middle": "Joseph",
+      "name_last": "Martinelli",
+      "rank": "Staff Sergeant",
+      "component_id": "8th_air_force",
+      "bomb_group": "91",
+      "squadron": "322"
+    },
+
+    "S011": {
+      "primary_id": "S011",
+      "name_first": "George",
+      "name_middle": "William",
+      "name_last": "Patterson",
+      "rank": "Technical Sergeant",
+      "component_id": "8th_air_force",
+      "bomb_group": "91",
+      "squadron": "322"
+    },
+
+    "S012": {
+      "primary_id": "S012",
+      "name_first": "Harold",
+      "name_middle": null,
+      "name_last": "Kim",
+      "rank": "Corporal",
+      "component_id": "2nd_armored_division",
+      "combat_command": "A",
+      "battalion": "66",
+      "company": "C",
+      "_collision_note": "Battalion designator overlaps with alpha battalion designators in airborne"
+    },
+
+    "S013": {
+      "primary_id": "S013",
+      "name_first": "Thomas",
+      "name_middle": "Edward",
+      "name_last": "Brennan",
+      "rank": "Private First Class",
+      "component_id": "1st_infantry_division",
+      "regiment": "18",
+      "battalion": "1",
+      "company": "B",
+      "_transfer_note": "TRANSFERRED: Originally C Co, 2nd Bn, 16th Inf. Now B Co, 1st Bn, 18th Inf. Regiment-level transfer within 1st ID.",
+      "_has_transfer": true
+    }
+  },
+
+  "transfers": {
+    "_comment": "25% of soldiers have unit transfers. This section documents transfer cases in seed set.",
+
+    "S013_brennan": {
+      "soldier_id": "S013",
+      "transfer_type": "regiment_level",
+      "original_assignment": {
+        "component_id": "1st_infantry_division",
+        "regiment": "16",
+        "battalion": "2",
+        "company": "C"
+      },
+      "new_assignment": {
+        "component_id": "1st_infantry_division",
+        "regiment": "18",
+        "battalion": "1",
+        "company": "B"
+      },
+      "_notes": "Regiment-level transfer (15% of transfers). Brennan moved from 16th to 18th Infantry within 1st ID. Both assignments are valid ground truth."
+    }
+  },
+
+  "sources": {
+    "_comment": "Each source represents a physical document produced by one clerk in one situation",
+
+    "SRC001": {
+      "source_id": "SRC001",
+      "clerk_archetype": "hq_formal",
+      "clerk_instance": {
+        "name": "Cpl. Helen Marchetti",
+        "context": "29th Division HQ, processing personnel rosters after Normandy consolidation",
+        "habits": {
+          "name_template": "LAST_FIRST_MI",
+          "rank_style": "prefix",
+          "rank_form": "proper_abbrev",
+          "unit_format": "labeled_hierarchical",
+          "always_includes_division": true
+        }
+      },
+      "situation_id": "normandy_assault",
+      "quality_tier": 1,
+      "date": "1944-07-15",
+      "entries": ["E001", "E002", "E003", "E004", "E005", "E034"]
+    },
+
+    "SRC002": {
+      "source_id": "SRC002",
+      "clerk_archetype": "battalion_rushed",
+      "clerk_instance": {
+        "name": "Pfc. Robert Trane",
+        "context": "2nd Battalion S-1, 16th Infantry. Processing after-action casualty list under time pressure.",
+        "habits": {
+          "name_template": "LAST_ONLY",
+          "rank_style": "suffix",
+          "rank_form": "caps_abbrev",
+          "unit_format": "runon_compact",
+          "always_includes_division": false
+        }
+      },
+      "situation_id": "normandy_assault",
+      "quality_tier": 3,
+      "date": "1944-06-08",
+      "entries": ["E006", "E007", "E008", "E009", "E036"]
+    },
+
+    "SRC003": {
+      "source_id": "SRC003",
+      "clerk_archetype": "transport_air",
+      "clerk_instance": {
+        "name": "T/5 Margaret Hollis",
+        "context": "Troop Carrier Command, processing jump manifest for Normandy drop",
+        "habits": {
+          "name_template": "LAST_FIRST_MI",
+          "rank_style": "prefix",
+          "rank_form": "proper_abbrev",
+          "unit_format": "labeled_hierarchical",
+          "always_includes_division": true
+        }
+      },
+      "situation_id": "normandy_airborne",
+      "quality_tier": 2,
+      "date": "1944-06-05",
+      "entries": ["E010", "E011", "E012", "E013", "E014", "E037"]
+    },
+
+    "SRC004": {
+      "source_id": "SRC004",
+      "clerk_archetype": "field_exhausted",
+      "clerk_instance": {
+        "name": "Pvt. James Delacroix",
+        "context": "Field hospital admissions, 72 hours since landing. Handwritten intake log.",
+        "habits": {
+          "name_template": "LAST_SPACE_FIRST",
+          "rank_style": "mixed",
+          "rank_form": "phonetic",
+          "unit_format": "phonetic_informal",
+          "always_includes_division": false
+        }
+      },
+      "situation_id": "normandy_assault",
+      "quality_tier": 4,
+      "date": "1944-06-09",
+      "entries": ["E015", "E016", "E017", "E018", "E032", "E038"]
+    },
+
+    "SRC005": {
+      "source_id": "SRC005",
+      "clerk_archetype": "marine_shipboard",
+      "clerk_instance": {
+        "name": "Cpl. Theodore Wojcik",
+        "context": "Transport ship manifest, pre-landing Guadalcanal. Column-based system.",
+        "habits": {
+          "name_template": "LAST_SPACE_FI",
+          "rank_style": "separate_column",
+          "rank_form": "caps_abbrev",
+          "unit_format": "slash_compact",
+          "always_includes_division": true
+        }
+      },
+      "situation_id": "guadalcanal",
+      "quality_tier": 2,
+      "date": "1942-08-06",
+      "entries": ["E019", "E020", "E021", "E022", "E023", "E030", "E031", "E035"]
+    },
+
+    "SRC006": {
+      "source_id": "SRC006",
+      "clerk_archetype": "aaf_operations",
+      "clerk_instance": {
+        "name": "S/Sgt. Vincent Calabrese",
+        "context": "91st Bomb Group operations, tracking mission crew assignments",
+        "habits": {
+          "name_template": "LAST_FI_MI",
+          "rank_style": "suffix",
+          "rank_form": "caps_abbrev",
+          "unit_format": "compact_aaf",
+          "always_includes_division": false
+        }
+      },
+      "situation_id": "eighth_af_strategic",
+      "quality_tier": 2,
+      "date": "1944-02-20",
+      "entries": ["E024", "E025", "E026", "E027", "E028", "E029", "E033"]
+    }
+  },
+
+  "entries": {
+    "_comment": "Rendered entries showing clerk-consistent output with situational vocabulary",
+
+    "E001": {
+      "entry_id": "E001",
+      "source_id": "SRC001",
+      "soldier_id": "S001",
+      "raw_text": "S/Sgt Kowalski, Stanley J.  Co E, 2nd Bn, 16th Inf, 1st Div",
+      "_notes": "HQ formal: full hierarchy, proper abbreviations, prefix rank"
+    },
+
+    "E002": {
+      "entry_id": "E002",
+      "source_id": "SRC001",
+      "soldier_id": "S002",
+      "raw_text": "Pfc Murphy, James R.  Co E, 2nd Bn, 16th Inf, 1st Div",
+      "_notes": "Same format as E001 - clerk consistency"
+    },
+
+    "E003": {
+      "entry_id": "E003",
+      "source_id": "SRC001",
+      "soldier_id": "S003",
+      "raw_text": "Sgt Chen, William  Co F, 2nd Bn, 16th Inf, 1st Div",
+      "_notes": "No middle initial (soldier has none) - format otherwise identical"
+    },
+
+    "E004": {
+      "entry_id": "E004",
+      "source_id": "SRC001",
+      "soldier_id": "S009",
+      "raw_text": "2nd Lt Nowak, Edward T.  Co F, 2nd Bn, 85th Mtn, 10th Div",
+      "_notes": "Different unit but same clerk format - 10th Mountain soldier on roster"
+    },
+
+    "E005": {
+      "entry_id": "E005",
+      "source_id": "SRC001",
+      "soldier_id": "S012",
+      "raw_text": "Cpl Kim, Harold  Co C, 66th Tk Bn, CCA, 2nd AD",
+      "_notes": "Armored structure rendered in clerk's consistent style"
+    },
+
+    "E006": {
+      "entry_id": "E006",
+      "source_id": "SRC002",
+      "soldier_id": "S001",
+      "raw_text": "KOWALSKI SSGT E2-16",
+      "_notes": "Battalion clerk: terse, drops division, everyone knows context"
+    },
+
+    "E007": {
+      "entry_id": "E007",
+      "source_id": "SRC002",
+      "soldier_id": "S002",
+      "raw_text": "MURPHY PFC E2-16",
+      "_notes": "Identical format to E006 - within-source consistency"
+    },
+
+    "E008": {
+      "entry_id": "E008",
+      "source_id": "SRC002",
+      "soldier_id": "S003",
+      "raw_text": "CHEN SGT F2-16",
+      "_notes": "Same format, different company"
+    },
+
+    "E009": {
+      "entry_id": "E009",
+      "source_id": "SRC002",
+      "soldier_id": "S001",
+      "raw_text": "KOWALSKI SSGT E2-16  OMAHA",
+      "_notes": "Same soldier again (duplicate record), situational vocab appears"
+    },
+
+    "E010": {
+      "entry_id": "E010",
+      "source_id": "SRC003",
+      "soldier_id": "S004",
+      "raw_text": "Cpl Thompson, Robert L.  2nd Co, A Bn, 505th PIR, 82nd AB  CHK-42",
+      "_notes": "Airborne structure: alpha battalion, numeric company. Chalk number from manifest."
+    },
+
+    "E011": {
+      "entry_id": "E011",
+      "source_id": "SRC003",
+      "soldier_id": "S005",
+      "raw_text": "Pvt O'Brien, Michael F.  2nd Co, A Bn, 505th PIR, 82nd AB  CHK-42",
+      "_notes": "Same stick (chalk 42) as Thompson - situational coherence"
+    },
+
+    "E012": {
+      "entry_id": "E012",
+      "source_id": "SRC003",
+      "soldier_id": "S006",
+      "raw_text": "T/5 Russo, Anthony V.  1st Co, B Bn, 507th PIR, 82nd AB  CHK-67",
+      "_notes": "Different regiment/chalk, same clerk format"
+    },
+
+    "E013": {
+      "entry_id": "E013",
+      "source_id": "SRC003",
+      "soldier_id": "S004",
+      "raw_text": "Cpl Thompson, Robert L.  2nd Co, A Bn, 505th PIR, 82nd AB  CHK-42 C-47",
+      "_notes": "Same soldier, additional vocab (aircraft type)"
+    },
+
+    "E014": {
+      "entry_id": "E014",
+      "source_id": "SRC003",
+      "soldier_id": "S005",
+      "raw_text": "Pvt O'Brien, Michael F.  2nd Co, A Bn, 505th PIR, 82nd AB  CHK-42 DZ-O",
+      "_notes": "Drop zone added - all situational vocab from normandy_airborne"
+    },
+
+    "E015": {
+      "entry_id": "E015",
+      "source_id": "SRC004",
+      "soldier_id": "S001",
+      "raw_text": "Kowalski Stanley  SSgt Easy Co 16  WIA",
+      "_notes": "Field exhausted: phonetic company, status code, no punctuation"
+    },
+
+    "E016": {
+      "entry_id": "E016",
+      "source_id": "SRC004",
+      "soldier_id": "S002",
+      "raw_text": "Murphy James  Pfc Easy 16  WIA OMAHA",
+      "_notes": "Even more abbreviated - fatigue showing. Situational vocab."
+    },
+
+    "E017": {
+      "entry_id": "E017",
+      "source_id": "SRC004",
+      "soldier_id": "S003",
+      "raw_text": "Chen William  Sgt Fox Co 16",
+      "_notes": "Phonetic company (Fox = F). Slightly different format - field clerk inconsistency."
+    },
+
+    "E018": {
+      "entry_id": "E018",
+      "source_id": "SRC004",
+      "soldier_id": "S004",
+      "raw_text": "Thompson Robert  Cpl 505 ABN  WIA",
+      "_notes": "Airborne soldier at same field hospital - minimal unit info, ABN marker"
+    },
+
+    "E019": {
+      "entry_id": "E019",
+      "source_id": "SRC005",
+      "soldier_id": "S007",
+      "raw_text": "SULLIVAN J    E/2/1  1MARDIV  SGT",
+      "_notes": "Ship manifest: columnar, parent-over-child slash, rank at end"
+    },
+
+    "E020": {
+      "entry_id": "E020",
+      "source_id": "SRC005",
+      "soldier_id": "S008",
+      "raw_text": "DAVIS R    E/2/1  1MARDIV  PFC",
+      "_notes": "Identical format - ship clerk is very consistent"
+    },
+
+    "E021": {
+      "entry_id": "E021",
+      "source_id": "SRC005",
+      "soldier_id": "S007",
+      "raw_text": "SULLIVAN J    E/2/1  1MARDIV  SGT  APA",
+      "_notes": "Same soldier, transport code added"
+    },
+
+    "E022": {
+      "entry_id": "E022",
+      "source_id": "SRC005",
+      "soldier_id": "S008",
+      "raw_text": "DAVIS R    E/2/1  1MARDIV  PFC  LUNGA",
+      "_notes": "Situational vocab: Lunga Point, Guadalcanal"
+    },
+
+    "E023": {
+      "entry_id": "E023",
+      "source_id": "SRC005",
+      "soldier_id": "S007",
+      "raw_text": "SULLIVAN J    E/2/1  1MARDIV  SGT  RED-1",
+      "_notes": "Beach code from guadalcanal situation"
+    },
+
+    "E024": {
+      "entry_id": "E024",
+      "source_id": "SRC006",
+      "soldier_id": "S010",
+      "raw_text": "Martinelli, F.J.  91BG-322  SSGT  B-17",
+      "_notes": "AAF ops clerk: compact group-squadron, aircraft type"
+    },
+
+    "E025": {
+      "entry_id": "E025",
+      "source_id": "SRC006",
+      "soldier_id": "S011",
+      "raw_text": "Patterson, G.W.  91BG-322  TSGT  B-17",
+      "_notes": "Same crew, same format"
+    },
+
+    "E026": {
+      "entry_id": "E026",
+      "source_id": "SRC006",
+      "soldier_id": "S010",
+      "raw_text": "Martinelli, F.J.  91BG-322  SSGT  B-17 MOS-7",
+      "_notes": "Crew position code added"
+    },
+
+    "E027": {
+      "entry_id": "E027",
+      "source_id": "SRC006",
+      "soldier_id": "S011",
+      "raw_text": "Patterson, G.W.  91BG-322  TSGT  B-17 STATION-121",
+      "_notes": "Base code from eighth_af_strategic situation"
+    },
+
+    "E028": {
+      "entry_id": "E028",
+      "source_id": "SRC006",
+      "soldier_id": "S010",
+      "raw_text": "Martinelli, F.J.  91BG-322  SSGT  MIA",
+      "_notes": "Status code - mission loss"
+    },
+
+    "E029": {
+      "entry_id": "E029",
+      "source_id": "SRC006",
+      "soldier_id": "S011",
+      "raw_text": "Patterson, G.W.  91BG-322  TSGT  MIA",
+      "_notes": "Same crew, same status - coherent within source"
+    },
+
+
+    "_comment_clutter": "ENTRIES WITH CONTEXTUAL CLUTTER - Non-signal noise from clerk environment",
+
+    "E030": {
+      "entry_id": "E030",
+      "source_id": "SRC005",
+      "soldier_id": "S007",
+      "raw_text": "SULLIVAN J    E/2/1  1MARDIV  SGT  Dk2 Bth-C",
+      "_notes": "Ship clutter: Deck 2, Berth C. These are ship locations, not unit data.",
+      "clutter_terms": ["Dk2", "Bth-C"],
+      "clutter_context": "transport_ship"
+    },
+
+    "E031": {
+      "entry_id": "E031",
+      "source_id": "SRC005",
+      "soldier_id": "S008",
+      "raw_text": "DAVIS R    E/2/1  1MARDIV  PFC  Dk2 Hold3",
+      "_notes": "Ship clutter: Deck 2, Hold 3. Same deck as Sullivan (coherent grouping).",
+      "clutter_terms": ["Dk2", "Hold3"],
+      "clutter_context": "transport_ship"
+    },
+
+    "E032": {
+      "entry_id": "E032",
+      "source_id": "SRC004",
+      "soldier_id": "S002",
+      "raw_text": "Murphy James  Pfc Easy 16  WIA Ward3 Bed12",
+      "_notes": "Hospital clutter: Ward 3, Bed 12. Field hospital intake.",
+      "clutter_terms": ["Ward3", "Bed12"],
+      "clutter_context": "field_medevac"
+    },
+
+    "E033": {
+      "entry_id": "E033",
+      "source_id": "SRC006",
+      "soldier_id": "S010",
+      "raw_text": "Martinelli, F.J.  91BG-322  SSGT  B-17 AC847 Pos3",
+      "_notes": "AAF clutter: Aircraft serial 847, Position 3 (crew position).",
+      "clutter_terms": ["AC847", "Pos3"],
+      "clutter_context": "aaf_operations"
+    },
+
+    "E034": {
+      "entry_id": "E034",
+      "source_id": "SRC001",
+      "soldier_id": "S001",
+      "raw_text": "S/Sgt Kowalski, Stanley J.  Co E, 2nd Bn, 16th Inf, 1st Div  Grp7",
+      "_notes": "HQ clutter: Processing Group 7. Even formal clerks sometimes add admin codes.",
+      "clutter_terms": ["Grp7"],
+      "clutter_context": "repldep_intake"
+    },
+
+
+    "_comment_confounders": "ENTRIES WITH CONFOUNDERS - Deliberately ambiguous terms",
+
+    "E035": {
+      "entry_id": "E035",
+      "source_id": "SRC005",
+      "soldier_id": "S007",
+      "raw_text": "SULLIVAN J    E/2/1  1MARDIV  SGT  A",
+      "_notes": "CONFOUNDER: Bare 'A' at end. Is this Company A or Berth A? Parser cannot tell from this entry alone.",
+      "confounder_term": "A",
+      "confounds_with": "company_letter",
+      "ground_truth": "Berth A (not unit data - soldier is in E Company)"
+    },
+
+    "E036": {
+      "entry_id": "E036",
+      "source_id": "SRC002",
+      "soldier_id": "S001",
+      "raw_text": "KOWALSKI SSGT E2-16 C-4",
+      "_notes": "CONFOUNDER: 'C-4' looks like Company C, 4th Bn. But this is Compartment C-4 on transport.",
+      "confounder_term": "C-4",
+      "confounds_with": "unit_slash_notation",
+      "ground_truth": "Compartment C-4 (soldier is in E Company, 2nd Bn)"
+    },
+
+    "E037": {
+      "entry_id": "E037",
+      "source_id": "SRC003",
+      "soldier_id": "S004",
+      "raw_text": "Cpl Thompson, Robert L.  2nd Co, A Bn, 505th PIR, 82nd AB  CHK-42 2A",
+      "_notes": "CONFOUNDER: '2A' looks like 2nd Co, A Bn (which is true!). But this is also a valid boarding group code. Ambiguous whether it's redundant unit info or transport code.",
+      "confounder_term": "2A",
+      "confounds_with": "battalion_company_runon",
+      "ground_truth": "Boarding group 2A (happens to match unit structure - realistic coincidence)"
+    },
+
+    "E038": {
+      "entry_id": "E038",
+      "source_id": "SRC004",
+      "soldier_id": "S003",
+      "raw_text": "Chen William  Sgt Fox 16  ??",
+      "_notes": "CONFOUNDER: '??' indicates clerk uncertainty. Something was illegible or unknown.",
+      "confounder_term": "??",
+      "confounds_with": null,
+      "ground_truth": "Clerk notation - field was uncertain"
+    },
+
+
+    "_comment_transfers": "ENTRIES FOR TRANSFERRED SOLDIERS - Same soldier, different valid assignments",
+
+    "E039": {
+      "entry_id": "E039",
+      "source_id": "SRC001",
+      "soldier_id": "S013",
+      "raw_text": "Pfc Brennan, Thomas E.  Co C, 2nd Bn, 16th Inf, 1st Div",
+      "_notes": "TRANSFER: Original assignment. Brennan was in C Co, 2nd Bn, 16th Inf before transfer.",
+      "_is_original_assignment": true
+    },
+
+    "E040": {
+      "entry_id": "E040",
+      "source_id": "SRC002",
+      "soldier_id": "S013",
+      "raw_text": "BRENNAN PFC C2-16",
+      "_notes": "TRANSFER: Original assignment, rushed format. Same soldier as E041 but different unit.",
+      "_is_original_assignment": true
+    },
+
+    "E041": {
+      "entry_id": "E041",
+      "source_id": "SRC002",
+      "soldier_id": "S013",
+      "raw_text": "BRENNAN PFC B1-18",
+      "_notes": "TRANSFER: New assignment after transfer. B Co, 1st Bn, 18th Inf. Appears to conflict with E040 but both are correct.",
+      "_is_new_assignment": true
+    }
+  },
+
+  "collision_demonstrations": {
+    "_comment": "Explicit examples showing how the same unit designators require disambiguation",
+
+    "regiment_1_collision": {
+      "description": "Regiment 1 appears in 5 different divisions - requires service/type signals to disambiguate",
+      "examples": [
+        {
+          "raw_text": "Sgt Chen, William  Co F, 2nd Bn, 1st Inf, 1st Div",
+          "component": "1st_infantry_division",
+          "signals": ["Inf label", "1st Div suffix"]
+        },
+        {
+          "raw_text": "SULLIVAN J    E/2/1  1MARDIV  SGT",
+          "component": "1st_marine_division",
+          "signals": ["1MARDIV suffix", "USMC vocabulary context"]
+        },
+        {
+          "raw_text": "Pvt Garcia, M.  1st Co, A Bn, 1st PIR, 101st AB",
+          "component": "101st_airborne_division",
+          "signals": ["PIR label", "alpha battalion", "numeric company", "AB suffix"]
+        }
+      ]
+    },
+
+    "battalion_alpha_collision": {
+      "description": "Battalion 'A' appears in both airborne (as designator) and armored (as Combat Command)",
+      "examples": [
+        {
+          "raw_text": "Cpl Thompson, Robert L.  2nd Co, A Bn, 505th PIR, 82nd AB",
+          "component": "82nd_airborne_division",
+          "interpretation": "A = Alpha Battalion of 505th PIR",
+          "signals": ["PIR label", "numeric company"]
+        },
+        {
+          "raw_text": "Cpl Kim, Harold  Co C, 66th Tk Bn, CCA, 2nd AD",
+          "component": "2nd_armored_division",
+          "interpretation": "A in CCA = Combat Command A, not battalion",
+          "signals": ["Tk Bn label", "CC prefix", "AD suffix"]
+        }
+      ]
+    },
+
+    "ambiguous_without_context": {
+      "description": "Entries that are genuinely ambiguous without additional signals",
+      "examples": [
+        {
+          "raw_text": "MURPHY PFC E2-16",
+          "possible_components": ["1st_infantry_division", "29th_infantry_division"],
+          "notes": "Regiment 16 exists in both 1st ID and 29th ID. Requires source-level context or additional entries to disambiguate."
+        },
+        {
+          "raw_text": "Thompson Cpl 505 ABN",
+          "possible_components": ["82nd_airborne_division"],
+          "notes": "505th PIR is unique to 82nd, but 'ABN' alone wouldn't distinguish from 101st without regiment."
+        }
+      ]
+    }
+  },
+
+  "within_source_consistency_examples": {
+    "_comment": "Demonstrating that entries from the same source look nearly identical",
+
+    "SRC001_consistency": {
+      "source": "SRC001 (HQ Formal)",
+      "pattern": "[Rank] [Last], [First] [MI].  Co [X], [Ord] Bn, [Num]th Inf, [Num] Div",
+      "entries": [
+        "S/Sgt Kowalski, Stanley J.  Co E, 2nd Bn, 16th Inf, 1st Div",
+        "Pfc Murphy, James R.  Co E, 2nd Bn, 16th Inf, 1st Div",
+        "Sgt Chen, William  Co F, 2nd Bn, 16th Inf, 1st Div"
+      ],
+      "variation": "Only the data changes; format is locked"
+    },
+
+    "SRC002_consistency": {
+      "source": "SRC002 (Battalion Rushed)",
+      "pattern": "[LAST] [RANK] [Co][Bn]-[Regt]",
+      "entries": [
+        "KOWALSKI SSGT E2-16",
+        "MURPHY PFC E2-16",
+        "CHEN SGT F2-16"
+      ],
+      "variation": "Minimal - occasional situational vocab appended"
+    },
+
+    "SRC005_consistency": {
+      "source": "SRC005 (Marine Shipboard)",
+      "pattern": "[LAST] [FI]    [Co]/[Bn]/[Regt]  [DIV]  [RANK]",
+      "entries": [
+        "SULLIVAN J    E/2/1  1MARDIV  SGT",
+        "DAVIS R    E/2/1  1MARDIV  PFC"
+      ],
+      "variation": "Columnar format never changes; vocab appended at end"
+    }
+  },
+
+  "vocabulary_layers_demonstration": {
+    "_comment": "Showing the three vocabulary layers: situational, clutter, and confounders",
+
+    "layer_definitions": {
+      "situational": "Signal-bearing terms tied to operation (helps parser disambiguate)",
+      "contextual_clutter": "Noise from clerk environment (does NOT help disambiguation)",
+      "confounders": "Terms that LOOK like unit data but aren't (actively misleading)"
+    },
+
+    "full_entry_breakdown": {
+      "entry": "SULLIVAN J    E/2/1  1MARDIV  SGT  Dk2 Bth-C  A",
+      "layers": {
+        "core": {
+          "content": "SULLIVAN J    E/2/1  1MARDIV  SGT",
+          "meaning": "Name, unit hierarchy, rank (from clerk style)"
+        },
+        "situational": {
+          "content": "(none in this entry)",
+          "note": "No operation-specific vocab like LUNGA or RED-1"
+        },
+        "contextual_clutter": {
+          "content": "Dk2 Bth-C",
+          "meaning": "Deck 2, Berth C - ship locations, NOT unit data"
+        },
+        "confounder": {
+          "content": "A",
+          "meaning": "Bare letter - could be Company A or Berth A. Parser cannot distinguish without context."
+        }
+      }
+    },
+
+    "disambiguation_examples": {
+      "situational_helps": {
+        "entry": "Kowalski Stanley  SSgt Easy Co 16  WIA OMAHA",
+        "situational_term": "OMAHA",
+        "disambiguation_value": "OMAHA strongly signals 1st ID or 29th ID (D-Day beach sector)",
+        "note": "Without OMAHA, regiment 16 could be from multiple divisions"
+      },
+      "clutter_does_not_help": {
+        "entry": "DAVIS R    E/2/1  1MARDIV  PFC  Dk2 Hold3",
+        "clutter_terms": ["Dk2", "Hold3"],
+        "disambiguation_value": "None - these are ship locations, not unit signals",
+        "note": "Parser should ignore these for unit disambiguation"
+      },
+      "confounder_actively_misleads": {
+        "entry": "KOWALSKI SSGT E2-16 C-4",
+        "confounder_term": "C-4",
+        "apparent_meaning": "Company C, 4th Battalion",
+        "actual_meaning": "Compartment C-4 on transport ship",
+        "note": "Parser must recognize Kowalski is E Company (from E2-16), so C-4 cannot be company"
+      }
+    },
+
+    "clutter_by_clerk_context": {
+      "transport_ship": {
+        "terms": ["Dk2", "Dk3", "Hold3", "Bth-C", "Bth-A", "Bay4"],
+        "example": "SULLIVAN J    E/2/1  1MARDIV  SGT  Dk2 Bth-C"
+      },
+      "field_medevac": {
+        "terms": ["Ward3", "Ward5", "Bed12", "Bed17", "Adm442"],
+        "example": "Murphy James  Pfc Easy 16  WIA Ward3 Bed12"
+      },
+      "aaf_operations": {
+        "terms": ["AC847", "AC312", "Pos3", "Pos7", "Msn142"],
+        "example": "Martinelli, F.J.  91BG-322  SSGT  B-17 AC847 Pos3"
+      },
+      "repldep_intake": {
+        "terms": ["Grp7", "Grp12", "Ln23", "Sec-2"],
+        "example": "S/Sgt Kowalski, Stanley J.  Co E, 2nd Bn, 16th Inf, 1st Div  Grp7"
+      }
+    }
+  },
+
+  "cross_source_soldier_comparison": {
+    "_comment": "Same soldier rendered by different clerks",
+
+    "S001_kowalski": {
+      "soldier": "S001 - Stanley Joseph Kowalski, S/Sgt, E Co, 2nd Bn, 16th Inf, 1st ID",
+      "renderings": [
+        {
+          "source": "SRC001 (HQ Formal)",
+          "raw_text": "S/Sgt Kowalski, Stanley J.  Co E, 2nd Bn, 16th Inf, 1st Div"
+        },
+        {
+          "source": "SRC002 (Battalion Rushed)",
+          "raw_text": "KOWALSKI SSGT E2-16"
+        },
+        {
+          "source": "SRC004 (Field Exhausted)",
+          "raw_text": "Kowalski Stanley  SSgt Easy Co 16  WIA"
+        }
+      ],
+      "notes": "Three completely different formats for the same soldier - parser must recognize all as equivalent"
+    },
+
+    "S004_thompson": {
+      "soldier": "S004 - Robert Lee Thompson, Cpl, 2nd Co, A Bn, 505th PIR, 82nd AB",
+      "renderings": [
+        {
+          "source": "SRC003 (Transport Air)",
+          "raw_text": "Cpl Thompson, Robert L.  2nd Co, A Bn, 505th PIR, 82nd AB  CHK-42"
+        },
+        {
+          "source": "SRC004 (Field Exhausted)",
+          "raw_text": "Thompson Robert  Cpl 505 ABN  WIA"
+        }
+      ],
+      "notes": "Airborne soldier: full manifest format vs minimal field hospital intake"
+    },
+
+    "S007_sullivan": {
+      "soldier": "S007 - John Patrick Sullivan, Sgt, E Co, 2nd Bn, 1st Marines, 1st MarDiv",
+      "renderings": [
+        {
+          "source": "SRC005 (Marine Shipboard)",
+          "raw_text": "SULLIVAN J    E/2/1  1MARDIV  SGT"
+        },
+        {
+          "source": "SRC005 (Marine Shipboard)",
+          "raw_text": "SULLIVAN J    E/2/1  1MARDIV  SGT  RED-1"
+        }
+      ],
+      "notes": "Same clerk, same format - only situational vocab varies"
+    }
+  },
+
+  "transfer_demonstration": {
+    "_comment": "Showing the disambiguation challenge created by soldier transfers",
+
+    "S013_brennan": {
+      "soldier": "S013 - Thomas Edward Brennan, Pfc",
+      "transfer": "C Co, 2nd Bn, 16th Inf → B Co, 1st Bn, 18th Inf (regiment-level)",
+      "renderings": [
+        {
+          "entry": "E039",
+          "source": "SRC001 (HQ Formal)",
+          "raw_text": "Pfc Brennan, Thomas E.  Co C, 2nd Bn, 16th Inf, 1st Div",
+          "assignment": "original"
+        },
+        {
+          "entry": "E040",
+          "source": "SRC002 (Battalion Rushed)",
+          "raw_text": "BRENNAN PFC C2-16",
+          "assignment": "original"
+        },
+        {
+          "entry": "E041",
+          "source": "SRC002 (Battalion Rushed)",
+          "raw_text": "BRENNAN PFC B1-18",
+          "assignment": "new"
+        }
+      ],
+      "disambiguation_challenge": {
+        "problem": "E040 shows C2-16 (C Co, 2nd Bn, 16th). E041 shows B1-18 (B Co, 1st Bn, 18th). These appear to conflict.",
+        "possible_interpretations": [
+          "Parsing error in one of the entries",
+          "Two different Brennans (common name)",
+          "Valid transfer - both assignments correct for this soldier"
+        ],
+        "ground_truth": "Valid transfer. Both assignments are correct at different points in time.",
+        "parser_implication": "Parser cannot resolve without additional context. Should flag as potential multi-assignment case."
+      },
+      "notes": "This is the hardest case: same name, same division (1st ID), two different regiments. Without dates, parser cannot know which is 'current'."
+    },
+
+    "transfer_type_distribution": {
+      "_comment": "25% of soldiers have transfers, distributed as follows:",
+      "company_level": "50% - Same battalion, different company (easiest to detect as same soldier)",
+      "battalion_level": "30% - Same regiment, different battalion",
+      "regiment_level": "15% - Same division, different regiment (hard - like S013)",
+      "division_level": "5% - Different division entirely (hardest - appears to be two different soldiers)"
+    }
+  }
+}

@@ -1,0 +1,1358 @@
+# Synthetic Manifest Shorthand Style Spec (v3)
+# Philosophy: Clerks are characters, not sampling functions.
+#
+# Key principles:
+#   1. Each clerk has fixed habits that persist across all their entries
+#   2. Vocabulary emerges from situations, not component-affinity sampling
+#   3. Within-source repetition is the norm; variation happens between sources
+#   4. No "signal injection" - vocabulary appears because the clerk would naturally use it
+#   5. Imperfections are behavioral, not random noise
+
+meta:
+  spec_name: "manifest_shorthand_v3"
+  spec_version: "3.0.0"
+  created_utc: "2026-01-13T00:00:00Z"
+  philosophy: |
+    Real clerks don't sample from probability distributions. They develop habits,
+    stick with what works, and write the same way for dozens of entries in a row.
+    Variation exists between clerks and between sources, not within them.
+
+    This spec defines clerks as persistent characters whose styles explain themselves.
+    The parser's challenge is recognizing that "E2-116" and "Co E, 2nd Bn, 116th Inf"
+    both mean the same thing - not decoding random noise.
+
+# =============================================================================
+# SCHEMA
+# =============================================================================
+
+schema:
+  truth_input_columns:
+    - primary_id
+    - name_first
+    - name_middle
+    - name_last
+    - rank
+    - component_id
+    # Unit fields vary by component type:
+    # Infantry/Airborne/Mountain/Marine: division, regiment, battalion, company
+    # Armored: division, combat_command, battalion, company
+    # Air Force: air_force, bomb_group, squadron
+
+  raw_output_columns:
+    - source_id
+    - soldier_id
+    - raw_text
+    - clerk_id
+    - situation_id
+    - quality_tier
+
+# =============================================================================
+# CLERK ARCHETYPES
+# =============================================================================
+#
+# Clerks are defined as archetypes with fixed behavioral patterns.
+# At generation time, concrete clerks are instantiated from archetypes
+# with minor individual variation (but habits remain fixed per clerk).
+#
+# A clerk's style is LOCKED for all entries they produce. No per-entry sampling.
+
+clerk_archetypes:
+
+  # ---------------------------------------------------------------------------
+  # HEADQUARTERS CLERKS - Formal, complete, division-aware
+  # ---------------------------------------------------------------------------
+
+  hq_formal:
+    description: |
+      Division or Corps HQ clerk. Trained on proper Army forms.
+      Always includes full hierarchy. Neat, consistent, by-the-book.
+    context_level: "division_hq"
+
+    name_format:
+      template: "{LAST}, {FIRST} {MI}."
+      # Never varies - this is how they were trained
+
+    rank_format:
+      style: "prefix"
+      form: "proper_abbrev"  # S/Sgt, T/5, Cpl
+
+    unit_format:
+      style: "labeled_hierarchical"
+      # Always includes all levels with labels
+      # "Co E, 2nd Bn, 116th Inf, 29th Div"
+      separator: ", "
+      include_division: true
+      label_style: "abbreviated"  # Co, Bn, Inf, Div
+
+    vocabulary_density: "low"
+    # HQ clerks stick to the facts, minimal extra notation
+
+    consistency:
+      format_lock: 0.98  # 98% of entries identical format
+      minor_drift: 0.02  # occasional spacing variation
+
+    imperfections:
+      typo_rate: 0.01
+      abbreviation_inconsistency: 0.02  # very rare
+
+  # ---------------------------------------------------------------------------
+
+  hq_efficient:
+    description: |
+      Experienced HQ clerk who's processed thousands of records.
+      Developed efficient shorthand but still systematic.
+    context_level: "division_hq"
+
+    name_format:
+      template: "{LAST}, {FI}.{MI}."
+
+    rank_format:
+      style: "prefix"
+      form: "caps_abbrev"  # SGT, CPL, PVT
+
+    unit_format:
+      style: "slash_positional"
+      # "E/2/116/29ID"
+      orientation: "child_over_parent"
+      separator: "/"
+      include_division: true
+      division_suffix: true  # "29ID" at end
+
+    vocabulary_density: "low"
+
+    consistency:
+      format_lock: 0.95
+      minor_drift: 0.05
+
+    imperfections:
+      typo_rate: 0.02
+      abbreviation_inconsistency: 0.05
+
+  # ---------------------------------------------------------------------------
+  # BATTALION CLERKS - Assume context, drop higher echelons
+  # ---------------------------------------------------------------------------
+
+  battalion_rushed:
+    description: |
+      Battalion S-1 clerk processing casualty lists under time pressure.
+      Everyone knows what battalion this is - drops division, often regiment.
+      Sloppy but functional.
+    context_level: "battalion"
+
+    name_format:
+      template: "{LAST}"
+      # Last name only unless there's ambiguity
+
+    rank_format:
+      style: "suffix"
+      form: "caps_abbrev"
+
+    unit_format:
+      style: "runon_compact"
+      # "E2-116" or "E2/116"
+      orientation: "child_over_parent"
+      separator: "-"
+      include_division: false  # everyone here knows
+      include_regiment: true
+
+    vocabulary_density: "medium"
+    # May add situational codes from current operation
+
+    consistency:
+      format_lock: 0.85
+      minor_drift: 0.12
+      major_variation: 0.03  # occasionally different format
+
+    imperfections:
+      typo_rate: 0.04
+      abbreviation_inconsistency: 0.10
+      trailing_off: 0.05  # sometimes doesn't finish field
+
+  # ---------------------------------------------------------------------------
+
+  battalion_methodical:
+    description: |
+      Careful battalion clerk. Takes time, makes fewer mistakes.
+      Still drops division but keeps everything else.
+    context_level: "battalion"
+
+    name_format:
+      template: "{LAST}, {FIRST}"
+
+    rank_format:
+      style: "prefix"
+      form: "mixed_abbrev"  # Sgt, Cpl, Pvt
+
+    unit_format:
+      style: "labeled_micro"
+      # "E Co 2Bn 116Inf"
+      separator: " "
+      include_division: false
+      label_style: "micro"  # Co, Bn, Inf (no commas)
+
+    vocabulary_density: "low"
+
+    consistency:
+      format_lock: 0.92
+      minor_drift: 0.08
+
+    imperfections:
+      typo_rate: 0.02
+      abbreviation_inconsistency: 0.04
+
+  # ---------------------------------------------------------------------------
+  # FIELD CLERKS - Exhausted, situational, phonetic
+  # ---------------------------------------------------------------------------
+
+  field_exhausted:
+    description: |
+      Field hospital or aid station clerk. Handwritten intake under stress.
+      Writes what they hear. Inconsistent. Situational vocabulary bleeds in.
+    context_level: "field"
+
+    name_format:
+      template: "{LAST} {FIRST}"
+      # No comma, writes as spoken
+      drop_middle_rate: 0.60  # often forgets middle initial
+
+    rank_format:
+      style: "mixed"  # sometimes prefix, sometimes suffix, sometimes missing
+      form: "phonetic"  # SSgt, Sarnt, Pfc
+      omit_rate: 0.15  # sometimes forgets rank entirely
+
+    unit_format:
+      style: "phonetic_informal"
+      # "Easy Co 116" or "2nd Bn 116th"
+      separator: " "
+      include_division: false
+      phonetic_companies: true  # "Easy" not "E", "Fox" not "F"
+
+    vocabulary_density: "high"
+    # Writes situational context: location, status, what's happening
+
+    consistency:
+      format_lock: 0.65
+      minor_drift: 0.25
+      major_variation: 0.10
+
+    imperfections:
+      typo_rate: 0.08
+      abbreviation_inconsistency: 0.20
+      trailing_off: 0.12
+      mid_entry_corrections: 0.05  # strikethrough and rewrite
+
+  # ---------------------------------------------------------------------------
+
+  field_medevac:
+    description: |
+      Medical evacuation clerk tracking wounded. Focus on status, less on unit.
+      Unit info often incomplete.
+    context_level: "field"
+
+    name_format:
+      template: "{LAST}, {FI}."
+
+    rank_format:
+      style: "prefix"
+      form: "caps_abbrev"
+      omit_rate: 0.10
+
+    unit_format:
+      style: "minimal"
+      # Just "116th" or "2/116" - regiment level, sometimes battalion
+      include_division: false
+      include_company: false  # often unknown or irrelevant
+
+    vocabulary_density: "high"
+    vocabulary_bias: ["status_code"]  # WIA, KIA, RTD
+
+    consistency:
+      format_lock: 0.75
+      minor_drift: 0.20
+      major_variation: 0.05
+
+    imperfections:
+      typo_rate: 0.05
+      incomplete_unit: 0.25  # often missing lower echelons
+
+  # ---------------------------------------------------------------------------
+  # TRANSPORT/MANIFEST CLERKS - Systematic but context-specific
+  # ---------------------------------------------------------------------------
+
+  transport_ship:
+    description: |
+      Ship manifest clerk processing boarding lists.
+      Has a column system. Name in one column, unit codes in another.
+      Very systematic but uses own notation.
+    context_level: "transport"
+
+    name_format:
+      template: "{LAST} {FI}"
+      # No punctuation, columnar
+
+    rank_format:
+      style: "separate_column"
+      form: "caps_abbrev"
+      # Rank appears after unit, like a separate field
+
+    unit_format:
+      style: "slash_positional"
+      orientation: "parent_over_child"  # learned it backwards: "116/2/E"
+      separator: "/"
+      include_division: true
+      division_suffix: true
+
+    vocabulary_density: "medium"
+    vocabulary_bias: ["transport_code", "manifest_code"]
+
+    consistency:
+      format_lock: 0.95
+      minor_drift: 0.05
+
+    imperfections:
+      typo_rate: 0.02
+      column_bleed: 0.08  # fields run together
+
+  # ---------------------------------------------------------------------------
+
+  transport_air:
+    description: |
+      Troop carrier manifest clerk for airborne operations.
+      Tracks stick assignments, chalk numbers, aircraft.
+    context_level: "transport"
+
+    name_format:
+      template: "{LAST}, {FIRST} {MI}."
+
+    rank_format:
+      style: "prefix"
+      form: "proper_abbrev"
+
+    unit_format:
+      style: "labeled_hierarchical"
+      separator: ", "
+      include_division: true
+
+    vocabulary_density: "high"
+    vocabulary_bias: ["manifest_code", "transport_code"]
+    # CHK-42, C-47, SER-JMP, etc.
+
+    consistency:
+      format_lock: 0.90
+      minor_drift: 0.10
+
+    imperfections:
+      typo_rate: 0.03
+
+  # ---------------------------------------------------------------------------
+  # REPLACEMENT DEPOT CLERKS - See all units, always complete
+  # ---------------------------------------------------------------------------
+
+  repldep_intake:
+    description: |
+      Replacement depot clerk processing arrivals.
+      Sees soldiers from many units, so always includes full hierarchy.
+      Trained on standardized Army forms.
+    context_level: "replacement_depot"
+
+    name_format:
+      template: "{LAST}, {FI}.{MI}."
+
+    rank_format:
+      style: "prefix"
+      form: "proper_abbrev"
+
+    unit_format:
+      style: "labeled_full"
+      # "Co E, 2nd Bn, 116th Inf Regt, 29th Inf Div"
+      separator: ", "
+      include_division: true
+      label_style: "full"  # includes "Regt", "Div"
+
+    vocabulary_density: "low"
+    vocabulary_bias: ["process_code"]  # REPL, POE
+
+    consistency:
+      format_lock: 0.97
+      minor_drift: 0.03
+
+    imperfections:
+      typo_rate: 0.01
+
+  # ---------------------------------------------------------------------------
+  # AIR FORCE CLERKS - Different hierarchy, different vocabulary
+  # ---------------------------------------------------------------------------
+
+  aaf_squadron:
+    description: |
+      Squadron-level clerk tracking aircrew.
+      Uses AAF-specific notation. Group/Squadron structure.
+    context_level: "squadron"
+
+    name_format:
+      template: "{LAST}, {FIRST} {MI}."
+
+    rank_format:
+      style: "prefix"
+      form: "proper_abbrev"
+
+    unit_format:
+      style: "aaf_standard"
+      # "3rd Sq, 91st BG, 8th AF" or "3/91BG"
+      separator: ", "
+      include_air_force: true
+
+    vocabulary_density: "medium"
+    vocabulary_bias: ["equipment_code", "position_code"]
+    # B-17, MOS-7, etc.
+
+    consistency:
+      format_lock: 0.90
+      minor_drift: 0.10
+
+    imperfections:
+      typo_rate: 0.02
+
+  # ---------------------------------------------------------------------------
+
+  aaf_operations:
+    description: |
+      Group operations clerk tracking mission assignments.
+      Focus on crew, aircraft, mission data.
+    context_level: "group_ops"
+
+    name_format:
+      template: "{LAST} {FI}{MI}"
+      # Compact, no punctuation
+
+    rank_format:
+      style: "suffix"
+      form: "caps_abbrev"
+
+    unit_format:
+      style: "compact_aaf"
+      # "91BG-3" or "3/91"
+      separator: "-"
+      include_air_force: false  # everyone knows
+
+    vocabulary_density: "high"
+    vocabulary_bias: ["equipment_code", "status_code", "base_code"]
+
+    consistency:
+      format_lock: 0.88
+      minor_drift: 0.10
+      major_variation: 0.02
+
+    imperfections:
+      typo_rate: 0.03
+
+  # ---------------------------------------------------------------------------
+  # MARINE CLERKS - FMF style, naval transport awareness
+  # ---------------------------------------------------------------------------
+
+  marine_fmf:
+    description: |
+      Fleet Marine Force administrative clerk.
+      Uses Marine-specific notation. Naval transport vocabulary.
+    context_level: "division_hq"
+
+    name_format:
+      template: "{LAST}, {FIRST} {MI}."
+
+    rank_format:
+      style: "prefix"
+      form: "proper_abbrev"
+
+    unit_format:
+      style: "marine_standard"
+      # "Co A, 1st Bn, 7th Mar, 1st MarDiv"
+      separator: ", "
+      include_division: true
+      marine_regiment_style: "Mar"  # not "Marines" or "Marine Regt"
+
+    vocabulary_density: "medium"
+    vocabulary_bias: ["admin_code", "transport_code"]
+    # FMF, USMC, APA, etc.
+
+    consistency:
+      format_lock: 0.92
+      minor_drift: 0.08
+
+    imperfections:
+      typo_rate: 0.02
+
+  # ---------------------------------------------------------------------------
+
+  marine_shipboard:
+    description: |
+      Marine clerk on transport ship pre-landing.
+      Tracks embarked personnel. Naval vocabulary heavy.
+    context_level: "transport"
+
+    name_format:
+      template: "{LAST} {FI}"
+
+    rank_format:
+      style: "suffix"
+      form: "caps_abbrev"
+
+    unit_format:
+      style: "slash_compact"
+      # "A/1/7" or "A/1/7 1MARDIV"
+      separator: "/"
+      include_division: true
+      division_suffix: true
+
+    vocabulary_density: "high"
+    vocabulary_bias: ["transport_code", "zone_designator"]
+
+    consistency:
+      format_lock: 0.90
+      minor_drift: 0.10
+
+    imperfections:
+      typo_rate: 0.03
+
+# =============================================================================
+# SITUATIONS
+# =============================================================================
+#
+# Situations define the operational context that drives vocabulary selection.
+# A source document is assigned a situation. All entries in that source share
+# situational vocabulary BECAUSE THEY'RE FROM THE SAME EVENT.
+#
+# This replaces the "component affinity" model - vocabulary isn't sampled by
+# component, it's determined by what's actually happening.
+
+situations:
+
+  # ---------------------------------------------------------------------------
+  # EUROPEAN THEATER - GROUND
+  # ---------------------------------------------------------------------------
+
+  normandy_assault:
+    description: "D-Day beach landings, June 1944"
+    theater: "eto"
+    operation_type: "amphibious_assault"
+    applies_to:
+      - 1st_infantry_division
+      - 29th_infantry_division  # if we add it later
+    vocabulary_pool:
+      primary: ["OMAHA", "UTAH", "DOG-G", "EASY-RED"]
+      secondary: ["LST", "LCI", "LCVP", "EMB", "DEB"]
+      rare: ["BIGOT", "OVERLORD"]
+    date_range: ["1944-06-06", "1944-06-30"]
+
+  normandy_airborne:
+    description: "Airborne drops behind Normandy beaches"
+    theater: "eto"
+    operation_type: "airborne_assault"
+    applies_to:
+      - 82nd_airborne_division
+      - 101st_airborne_division
+    vocabulary_pool:
+      primary: ["DZ-O", "DZ-N", "DZ-C", "DZ-D", "ABN", "PIR"]
+      secondary: ["C-47", "CHK-42", "CHK-67", "TCG", "SER-JMP"]
+      rare: ["NEPTUNE", "ALBANY", "BOSTON"]
+    date_range: ["1944-06-05", "1944-06-07"]
+
+  bulge_defensive:
+    description: "Battle of the Bulge, Ardennes"
+    theater: "eto"
+    operation_type: "defensive"
+    applies_to:
+      - 101st_airborne_division
+      - 82nd_airborne_division
+    vocabulary_pool:
+      primary: ["BASTOGNE", "ABN", "PIR"]
+      secondary: ["DET", "ATCH", "TDY"]
+      rare: ["NUTS"]  # had to include it
+    date_range: ["1944-12-16", "1945-01-25"]
+
+  eto_breakout:
+    description: "Operation Cobra and breakout from Normandy"
+    theater: "eto"
+    operation_type: "offensive"
+    applies_to:
+      - 2nd_armored_division
+      - 1st_infantry_division
+    vocabulary_pool:
+      primary: ["COBRA", "ARMD", "TK"]
+      secondary: ["CC-A", "CC-B", "HT"]
+      rare: ["LUTTICH"]
+    date_range: ["1944-07-25", "1944-08-15"]
+
+  # ---------------------------------------------------------------------------
+  # MEDITERRANEAN THEATER
+  # ---------------------------------------------------------------------------
+
+  italy_anzio:
+    description: "Anzio landings and Italian campaign"
+    theater: "mto"
+    operation_type: "amphibious_assault"
+    applies_to:
+      - 36th_infantry_division
+      - 1st_armored_division
+    vocabulary_pool:
+      primary: ["SALERNO", "ANZIO", "RAPIDO"]
+      secondary: ["LST", "LCI", "EMB", "DEB"]
+      rare: ["SHINGLE", "AVALANCHE"]
+    date_range: ["1943-09-09", "1944-06-04"]
+
+  italy_mountain:
+    description: "10th Mountain operations in Italian Alps"
+    theater: "mto"
+    operation_type: "mountain_warfare"
+    applies_to:
+      - 10th_mountain_division
+    vocabulary_pool:
+      primary: ["RIVA", "BELVEDERE", "MTN", "ALP"]
+      secondary: ["SKI", "MULE"]
+      rare: ["CRAFTSMAN"]
+    date_range: ["1945-01-28", "1945-05-02"]
+
+  north_africa:
+    description: "Tunisia and Kasserine Pass"
+    theater: "mto"
+    operation_type: "combined"
+    applies_to:
+      - 1st_armored_division
+    vocabulary_pool:
+      primary: ["KASSERINE", "ARMD", "TK", "TD"]
+      secondary: ["CC-A", "CC-B"]
+      rare: ["TORCH"]
+    date_range: ["1942-11-08", "1943-05-13"]
+
+  # ---------------------------------------------------------------------------
+  # PACIFIC THEATER - MARINES
+  # ---------------------------------------------------------------------------
+
+  guadalcanal:
+    description: "Guadalcanal campaign"
+    theater: "pto"
+    operation_type: "amphibious_assault"
+    applies_to:
+      - 1st_marine_division
+    vocabulary_pool:
+      primary: ["LUNGA", "RED-1", "USMC", "FMF"]
+      secondary: ["APA", "LVT", "LCVP"]
+      rare: ["WATCHTOWER"]
+    date_range: ["1942-08-07", "1943-02-09"]
+
+  tarawa:
+    description: "Tarawa assault"
+    theater: "pto"
+    operation_type: "amphibious_assault"
+    applies_to:
+      - 2nd_marine_division
+    vocabulary_pool:
+      primary: ["BETIO", "RED-2", "RED-3", "USMC", "FMF"]
+      secondary: ["APA", "LVT", "LCVP", "AKA"]
+      rare: ["GALVANIC"]
+    date_range: ["1943-11-20", "1943-11-23"]
+
+  iwo_jima:
+    description: "Iwo Jima assault"
+    theater: "pto"
+    operation_type: "amphibious_assault"
+    applies_to:
+      - 3rd_marine_division
+    vocabulary_pool:
+      primary: ["SURIBACHI", "GREEN-1", "USMC", "FMF"]
+      secondary: ["APA", "LVT"]
+      rare: ["DETACHMENT"]
+    date_range: ["1945-02-19", "1945-03-26"]
+
+  # ---------------------------------------------------------------------------
+  # AIR FORCE OPERATIONS
+  # ---------------------------------------------------------------------------
+
+  eighth_af_strategic:
+    description: "8th Air Force daylight strategic bombing"
+    theater: "eto"
+    operation_type: "strategic_bombing"
+    applies_to:
+      - 8th_air_force
+    vocabulary_pool:
+      primary: ["B-17", "B-24", "AAF", "MOS-7"]
+      secondary: ["STATION-121", "THORPE", "FLK", "RTD"]
+      rare: ["POINTBLANK", "ARGUMENT"]
+    date_range: ["1942-08-17", "1945-05-08"]
+
+  fifteenth_af_mediterranean:
+    description: "15th Air Force operations from Italy"
+    theater: "mto"
+    operation_type: "strategic_bombing"
+    applies_to:
+      - 15th_air_force
+    vocabulary_pool:
+      primary: ["B-17", "B-24", "AAF"]
+      secondary: ["FOGGIA", "BARI", "MOS-7"]
+      rare: ["PLOESTI"]
+    date_range: ["1943-11-01", "1945-05-08"]
+
+  ninth_af_tactical:
+    description: "9th Air Force tactical support"
+    theater: "eto"
+    operation_type: "tactical_support"
+    applies_to:
+      - 9th_air_force
+    vocabulary_pool:
+      primary: ["A-26", "AAF"]
+      secondary: ["STATION-416"]
+      rare: []
+    date_range: ["1943-10-16", "1945-05-08"]
+
+  # ---------------------------------------------------------------------------
+  # GENERIC / ADMINISTRATIVE
+  # ---------------------------------------------------------------------------
+
+  replacement_processing:
+    description: "Replacement depot intake, any component"
+    theater: "conus"
+    operation_type: "administrative"
+    applies_to: "any"
+    vocabulary_pool:
+      primary: ["REPL", "POE", "AGF"]
+      secondary: ["ETOUSA", "TDY"]
+      rare: []
+    date_range: ["1942-01-01", "1945-12-31"]
+
+  transport_generic:
+    description: "Ship transport manifest, mixed units"
+    theater: "atlantic"
+    operation_type: "transport"
+    applies_to: "any"
+    vocabulary_pool:
+      primary: ["EMB", "DEB", "XFR"]
+      secondary: ["DET", "ATCH", "HQ"]
+      rare: []
+    date_range: ["1942-01-01", "1945-12-31"]
+
+  casualty_processing:
+    description: "Hospital or graves registration"
+    theater: "any"
+    operation_type: "medical"
+    applies_to: "any"
+    vocabulary_pool:
+      primary: ["WIA", "KIA"]
+      secondary: ["RTD", "MIA", "DET"]
+      rare: []
+    date_range: ["1942-01-01", "1945-12-31"]
+
+# =============================================================================
+# SOURCE GENERATION
+# =============================================================================
+#
+# A source represents a single document (manifest page, casualty list, etc.)
+# produced by one clerk in one situation.
+
+source_generation:
+
+  # How many entries per source (represents a physical page or batch)
+  entries_per_source:
+    distribution: "normal_truncated"
+    mean: 35
+    std: 15
+    min: 8
+    max: 80
+
+  # Clerk assignment to sources
+  clerk_distribution:
+    # Some clerks process way more than others (realistic)
+    model: "power_law"
+    alpha: 1.8  # heavy concentration
+
+  # Situation assignment
+  situation_assignment:
+    # Each source gets ONE situation
+    # Vocabulary comes from that situation only
+    cross_situation_bleed: 0.02  # very rare
+
+  # Unit concentration within source
+  unit_concentration:
+    # Transport manifests have mostly soldiers from same unit
+    same_battalion_rate: 0.70
+    same_regiment_rate: 0.25
+    mixed_rate: 0.05
+
+# =============================================================================
+# WITHIN-SOURCE CONSISTENCY
+# =============================================================================
+#
+# This is the key differentiator from v2.
+# Within a source, the clerk uses the SAME format repeatedly.
+# Variation happens BETWEEN sources, not WITHIN them.
+
+within_source_behavior:
+
+  format_consistency:
+    # Once a clerk starts a batch, they stick with their format
+    identical_format_rate: 0.85  # 85% of entries exactly the same
+    minor_variation_rate: 0.12   # spacing, capitalization drift
+    format_switch_rate: 0.03    # rare: clerk tries different approach
+
+  vocabulary_consistency:
+    # If clerk uses "OMAHA" once, they use it throughout
+    term_persistence: 0.95
+    # They don't randomly sample - they have a mental list for this batch
+
+  fatigue_modeling:
+    enabled: true
+    # Clerk gets sloppier over course of batch
+    early_batch_formality: 0.90   # first 20% of entries
+    late_batch_formality: 0.70    # last 20% of entries
+    effects:
+      - increase_abbreviation
+      - increase_typo_rate
+      - drop_optional_fields
+
+# =============================================================================
+# BEHAVIORAL IMPERFECTIONS
+# =============================================================================
+#
+# Imperfections are BEHAVIORAL, not random noise.
+# They reflect how real clerks actually make mistakes.
+
+behavioral_imperfections:
+
+  # Clerk writes one way, then switches mid-batch
+  abbreviation_drift:
+    enabled: true
+    rate_per_source: 0.08
+    # Example: starts with "Sgt", switches to "SGT" partway through
+    affects: ["rank", "unit_labels"]
+
+  # Strikethrough and correction
+  self_correction:
+    enabled: true
+    rate_per_entry: 0.02
+    patterns:
+      - style: "strikethrough"
+        example: "~~E~~ F Co"
+      - style: "bracketed"
+        example: "3rd [2nd] Bn"
+      - style: "slash_correction"
+        example: "Pvt/Pfc"
+
+  # Field trails off, incomplete
+  trailing_off:
+    enabled: true
+    rate_per_entry: 0.04
+    affects: ["company", "middle_initial"]
+    # More common in field clerks
+
+  # Typewriter/writing issues
+  mechanical_errors:
+    spacing_jitter:
+      enabled: true
+      rate: 0.15
+      max_extra_spaces: 2
+    punctuation_drop:
+      enabled: true
+      rate: 0.05
+    character_overtype:
+      enabled: true
+      rate: 0.02
+      # Typewriter double-strike: "SGTt", "116tth"
+
+# =============================================================================
+# QUALITY TIERS
+# =============================================================================
+#
+# Quality tiers reflect overall document/clerk quality, not per-entry sampling.
+# A tier is assigned to the SOURCE, not individual entries.
+
+quality_tiers:
+
+  1:
+    name: "archival_clean"
+    description: "Well-preserved, clearly typed, HQ-level document"
+    distribution_weight: 0.20
+    clerk_archetype_bias: ["hq_formal", "hq_efficient", "repldep_intake"]
+    imperfection_multiplier: 0.5
+
+  2:
+    name: "standard"
+    description: "Typical field document, some wear but legible"
+    distribution_weight: 0.35
+    clerk_archetype_bias: ["battalion_methodical", "transport_ship", "marine_fmf"]
+    imperfection_multiplier: 1.0
+
+  3:
+    name: "field_worn"
+    description: "Field conditions, rushed typing, some damage"
+    distribution_weight: 0.25
+    clerk_archetype_bias: ["battalion_rushed", "field_medevac", "aaf_operations"]
+    imperfection_multiplier: 1.5
+
+  4:
+    name: "degraded"
+    description: "Poor conditions, handwritten or damaged"
+    distribution_weight: 0.15
+    clerk_archetype_bias: ["field_exhausted"]
+    imperfection_multiplier: 2.0
+
+  5:
+    name: "fragmentary"
+    description: "Heavily damaged, partial entries, difficult to read"
+    distribution_weight: 0.05
+    clerk_archetype_bias: ["field_exhausted"]
+    imperfection_multiplier: 3.0
+    incomplete_entry_rate: 0.25
+
+# =============================================================================
+# NAME RENDERING
+# =============================================================================
+
+name_rendering:
+
+  # Templates are per-clerk, not sampled per-entry
+  templates:
+    LAST_FIRST_MI:
+      pattern: "{LAST}, {FIRST} {MI}."
+      example: "Kowalski, Stanley J."
+
+    LAST_FIRST:
+      pattern: "{LAST}, {FIRST}"
+      example: "Kowalski, Stanley"
+
+    LAST_FI_MI:
+      pattern: "{LAST}, {FI}.{MI}."
+      example: "Kowalski, S.J."
+
+    LAST_FI:
+      pattern: "{LAST}, {FI}."
+      example: "Kowalski, S."
+
+    LAST_ONLY:
+      pattern: "{LAST}"
+      example: "Kowalski"
+
+    FIRST_LAST:
+      pattern: "{FIRST} {LAST}"
+      example: "Stanley Kowalski"
+
+    LAST_SPACE_FIRST:
+      pattern: "{LAST} {FIRST}"
+      example: "Kowalski Stanley"
+
+    LAST_SPACE_FI:
+      pattern: "{LAST} {FI}"
+      example: "Kowalski S"
+
+# =============================================================================
+# RANK RENDERING
+# =============================================================================
+
+rank_rendering:
+
+  canonical_to_variants:
+    Private:
+      proper_abbrev: "Pvt"
+      caps_abbrev: "PVT"
+      phonetic: "Pvt"
+
+    Private First Class:
+      proper_abbrev: "Pfc"
+      caps_abbrev: "PFC"
+      phonetic: "Pfc"
+
+    Corporal:
+      proper_abbrev: "Cpl"
+      caps_abbrev: "CPL"
+      phonetic: "Cpl"
+
+    Sergeant:
+      proper_abbrev: "Sgt"
+      caps_abbrev: "SGT"
+      phonetic: "Sgt"
+
+    Staff Sergeant:
+      proper_abbrev: "S/Sgt"
+      caps_abbrev: "SSGT"
+      phonetic: "SSgt"
+
+    Technical Sergeant:
+      proper_abbrev: "T/Sgt"
+      caps_abbrev: "TSGT"
+      phonetic: "TSgt"
+
+    First Sergeant:
+      proper_abbrev: "1st Sgt"
+      caps_abbrev: "1SGT"
+      phonetic: "1st Sgt"
+
+    Master Sergeant:
+      proper_abbrev: "M/Sgt"
+      caps_abbrev: "MSGT"
+      phonetic: "MSgt"
+
+    Technician Fifth Grade:
+      proper_abbrev: "T/5"
+      caps_abbrev: "T5"
+      phonetic: "T5"
+
+    Technician Fourth Grade:
+      proper_abbrev: "T/4"
+      caps_abbrev: "T4"
+      phonetic: "T4"
+
+    Second Lieutenant:
+      proper_abbrev: "2nd Lt"
+      caps_abbrev: "2LT"
+      phonetic: "2nd Lt"
+
+    First Lieutenant:
+      proper_abbrev: "1st Lt"
+      caps_abbrev: "1LT"
+      phonetic: "1st Lt"
+
+    Captain:
+      proper_abbrev: "Capt"
+      caps_abbrev: "CPT"
+      phonetic: "Capt"
+
+    Major:
+      proper_abbrev: "Maj"
+      caps_abbrev: "MAJ"
+      phonetic: "Maj"
+
+  placement:
+    prefix: "Sgt Kowalski"
+    suffix: "Kowalski SGT"
+    infix: "Kowalski, S.J., Sgt"
+    separate_column: "KOWALSKI S    116/2/E  SSG"
+
+# =============================================================================
+# UNIT RENDERING
+# =============================================================================
+
+unit_rendering:
+
+  # Company designators can be letters or phonetic
+  company_styles:
+    alpha: ["A", "B", "C", "D", "E", "F", "G", "H", "I", "K", "L", "M"]
+    phonetic:
+      A: "Able"
+      B: "Baker"
+      C: "Charlie"
+      D: "Dog"
+      E: "Easy"
+      F: "Fox"
+      G: "George"
+      H: "How"
+      I: "Item"
+      K: "King"
+      L: "Love"
+      M: "Mike"
+
+  # Unit type labels
+  unit_labels:
+    company:
+      full: "Company"
+      abbreviated: "Co"
+      micro: "Co"
+      none: ""
+
+    battalion:
+      full: "Battalion"
+      abbreviated: "Bn"
+      micro: "Bn"
+      ordinal: ["1st", "2nd", "3rd"]
+      none: ""
+
+    regiment:
+      full: "Infantry Regiment"
+      abbreviated: "Inf"
+      micro: "Inf"
+      none: ""
+
+    division:
+      infantry:
+        full: "Infantry Division"
+        abbreviated: "ID"
+        compact: "ID"
+      airborne:
+        full: "Airborne Division"
+        abbreviated: "AB"
+        compact: "AB"
+      armored:
+        full: "Armored Division"
+        abbreviated: "AD"
+        compact: "AD"
+      mountain:
+        full: "Mountain Division"
+        abbreviated: "Mtn"
+        compact: "MTN"
+      marine:
+        full: "Marine Division"
+        abbreviated: "MarDiv"
+        compact: "MARDIV"
+
+    combat_command:
+      full: "Combat Command"
+      abbreviated: "CC"
+
+    bomb_group:
+      full: "Bombardment Group"
+      abbreviated: "BG"
+
+    squadron:
+      full: "Squadron"
+      abbreviated: "Sq"
+
+  # Format families (assigned per-clerk, not sampled per-entry)
+  format_families:
+
+    labeled_full:
+      description: "All labels, full hierarchy"
+      example: "Co E, 2nd Bn, 116th Inf Regt, 29th Inf Div"
+      separator: ", "
+
+    labeled_hierarchical:
+      description: "Abbreviated labels, full hierarchy"
+      example: "Co E, 2nd Bn, 116th Inf, 29th Div"
+      separator: ", "
+
+    labeled_micro:
+      description: "Minimal labels, compressed"
+      example: "E Co 2Bn 116Inf"
+      separator: " "
+
+    slash_positional:
+      description: "Slash-separated, positional"
+      example: "E/2/116/29ID"
+      separator: "/"
+      orientations: ["child_over_parent", "parent_over_child"]
+
+    runon_compact:
+      description: "Run-on with minimal separation"
+      example: "E2-116"
+      separator: "-"
+
+    minimal:
+      description: "Only essential info"
+      example: "116th"
+
+    phonetic_informal:
+      description: "Phonetic company names, spoken style"
+      example: "Easy Co 116"
+
+    aaf_standard:
+      description: "Air Force standard notation"
+      example: "3rd Sq, 91st BG, 8th AF"
+
+    compact_aaf:
+      description: "Air Force compact notation"
+      example: "3/91BG"
+
+    marine_standard:
+      description: "Marine Corps notation"
+      example: "Co A, 1st Bn, 7th Mar, 1st MarDiv"
+
+    slash_compact:
+      description: "Compact slash for Marines"
+      example: "A/1/7"
+
+# =============================================================================
+# VOCABULARY LAYERS
+# =============================================================================
+#
+# Vocabulary is NOT randomly sampled. It appears based on three distinct sources:
+#
+# 1. SITUATIONAL VOCABULARY (Signal-bearing)
+#    - Tied to the operation/situation assigned to the source
+#    - Provides disambiguation signals (OMAHA = 1st ID Normandy, DZ-O = 82nd AB)
+#    - Comes from synthetic_vocabulary.json via situation.vocabulary_pool
+#
+# 2. CONTEXTUAL CLUTTER (Non-signal noise)
+#    - Tied to the clerk's working environment, not the soldier's unit
+#    - Ship clerks add deck/berth codes; hospital clerks add ward/bed numbers
+#    - Does NOT provide unit disambiguation signal
+#    - Comes from synthetic_vocabulary.json clutter_code terms
+#
+# 3. CONFOUNDERS (Deliberately ambiguous)
+#    - Terms that LOOK like unit data but aren't
+#    - Bare letters (A, B, C) that could be company or berth
+#    - Numeric patterns (C-4, 2A) that resemble unit notation
+#    - Forces parser to use context, not pattern matching
+#    - Comes from synthetic_vocabulary.json confounder terms
+
+vocabulary_layers:
+
+  situational:
+    description: "Terms from the source's assigned situation"
+    source: "situations[].vocabulary_pool"
+    selection_logic: |
+      1. Source is assigned a situation (e.g., normandy_assault)
+      2. Situation has vocabulary_pool with primary/secondary/rare terms
+      3. Clerk's vocabulary_density determines how many terms appear
+      4. Terms persist within source (if clerk uses OMAHA once, they keep using it)
+    density_by_archetype:
+      low: 0.15    # ~15% of entries get situational vocab
+      medium: 0.35
+      high: 0.55
+
+  contextual_clutter:
+    description: "Non-signal noise from clerk's physical environment"
+    source: "synthetic_vocabulary.json where term_type = clutter_code"
+    selection_logic: |
+      1. Clerk archetype has working context (ship, depot, hospital, airfield)
+      2. Clutter terms have clerk_context field listing applicable archetypes
+      3. Only clutter matching clerk's context can appear
+      4. Clutter rate is separate from situational vocab rate
+    examples:
+      transport_ship: ["Dk2", "Hold3", "Bth-C", "Bay4"]
+      field_medevac: ["Ward3", "Bed17", "Adm442"]
+      aaf_operations: ["AC847", "Pos3", "Msn142"]
+      repldep_intake: ["Grp7", "Ln23", "Sec-2"]
+    clutter_rate_by_archetype:
+      hq_formal: 0.05       # very clean
+      hq_efficient: 0.08
+      battalion_rushed: 0.12
+      battalion_methodical: 0.08
+      field_exhausted: 0.20  # lots of contextual noise
+      field_medevac: 0.25
+      transport_ship: 0.30   # high - columnar forms, lots of codes
+      transport_air: 0.20
+      repldep_intake: 0.15
+      aaf_squadron: 0.18
+      aaf_operations: 0.22
+      marine_fmf: 0.10
+      marine_shipboard: 0.28
+
+  confounders:
+    description: "Deliberately ambiguous terms that resemble unit designators"
+    source: "synthetic_vocabulary.json where term_type = confounder"
+    selection_logic: |
+      1. Confounders are injected based on clerk context (same as clutter)
+      2. Rate is lower than clutter - these are the hard cases
+      3. Parser must use surrounding context to distinguish from real unit data
+    examples:
+      - term: "A"
+        appears_in: "MURPHY PFC E2-16 A"
+        ambiguity: "Is 'A' a company or a berth letter?"
+      - term: "C-4"
+        appears_in: "KOWALSKI SSGT 116 C-4"
+        ambiguity: "Is 'C-4' Company C 4th Bn, or Compartment C-4?"
+      - term: "2A"
+        appears_in: "Thompson Cpl 505 2A"
+        ambiguity: "Is '2A' 2nd Co A Bn (airborne), or boarding group 2A?"
+    confounder_rate: 0.08  # ~8% of entries with clutter include a confounder
+
+# =============================================================================
+# GENERATION PARAMETERS
+# =============================================================================
+
+generation:
+
+  # Total synthetic dataset size
+  target_records: 10000
+
+  # Soldiers may appear in multiple sources (realistic)
+  records_per_soldier:
+    distribution: "geometric"
+    p: 0.45
+    min: 1
+    max: 8
+
+  # But usually from limited number of sources
+  sources_per_soldier:
+    distribution: "categorical"
+    weights:
+      1: 0.80
+      2: 0.18
+      3: 0.02
+
+  # Component distribution should be lumpy, not uniform
+  component_distribution:
+    model: "weighted_with_variance"
+    # Don't try to hit exact percentages - real data is messy
+
+  # Seed for reproducibility
+  random_seed: null  # Set for reproducible generation
+
+# =============================================================================
+# SOLDIER TRANSFERS
+# =============================================================================
+#
+# 25% of soldiers have a unit transfer in their history.
+# This creates the hardest disambiguation cases: the SAME soldier legitimately
+# appears with DIFFERENT unit assignments across sources.
+#
+# Documents are undated, so there's no temporal consistency to rely on.
+# The parser must recognize that conflicting assignments may both be valid.
+# Clerks have no awareness of transfers - they just record what they see.
+
+transfers:
+
+  # Overall transfer rate
+  soldier_transfer_rate: 0.25  # 25% of soldiers have at least one transfer
+
+  # Transfer type distribution (must sum to 1.0)
+  # Ordered from most common to rarest
+  transfer_types:
+
+    company_level:
+      description: "Same battalion, different company"
+      example: "E Co -> F Co within 2nd Bn, 16th Inf"
+      frequency: 0.50  # 50% of transfers
+      notes: |
+        Most common transfer type. Soldier stays in same battalion
+        but moves to different company. Often due to:
+        - Casualty replacement (filling gaps)
+        - Skill rebalancing
+        - Company reorganization
+
+    battalion_level:
+      description: "Same regiment, different battalion"
+      example: "2nd Bn -> 3rd Bn within 16th Inf"
+      frequency: 0.30  # 30% of transfers
+      notes: |
+        Soldier stays in same regiment but moves to different battalion.
+        Less common than company transfers but still routine.
+
+    regiment_level:
+      description: "Same division, different regiment"
+      example: "16th Inf -> 18th Inf within 1st ID"
+      frequency: 0.15  # 15% of transfers
+      notes: |
+        Relatively rare. Soldier stays in division but moves to
+        different regiment. Usually specialist skills or major
+        reorganization.
+
+    division_level:
+      description: "Different division (replacement depot reassignment)"
+      example: "1st ID -> 29th ID via replacement depot"
+      frequency: 0.05  # 5% of transfers
+      notes: |
+        Rare but crucial for testing. Creates the hardest cases:
+        soldier genuinely associated with two different divisions.
+        Typically happens through replacement depot system.
+
+  # Cross-branch transfers (Army to Marines, etc.) are NOT modeled
+  # These were extraordinarily rare in reality
+  cross_branch_transfers: false
+
+  # Impact on data generation
+  generation_notes: |
+    For a soldier with a transfer:
+    1. Create TWO valid assignment records in truth layer
+    2. Some raw entries reflect original assignment
+    3. Some raw entries reflect new assignment
+    4. Different sources may have different assignments (both valid)
+    5. Parser faces genuine ambiguity - not a data quality issue
+
+  # Transfer examples for disambiguation challenge
+  disambiguation_challenge: |
+    Soldier S001 (Kowalski) in the seed set could have:
+    - Source A (HQ formal): "S/Sgt Kowalski, Stanley J.  Co E, 2nd Bn, 16th Inf, 1st Div"
+    - Source B (rushed): "KOWALSKI SSGT F3-16"
+
+    Without dates, parser cannot know:
+    - Is "E Co, 2nd Bn" vs "F Co, 3rd Bn" a parsing error?
+    - Did Kowalski transfer (both correct)?
+    - Is this two different Kowalskis?
+
+    This is exactly what makes the real data hard.
