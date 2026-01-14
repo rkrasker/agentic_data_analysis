@@ -1,9 +1,14 @@
 {
   "meta": {
-    "version": "1.0.0",
+    "version": "1.1.0",
     "created_utc": "2026-01-13T00:00:00Z",
     "description": "Vocabulary terms for synthetic data generation. NOT provided to parsing LLM.",
-    "usage": "Terms are injected into raw text based on theme associations and frequency weights."
+    "usage": "Terms are injected into raw text based on theme associations and frequency weights.",
+    "vocabulary_layers": {
+      "situational": "Signal-bearing terms tied to operations/components (OMAHA, DZ-O, B-17)",
+      "contextual_clutter": "Non-signal noise from clerk working environment (Dk2, Hold3)",
+      "confounders": "Deliberately ambiguous terms that resemble unit designators"
+    }
   },
 
   "term_types": {
@@ -15,7 +20,9 @@
     "status_code": "Personnel status indicators",
     "base_code": "Station or base identifiers",
     "position_code": "Crew or duty position codes",
-    "process_code": "Processing or movement codes"
+    "process_code": "Processing or movement codes",
+    "clutter_code": "Non-unit environmental noise from clerk context",
+    "confounder": "Deliberately ambiguous terms resembling unit data"
   },
 
   "frequency_weights": {
@@ -658,6 +665,320 @@
       "frequency": "rare",
       "context": "Killed in action",
       "placement": ["suffix"]
+    },
+
+
+    {"_section": "CONTEXTUAL CLUTTER - Non-signal noise from clerk working environment"},
+
+    {
+      "term": "Dk{N}",
+      "term_type": "clutter_code",
+      "clerk_context": ["transport_ship", "marine_shipboard"],
+      "template": true,
+      "N_range": [1, 5],
+      "frequency": "common",
+      "context": "Ship deck number",
+      "placement": ["suffix"],
+      "confounding_note": "Numeric suffix resembles battalion numbers"
+    },
+    {
+      "term": "Hold{N}",
+      "term_type": "clutter_code",
+      "clerk_context": ["transport_ship", "marine_shipboard"],
+      "template": true,
+      "N_range": [1, 4],
+      "frequency": "uncommon",
+      "context": "Cargo hold designation",
+      "placement": ["suffix"],
+      "confounding_note": null
+    },
+    {
+      "term": "Cmp{N}",
+      "term_type": "clutter_code",
+      "clerk_context": ["transport_ship", "marine_shipboard"],
+      "template": true,
+      "N_range": [1, 8],
+      "frequency": "uncommon",
+      "context": "Compartment number",
+      "placement": ["suffix"],
+      "confounding_note": "Looks like 'Company' abbreviation"
+    },
+    {
+      "term": "Bth-{L}",
+      "term_type": "clutter_code",
+      "clerk_context": ["transport_ship", "marine_shipboard"],
+      "template": true,
+      "L_values": ["A", "B", "C", "D", "E", "F"],
+      "frequency": "common",
+      "context": "Berth letter assignment",
+      "placement": ["suffix"],
+      "confounding_note": "Letter resembles company designator"
+    },
+    {
+      "term": "Bay{N}",
+      "term_type": "clutter_code",
+      "clerk_context": ["transport_ship", "marine_shipboard", "transport_air"],
+      "template": true,
+      "N_range": [1, 6],
+      "frequency": "uncommon",
+      "context": "Troop bay or cargo bay",
+      "placement": ["suffix"],
+      "confounding_note": null
+    },
+    {
+      "term": "Sec-{N}",
+      "term_type": "clutter_code",
+      "clerk_context": ["repldep_intake", "hq_formal", "hq_efficient"],
+      "template": true,
+      "N_range": [1, 4],
+      "frequency": "uncommon",
+      "context": "Processing section number",
+      "placement": ["suffix"],
+      "confounding_note": null
+    },
+    {
+      "term": "Grp{N}",
+      "term_type": "clutter_code",
+      "clerk_context": ["repldep_intake", "transport_ship"],
+      "template": true,
+      "N_range": [1, 20],
+      "frequency": "common",
+      "context": "Processing or boarding group",
+      "placement": ["suffix"],
+      "confounding_note": "Resembles bomb group designator"
+    },
+    {
+      "term": "Ln{N}",
+      "term_type": "clutter_code",
+      "clerk_context": ["repldep_intake", "hq_formal"],
+      "template": true,
+      "N_range": [1, 50],
+      "frequency": "uncommon",
+      "context": "Line number on roster",
+      "placement": ["suffix"],
+      "confounding_note": null
+    },
+    {
+      "term": "Col{N}",
+      "term_type": "clutter_code",
+      "clerk_context": ["repldep_intake", "hq_formal", "hq_efficient"],
+      "template": true,
+      "N_range": [1, 8],
+      "frequency": "rare",
+      "context": "Column number on form",
+      "placement": ["suffix"],
+      "confounding_note": "Resembles 'Colonel' abbreviation"
+    },
+    {
+      "term": "Ward{N}",
+      "term_type": "clutter_code",
+      "clerk_context": ["field_exhausted", "field_medevac"],
+      "template": true,
+      "N_range": [1, 6],
+      "frequency": "common",
+      "context": "Hospital ward number",
+      "placement": ["suffix"],
+      "confounding_note": null
+    },
+    {
+      "term": "Bed{N}",
+      "term_type": "clutter_code",
+      "clerk_context": ["field_exhausted", "field_medevac"],
+      "template": true,
+      "N_range": [1, 40],
+      "frequency": "common",
+      "context": "Hospital bed number",
+      "placement": ["suffix"],
+      "confounding_note": null
+    },
+    {
+      "term": "Adm{N}",
+      "term_type": "clutter_code",
+      "clerk_context": ["field_exhausted", "field_medevac"],
+      "template": true,
+      "N_range": [100, 999],
+      "frequency": "uncommon",
+      "context": "Admission number",
+      "placement": ["suffix"],
+      "confounding_note": null
+    },
+    {
+      "term": "AC{N}",
+      "term_type": "clutter_code",
+      "clerk_context": ["aaf_operations", "aaf_squadron"],
+      "template": true,
+      "N_range": [100, 999],
+      "frequency": "common",
+      "context": "Aircraft serial (last 3 digits)",
+      "placement": ["suffix"],
+      "confounding_note": "Resembles unit code pattern"
+    },
+    {
+      "term": "Pos{N}",
+      "term_type": "clutter_code",
+      "clerk_context": ["aaf_operations", "aaf_squadron"],
+      "template": true,
+      "N_range": [1, 10],
+      "frequency": "common",
+      "context": "Crew position number",
+      "placement": ["suffix"],
+      "confounding_note": null
+    },
+    {
+      "term": "Msn{N}",
+      "term_type": "clutter_code",
+      "clerk_context": ["aaf_operations", "aaf_squadron"],
+      "template": true,
+      "N_range": [1, 300],
+      "frequency": "uncommon",
+      "context": "Mission number",
+      "placement": ["suffix"],
+      "confounding_note": null
+    },
+
+
+    {"_section": "CONFOUNDERS - Deliberately ambiguous terms that resemble unit data"},
+
+    {
+      "term": "A",
+      "term_type": "confounder",
+      "clerk_context": ["transport_ship", "marine_shipboard"],
+      "frequency": "common",
+      "context": "Bare berth or section letter",
+      "placement": ["suffix"],
+      "confounds_with": "company_letter",
+      "confounding_note": "Identical to Company A designator"
+    },
+    {
+      "term": "B",
+      "term_type": "confounder",
+      "clerk_context": ["transport_ship", "marine_shipboard"],
+      "frequency": "common",
+      "context": "Bare berth or section letter",
+      "placement": ["suffix"],
+      "confounds_with": "company_letter",
+      "confounding_note": "Identical to Company B designator"
+    },
+    {
+      "term": "C",
+      "term_type": "confounder",
+      "clerk_context": ["transport_ship", "marine_shipboard"],
+      "frequency": "common",
+      "context": "Bare berth or section letter",
+      "placement": ["suffix"],
+      "confounds_with": "company_letter",
+      "confounding_note": "Identical to Company C designator"
+    },
+    {
+      "term": "D",
+      "term_type": "confounder",
+      "clerk_context": ["transport_ship", "marine_shipboard"],
+      "frequency": "uncommon",
+      "context": "Bare berth or section letter",
+      "placement": ["suffix"],
+      "confounds_with": "company_letter",
+      "confounding_note": "Identical to Company D designator"
+    },
+    {
+      "term": "C-{N}",
+      "term_type": "confounder",
+      "clerk_context": ["transport_ship", "marine_shipboard"],
+      "template": true,
+      "N_range": [1, 8],
+      "frequency": "uncommon",
+      "context": "Compartment code",
+      "placement": ["suffix"],
+      "confounds_with": "unit_slash_notation",
+      "confounding_note": "Resembles company-battalion pattern (C-2)"
+    },
+    {
+      "term": "{N}{L}",
+      "term_type": "confounder",
+      "clerk_context": ["transport_ship", "repldep_intake"],
+      "template": true,
+      "N_range": [1, 12],
+      "L_values": ["A", "B", "C", "D"],
+      "frequency": "uncommon",
+      "context": "Boarding group/section code",
+      "placement": ["suffix"],
+      "confounds_with": "battalion_company_runon",
+      "confounding_note": "Resembles '2A' (2nd Bn, A Co) airborne pattern"
+    },
+    {
+      "term": "SN{NNN}-{L}",
+      "term_type": "confounder",
+      "clerk_context": ["repldep_intake", "hq_formal"],
+      "template": true,
+      "NNN_range": [100, 999],
+      "L_values": ["A", "B", "C", "D", "E"],
+      "frequency": "rare",
+      "context": "Serial number fragment",
+      "placement": ["suffix"],
+      "confounds_with": "unit_code_pattern",
+      "confounding_note": "Pattern resembles unit designation"
+    },
+    {
+      "term": "{NN}-{N}",
+      "term_type": "confounder",
+      "clerk_context": ["repldep_intake", "transport_ship"],
+      "template": true,
+      "NN_range": [10, 99],
+      "N_range": [1, 9],
+      "frequency": "uncommon",
+      "context": "Processing batch code",
+      "placement": ["suffix"],
+      "confounds_with": "regiment_battalion_pattern",
+      "confounding_note": "Resembles 16-2 (16th Regt, 2nd Bn) pattern"
+    },
+    {
+      "term": "#",
+      "term_type": "confounder",
+      "clerk_context": ["battalion_rushed", "field_exhausted"],
+      "frequency": "rare",
+      "context": "Check mark or attention marker",
+      "placement": ["suffix"],
+      "confounds_with": null,
+      "confounding_note": "Typewriter artifact, may cause parsing noise"
+    },
+    {
+      "term": "*",
+      "term_type": "confounder",
+      "clerk_context": ["battalion_rushed", "field_exhausted", "hq_efficient"],
+      "frequency": "uncommon",
+      "context": "Footnote or attention marker",
+      "placement": ["suffix"],
+      "confounds_with": null,
+      "confounding_note": "Common clerk notation"
+    },
+    {
+      "term": "??",
+      "term_type": "confounder",
+      "clerk_context": ["field_exhausted", "field_medevac"],
+      "frequency": "rare",
+      "context": "Uncertain or illegible notation",
+      "placement": ["suffix", "infix"],
+      "confounds_with": null,
+      "confounding_note": "Indicates clerk uncertainty"
+    },
+    {
+      "term": "[unk]",
+      "term_type": "confounder",
+      "clerk_context": ["field_exhausted", "field_medevac"],
+      "frequency": "rare",
+      "context": "Unknown field marker",
+      "placement": ["suffix", "infix"],
+      "confounds_with": null,
+      "confounding_note": "Field left blank or illegible"
+    },
+    {
+      "term": "x",
+      "term_type": "confounder",
+      "clerk_context": ["battalion_rushed", "field_exhausted"],
+      "frequency": "uncommon",
+      "context": "Deletion or check mark",
+      "placement": ["suffix"],
+      "confounds_with": null,
+      "confounding_note": "May indicate crossed-out or verified"
     }
   ]
 }
