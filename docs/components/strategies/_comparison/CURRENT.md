@@ -1,7 +1,7 @@
 # Strategy Comparison
 
-**Status:** Not yet implemented  
-**Last Updated:** YYYY-MM-DD
+**Status:** Not yet implemented
+**Last Updated:** 2026-01-15
 
 ## Purpose
 
@@ -12,9 +12,11 @@ Cross-strategy analysis, tradeoffs, and head-to-head results.
 | Strategy | Status | Unique Characteristic |
 |----------|--------|----------------------|
 | Zero-Shot | Design phase | No pre-learning; pure instruction |
-| Resolver | Design phase | Pre-learned heuristics from validation |
+| Resolver | **Detailed design** | Pre-learned heuristics from validation; 8-phase generation workflow |
 | Few-Shot | Not started | Learning by example |
 | Multi-Pass | Not started | Iterative refinement |
+
+**Note:** Resolver strategy has detailed implementation plan including relative threshold system, tiered generation, and rebuild tracking. See `docs/components/strategies/resolver/CURRENT.md`.
 
 ## Comparison Dimensions
 

@@ -321,6 +321,22 @@ This is exactly what makes the real data hard.
 
 ---
 
+## Current Scale
+
+**Implemented (v3.0.2):**
+- 10,000 records
+- 3,174 unique soldiers
+- Mean 3.2 records per soldier
+
+**Target (deferred):**
+- 250,000 records
+- ~4,000 unique soldiers
+- Mean ~62 records per soldier
+
+**Rationale for deferral:** Validating the full pipeline (component routing → batching → LLM strategies → evaluation) on 10K records before investing in large-scale generation.
+
+---
+
 ## Related Documents
 
 - [synthetic_style_spec_v3.yaml](synthetic_style_spec_v3.yaml) - Full v3 rendering spec

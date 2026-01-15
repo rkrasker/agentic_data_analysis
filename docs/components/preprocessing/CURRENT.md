@@ -157,6 +157,11 @@ Bridges synthetic generator output to regex extraction pipeline.
 - Run `extract_roster_fields()`
 - Save `data/synthetic/canonical.parquet`
 
+**Schema Management:**
+- Produces universal `canonical.parquet` (works for synthetic + production)
+- Synthetic-specific metadata saved separately to `synthetic_metadata.parquet`
+- Both can be joined on (source_id, soldier_id) for analysis
+
 **Usage:**
 ```bash
 python3.11 -m src.preprocessing.preprocessing_adapter [--timing]

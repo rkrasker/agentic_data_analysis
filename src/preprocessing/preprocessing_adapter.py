@@ -139,33 +139,53 @@ def run_extraction(
             num_max_len=3,
         )
 
-    # Drop adapter columns, keep original + extraction results
-    cols_to_drop = ["Name", "Notes"]
-    for col in cols_to_drop:
-        if col in result_df.columns:
-            result_df = result_df.drop(columns=[col])
+    # Define columns to keep in canonical.parquet
+    # Core columns (universal - work for synthetic + production)
+    core_cols = ['source_id', 'soldier_id', 'raw_text']
+
+    # Synthetic-specific columns to exclude from canonical
+    synthetic_cols = ['clerk_id', 'situation_id', 'quality_tier']
+
+    # Adapter columns to drop
+    adapter_cols = ['Name', 'Notes']
+
+    # Extraction columns = everything except core, synthetic, and adapter columns
+    all_cols = set(result_df.columns)
+    exclude_cols = set(core_cols + synthetic_cols + adapter_cols)
+    extraction_cols = sorted(all_cols - exclude_cols)
+
+    # Build canonical dataframe with universal schema
+    canonical_df = result_df[core_cols + extraction_cols].copy()
 
     # Ensure output directory exists
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    # Save result
+    # Save canonical (production-ready)
     print(f"Saving canonical data to {output_path}")
-    result_df.to_parquet(output_path, index=False)
-    print(f"  Saved {len(result_df)} records with {len(result_df.columns)} columns")
+    canonical_df.to_parquet(output_path, index=False)
+    print(f"  Saved {len(canonical_df)} records with {len(canonical_df.columns)} columns")
+
+    # Save synthetic metadata separately (for debugging/analysis)
+    if all(col in result_df.columns for col in synthetic_cols):
+        metadata_path = output_path.parent / 'synthetic_metadata.parquet'
+        metadata_cols = ['source_id', 'soldier_id'] + synthetic_cols
+        metadata_df = result_df[metadata_cols].copy()
+        metadata_df.to_parquet(metadata_path, index=False)
+        print(f"  Saved synthetic metadata to {metadata_path}")
 
     # Summary of extraction results
-    extraction_cols = [
+    summary_cols = [
         "Unit_Terms", "Org_Terms", "Role_Terms",
         "Unit_Term_Digit_Term:Pair", "Unit_Term_Alpha_Term:Pair",
         "Alpha_Digit:Pair", "Digit_Sequences"
     ]
     print("\nExtraction summary:")
-    for col in extraction_cols:
-        if col in result_df.columns:
-            non_empty = result_df[col].apply(lambda x: len(x) > 0 if isinstance(x, list) else False).sum()
-            print(f"  {col}: {non_empty} records with matches ({100*non_empty/len(result_df):.1f}%)")
+    for col in summary_cols:
+        if col in canonical_df.columns:
+            non_empty = canonical_df[col].apply(lambda x: len(x) > 0 if isinstance(x, list) else False).sum()
+            print(f"  {col}: {non_empty} records with matches ({100*non_empty/len(canonical_df):.1f}%)")
 
-    return result_df
+    return canonical_df
 
 
 def main():

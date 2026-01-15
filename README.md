@@ -101,6 +101,9 @@ Example usage in `examples/sandbox_usage.py`.
 - Batching - group records for efficient LLM processing
 - Zero-shot strategy - baseline consolidation approach
 
+**Deferred:**
+- Scale up synthetic data: 10K → 250K records (after pipeline validation)
+
 **Blockers:** None
 
 ## Quick Commands

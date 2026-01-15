@@ -1,7 +1,7 @@
 # Architecture
 
-**Last Updated:** 2026-01-14
-**Version:** 1.1
+**Last Updated:** 2026-01-15
+**Version:** 1.2
 
 <!--
 This is the canonical architecture document.
@@ -64,12 +64,14 @@ Synthetic Generator → raw.parquet → [Regex Preprocessing] → canonical.parq
 
 ## Strategies
 
-| Strategy | Input | Tradeoff |
-|----------|-------|----------|
-| Zero-Shot | Raw + hierarchy | No prep vs cognitive load |
-| Resolver | Raw + hierarchy + heuristics | Requires generation |
-| Few-Shot | Raw + hierarchy + examples | Learning vs tokens |
-| Multi-Pass | Multiple passes | Self-improving vs cost |
+| Strategy | Input | Tradeoff | Status |
+|----------|-------|----------|--------|
+| Zero-Shot | Raw + hierarchy | No prep vs cognitive load | Design |
+| Resolver | Raw + hierarchy + heuristics | Requires generation workflow | **Detailed design** |
+| Few-Shot | Raw + hierarchy + examples | Learning vs tokens | Outline |
+| Multi-Pass | Multiple passes | Self-improving vs cost | Outline |
+
+**Note:** Resolver strategy requires a separate build-time generation workflow that produces resolver artifacts from validation data. This is NOT a parallel routing pipeline — see `docs/components/strategies/resolver/CURRENT.md` for details.
 
 ## Data Structures
 
@@ -88,4 +90,5 @@ See `docs/data-structures/CURRENT.md`
 
 1. **Component Routing** — use extraction signals to route records to components
 2. **Batching** — group records for efficient LLM processing
-3. **Zero-Shot Strategy** — baseline consolidation approach
+3. **Resolver Generation Workflow** — implement 8-phase resolver generation from validation data
+4. **Zero-Shot Strategy** — baseline consolidation approach (for comparison)
