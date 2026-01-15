@@ -19,7 +19,7 @@ Number sequentially. Gaps are fine (after completion/removal).
 2. Reference relevant `docs/components/.../CURRENT.md`
 3. Hand off to Claude Code
 4. On completion, move to `completed/`
-5. Log activity in `.history/code-activity/`
+5. Log activity in `.project_history/code-activity/`
 6. Update relevant CURRENT.md with implementation status
 
 ## Current Instructions
@@ -28,4 +28,17 @@ Number sequentially. Gaps are fine (after completion/removal).
 
 | # | Task | Status | Component |
 |---|------|--------|-----------|
-| | | | |
+| — | *No active instructions* | — | — |
+
+## Recently Completed
+
+| # | Task | Completed | Component |
+|---|------|-----------|-----------|
+| 001 | Synthetic Data Generator (v3) | 2026-01-14 | synthetic_data_generation |
+| — | Preprocessing Adapter | 2026-01-14 | preprocessing |
+
+## Suggested Next Instructions
+
+1. **Component Router** — route records to components based on extraction signals
+2. **Batching** — group records for efficient LLM processing
+3. **Zero-Shot Strategy** — baseline consolidation approach

@@ -22,7 +22,7 @@
 - **Reference:** `docs/components/[path]/CURRENT.md`
 - **Config inputs:** `config/[relevant]/`
 - **Test location:** `tests/[path]/`
-- **Ignore:** `.history/`, other unrelated components
+- **Ignore:** `.project_history/`, other unrelated components
 
 ## Inputs
 
@@ -53,5 +53,5 @@
 
 - Design doc: `docs/components/.../CURRENT.md`
 - Architecture: `docs/architecture/CURRENT.md` (section X)
-- Related extracts: `.history/extracts/daily/...`
+- Related extracts: `.project_history/extracts/daily/...`
 - Related ADRs: `ADR-XXX`

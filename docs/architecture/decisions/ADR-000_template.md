@@ -41,6 +41,6 @@ What did we decide and why?
 
 ## References
 
-- Related extracts: `.history/extracts/...`
+- Related extracts: `.project_history/extracts/...`
 - Related ADRs: `ADR-XXX`
 - Related threads: [source LLM, approximate date]
