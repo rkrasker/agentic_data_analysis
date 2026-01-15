@@ -1,7 +1,7 @@
 # Synthetic Data Generation
 
-**Version:** 3.0.0
-**Last Updated:** 2026-01-13
+**Version:** 3.0.2
+**Last Updated:** 2026-01-14
 
 ---
 
@@ -332,6 +332,13 @@ This is exactly what makes the real data hard.
 ---
 
 ## Changelog
+
+### v3.0.2 (2026-01-14)
+- **Bug fix:** Transferred soldiers now appear with both original and new assignments across sources
+- Modified `renderer.py` to accept optional `assignment` parameter for transfer rendering
+- Modified `pipeline.py` to randomly select original vs new assignment (50/50) for each entry
+- Verified: 47% of transferred soldiers with 3+ entries show both assignments
+- Deferred `corr.parquet` (ID mapping) for future implementation
 
 ### v3.0.1 (2026-01-13)
 - Added soldier transfers specification (25% of soldiers, 4 transfer types)

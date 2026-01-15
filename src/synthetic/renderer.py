@@ -75,13 +75,19 @@ class Renderer:
         self.rng = random.Random(random_seed)
         self.hierarchy = hierarchy_loader
 
-    def render(self, soldier: Soldier, clerk: Clerk) -> str:
+    def render(
+        self,
+        soldier: Soldier,
+        clerk: Clerk,
+        assignment: Optional[Assignment] = None,
+    ) -> str:
         """
         Render a soldier record using the clerk's format.
 
         Args:
             soldier: The soldier truth record
             clerk: The clerk producing the entry
+            assignment: Optional specific assignment to render (for transfers)
 
         Returns:
             Rendered raw text
@@ -89,7 +95,7 @@ class Renderer:
         # Render components
         name = self.render_name(soldier, clerk)
         rank = self.render_rank(soldier, clerk)
-        unit = self.render_unit(soldier, clerk)
+        unit = self.render_unit(soldier, clerk, assignment=assignment)
 
         # Combine based on rank style
         if clerk.rank_format.style == RankStyle.PREFIX:
@@ -172,18 +178,25 @@ class Renderer:
 
         return rendered
 
-    def render_unit(self, soldier: Soldier, clerk: Clerk) -> str:
+    def render_unit(
+        self,
+        soldier: Soldier,
+        clerk: Clerk,
+        assignment: Optional[Assignment] = None,
+    ) -> str:
         """
         Render a soldier's unit using the clerk's format.
 
         Args:
             soldier: The soldier truth record
             clerk: The clerk producing the entry
+            assignment: Optional specific assignment to render (for transfers)
 
         Returns:
             Formatted unit string
         """
-        assignment = soldier.assignment
+        # Use provided assignment or default to soldier's current assignment
+        assignment = assignment if assignment is not None else soldier.assignment
         style = clerk.unit_format.style
 
         # Route to appropriate renderer

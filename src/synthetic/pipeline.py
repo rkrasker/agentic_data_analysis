@@ -225,10 +225,19 @@ class Pipeline:
             self.sources[source.source_id] = source
 
             # Generate entries
+            # Render function that handles transfer assignment selection
+            def render_with_transfer(soldier, clerk):
+                assignment = None  # Use current assignment by default
+                if soldier.has_transfer and soldier.original_assignment:
+                    # 50% chance to use original assignment for transferred soldiers
+                    if self.rng.random() < 0.5:
+                        assignment = soldier.original_assignment
+                return self.renderer.render(soldier, clerk, assignment=assignment)
+
             entries = self.source_generator.generate_entries(
                 source,
                 source_soldiers,
-                render_func=lambda s, c: self.renderer.render(s, c),
+                render_func=render_with_transfer,
             )
 
             for entry in entries:

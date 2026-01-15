@@ -1,6 +1,6 @@
 # Data Structures
 
-**Last Updated:** YYYY-MM-DD
+**Last Updated:** 2026-01-14
 
 ## Overview
 
@@ -70,8 +70,10 @@ Same as canonical.parquet plus:
 
 ## Supporting Files
 
-### corr.parquet
+### corr.parquet *(deferred)*
 **Purpose:** Maps old IDs to current IDs
+
+**Status:** Not currently produced by the synthetic generator. Deferred for future implementation if ID change simulation is needed.
 
 | Field | Type | Description |
 |-------|------|-------------|
@@ -86,9 +88,15 @@ Same as canonical.parquet plus:
 | Field | Type | Description |
 |-------|------|-------------|
 | soldier_id | string | Links to primary_id |
-| original_assignment | object | Previous unit path |
-| new_assignment | object | Current unit path |
-| change_type | string | Level: company/battalion/regiment/division |
+| transfer_type | string | Level: company_level/battalion_level/regiment_level/division_level |
+| original_component_id | string | Previous component |
+| original_regiment | int | Previous regiment |
+| original_battalion | int | Previous battalion |
+| original_company | string | Previous company |
+| new_component_id | string | Current component |
+| new_regiment | int | Current regiment |
+| new_battalion | int | Current battalion |
+| new_company | string | Current company |
 
 **Transfer Type Distribution:**
 | Type | Frequency | Example |
