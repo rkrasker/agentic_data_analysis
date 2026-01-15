@@ -332,6 +332,13 @@ def compile_patterns(
             rf"{LB}(?P<role>{ROLE}){RB}",
             flags,
         ),
+        # 10) Digit Sequences: 2+ digit groups separated by non-alphanumeric chars
+        #     Captures patterns like "1/2/116", "2-116", "116/2", "1st/2nd/3rd"
+        #     Separators: / - : .
+        "digit_sequences": re.compile(
+            rf"(?P<seq>\d{{{num_min_len},{num_max_len}}}(?:st|nd|rd|th)?(?:[/\-:.]\d{{{num_min_len},{num_max_len}}}(?:st|nd|rd|th)?)+)",
+            flags,
+        ),
         # Optional: special numbers (exact length, non-digit bounded)
         "_specials": None,  # will be compiled below if requested
         "_surface_to_canonical": alts["surface_to_canonical"],
@@ -466,6 +473,30 @@ def _mk_upper_single(dfm: pd.DataFrame, colname: str) -> pd.Series:
     return dfm[colname].astype("string").map(lambda s: _to_upper_display(str(s)))
 
 
+def _mk_digit_sequence(dfm: pd.DataFrame) -> pd.Series:
+    """
+    Convert digit sequence matches (e.g., "1/2/116", "2-116") to colon-joined digit lists.
+    Strips ordinal suffixes. Returns "1:2:116" format.
+    """
+    def parse_seq(s: str) -> str:
+        if pd.isna(s) or not s:
+            return ""
+        # Split on separators: / - : .
+        parts = re.split(r"[/\-:.]", str(s))
+        # Strip ordinal suffixes and filter empty
+        digits = []
+        for p in parts:
+            p = p.strip()
+            if p:
+                # Remove ordinal suffix
+                cleaned = re.sub(r"(?i)(?:st|nd|rd|th)$", "", p)
+                if cleaned:
+                    digits.append(cleaned)
+        return ":".join(digits)
+
+    return dfm["seq"].astype("string").map(parse_seq)
+
+
 # --------------------------- Vectorized extraction core (unique text only) ---------------------------
 
 def _extract_unique_texts(
@@ -514,6 +545,10 @@ def _extract_unique_texts(
     specials = _safe_extract(su, pats.get("_specials"), None,
                              enable_timing, timing, errors, "special_numbers", sentinel_factory)
 
+    # 4) Digit sequences (2+ digits separated by / - : .)
+    digit_seqs = _safe_extract(su, pats.get("digit_sequences"), _mk_digit_sequence,
+                               enable_timing, timing, errors, "digit_sequences", sentinel_factory)
+
     # Return all outputs plus timing/errors packaged for caller (we attach timing/errors via closure)
     outputs = {
         "Org_Term_Digit_Term:Pair": org_num,
@@ -526,6 +561,7 @@ def _extract_unique_texts(
         "Unit_Terms": unit_terms,
         "Role_Terms": role_terms,
         "Special_Numbers": specials,  # may be all empty lists if specials disabled
+        "Digit_Sequences": digit_seqs,
         "_timing": timing,
         "_errors": errors,
     }
@@ -641,7 +677,6 @@ def extract_roster_fields(
 
     # 4) Broadcast UNIQUE outputs back to all rows via Index.take (fast, no merge)
     df_out = df.copy()
-    idxer = pd.Index(range(len(su)))  # aligns with Series.take
     for k in [
         "Org_Term_Digit_Term:Pair",
         "Unit_Term_Digit_Term:Pair",
@@ -653,9 +688,12 @@ def extract_roster_fields(
         "Unit_Terms",
         "Role_Terms",
         "Special_Numbers",
+        "Digit_Sequences",
     ]:
         s_uni = outputs[k]
-        df_out[k] = pd.Series(s_uni.values).take(codes)
+        # Use .values to avoid index alignment issues with newer pandas
+        broadcast_values = [s_uni.values[c] for c in codes]
+        df_out[k] = broadcast_values
 
     # 5) Split colon-pair columns into their derived left/right list columns
     #    (still vectorized via explode/split/agg(list) and timed)
