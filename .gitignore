@@ -44,6 +44,8 @@ data/outputs/*
 !data/outputs/.gitkeep
 data/validation/*
 !data/validation/.gitkeep
+data/synthetic/*
+!data/synthetic/.gitkeep
 
 # Jupyter Notebook
 .ipynb_checkpoints

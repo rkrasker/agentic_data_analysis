@@ -6,6 +6,7 @@ pytest-cov>=4.1.0
 # Data processing
 pandas>=2.0.0
 numpy>=1.24.0
+pyarrow>=14.0.0
 
 # Optional: for future LLM integration
 # anthropic>=0.18.0
