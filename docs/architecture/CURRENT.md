@@ -1,16 +1,26 @@
 # Architecture
 
-**Last Updated:** YYYY-MM-DD  
-**Version:** X.Y
+**Last Updated:** 2026-01-14
+**Version:** 1.1
 
-<!-- 
-This is the canonical architecture document. 
+<!--
+This is the canonical architecture document.
 When updating, snapshot previous version to iterations/ first.
 -->
 
 ## Overview
 
 Consolidate fragmented historical military records into coherent soldier unit assignments using LLM-based strategies.
+
+## Current Status
+
+| Component | Status | Notes |
+|-----------|--------|-------|
+| Synthetic Data | ✓ Complete | 10K records, v3 clerk-as-character |
+| Preprocessing | ✓ Partial | Regex + adapter done, routing pending |
+| Batching | Not started | — |
+| Strategies | Not started | — |
+| Evaluation | Not started | — |
 
 ## Core Problem
 
@@ -26,14 +36,21 @@ Not an extraction problem — regex handles extraction. The LLM must:
 ## Pipeline Flow
 
 ```
-Raw Records → [Regex Preprocessing] → canonical.parquet (routing only)
+                         ✓ IMPLEMENTED
+                              ↓
+Synthetic Generator → raw.parquet → [Regex Preprocessing] → canonical.parquet
                                             ↓
-                                    [Component-Based Batching]
+                                    [Component-Based Batching] ← pending
                                             ↓
-                                    [Strategy Execution]
+                                    [Strategy Execution] ← pending
                                             ↓
-                                    [Evaluation vs Validation]
+                                    [Evaluation vs Validation] ← pending
 ```
+
+**Data artifacts:**
+- `data/synthetic/raw.parquet` — 10K generated records
+- `data/synthetic/validation.parquet` — ground truth
+- `data/synthetic/canonical.parquet` — preprocessed with 25 extraction columns
 
 ## Key Decisions
 
@@ -60,13 +77,15 @@ See `docs/data-structures/CURRENT.md`
 
 ## Components
 
+- Synthetic Data: `docs/components/synthetic_data_generation/CURRENT.md`
 - Preprocessing: `docs/components/preprocessing/CURRENT.md`
 - Batching: `docs/components/batching/CURRENT.md`
 - Consolidation: `docs/components/consolidation/CURRENT.md`
 - Evaluation: `docs/components/evaluation/CURRENT.md`
 - Strategies: `docs/components/strategies/*/CURRENT.md`
 
-## Open Questions
+## Next Steps
 
-- [ ] [Open question 1]
-- [ ] [Open question 2]
+1. **Component Routing** — use extraction signals to route records to components
+2. **Batching** — group records for efficient LLM processing
+3. **Zero-Shot Strategy** — baseline consolidation approach

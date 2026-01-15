@@ -79,18 +79,39 @@ Example usage in `examples/sandbox_usage.py`.
 
 ## Current Status
 
-**Focus:** Synthetic data generation - v3 clerk-as-character philosophy
+**Focus:** Preprocessing pipeline - bridging synthetic data to LLM strategies
+
+**Implemented:**
+| Component | Status | Data Artifacts |
+|-----------|--------|----------------|
+| Synthetic Generator | ✓ Complete | `raw.parquet`, `validation.parquet`, `unit_changes.parquet` |
+| Regex Extraction | ✓ Complete | 25 extraction columns |
+| Glossary Generator | ✓ Complete | `synthetic_glossary.json` (56 terms) |
+| Preprocessing Adapter | ✓ Complete | `canonical.parquet` |
 
 **Recent:**
-- v3 style spec created with clerk archetypes and situational vocabulary (2026-01-13)
-- Seed set created with 38 hand-crafted entries (2026-01-13)
-- Vocabulary updated with contextual clutter and confounders (2026-01-13)
-- Hierarchy redesign with designator collisions (2026-01-13)
-- Sandboxing implementation (2026-01-12)
+- Preprocessing adapter bridging synthetic → regex extraction (2026-01-14)
+- Glossary generator from synthetic configs (2026-01-14)
+- Digit_Sequences extraction for slash/dash notation (2026-01-14)
+- Synthetic data generator v3 complete - 10K records (2026-01-14)
+- v3 style spec with clerk archetypes and situational vocabulary (2026-01-13)
 
 **Next:**
-- Build synthetic data generator (see `instructions/active/001_synthetic-data-generator.md`)
-- Implement ClerkFactory, SituationManager, VocabularyInjector
-- Validate within-source consistency and collision coverage
+- Component routing - use extraction signals to route records
+- Batching - group records for efficient LLM processing
+- Zero-shot strategy - baseline consolidation approach
 
 **Blockers:** None
+
+## Quick Commands
+
+```bash
+# Generate synthetic data
+python3.11 -m src.synthetic.pipeline
+
+# Regenerate glossary (after config changes)
+python3.11 -m src.preprocessing.glossary_generator
+
+# Run preprocessing
+python3.11 -m src.preprocessing.preprocessing_adapter --timing
+```

@@ -1,7 +1,7 @@
 # Preprocessing
 
-**Status:** Regex extraction implemented, routing/ID resolution pending
-**Last Updated:** 2026-01-12
+**Status:** Regex extraction + synthetic adapter complete, component routing pending
+**Last Updated:** 2026-01-14
 
 ## Purpose
 
@@ -45,6 +45,7 @@ Extract structured fields from raw military records using pattern matching. Prov
   - **Paired categories:** `Unit_Term_Alpha_Term:Pair`, `Org_Term_Digit_Term:Pair`, etc.
   - **Split derivatives:** `Unit_Term_Alpha_Term:Unit`, `Unit_Term_Alpha_Term:Alpha`, etc.
   - **Standalone:** `Org_Terms`, `Unit_Terms`, `Role_Terms`, `Unchar_Alpha`, `Unchar_Digits`
+  - **Digit sequences:** `Digit_Sequences` - captures slash/dash notation (e.g., "2/116", "1-2-116")
   - **Optional:** `Special_Numbers` (exact-length extraction, e.g., 4-digit years)
 
 ### Key Design Choices
@@ -94,9 +95,13 @@ Failed extraction categories return sentinel values (`<EXTRACT_FAIL:CATEGORY>`) 
 ```
 src/preprocessing/
 ├── regex_preprocessing.py    # Core extraction engine (implemented)
-├── regex_extractor.py        # High-level wrapper (pending)
+├── glossary_generator.py     # Generate glossary from synthetic configs (implemented)
+├── preprocessing_adapter.py  # Bridge synthetic output to regex extraction (implemented)
 ├── component_router.py       # Route records based on signals (pending)
 └── id_resolver.py            # Corr table application (pending)
+
+config/glossaries/
+└── synthetic_glossary.json   # Auto-generated glossary (56 terms)
 ```
 
 ### regex_preprocessing.py
@@ -118,6 +123,54 @@ Fully vectorized, pandas-only extraction engine.
 - All tokens normalized to ALL CAPS
 - List-valued columns (multiple matches per record)
 - Optional timing/error diagnostics
+
+### glossary_generator.py
+
+Build-time script that generates glossary from synthetic config files.
+
+**Source files:**
+- `docs/components/synthetic_data_generation/synthetic_style_spec_v3.yaml` → ranks, unit labels
+- `config/hierarchies/hierarchy_reference.json` → service branches
+- `config/synthetic/synthetic_vocabulary.json` → admin codes
+
+**Term types extracted:**
+| Type | Count | Examples |
+|------|-------|----------|
+| Organization Term | 22 | Infantry Division/ID, Airborne/AB, USMC, AAF |
+| Unit Term | 20 | Company/Co, Battalion/Bn, phonetic names (Easy, Fox) |
+| Role Term | 14 | All rank variants (Sgt, SGT, S/Sgt, etc.) |
+
+**Usage:**
+```bash
+python3.11 -m src.preprocessing.glossary_generator
+# Output: config/glossaries/synthetic_glossary.json
+```
+
+### preprocessing_adapter.py
+
+Bridges synthetic generator output to regex extraction pipeline.
+
+**Responsibilities:**
+- Load `data/synthetic/raw.parquet` (synthetic output)
+- Adapt schema: `raw_text` → `Name` column
+- Load generated glossary
+- Run `extract_roster_fields()`
+- Save `data/synthetic/canonical.parquet`
+
+**Usage:**
+```bash
+python3.11 -m src.preprocessing.preprocessing_adapter [--timing]
+```
+
+**Extraction results (10K records):**
+| Category | Match Rate |
+|----------|-----------|
+| Role_Terms | 96.6% |
+| Unit_Terms | 48.8% |
+| Org_Terms | 47.8% |
+| Digit_Sequences | 25.8% |
+| Unit+Digit pairs | 45.4% |
+| Alpha+Digit pairs | 48.4% |
 
 ### Integration Points
 
@@ -148,18 +201,29 @@ Fully vectorized, pandas-only extraction engine.
 Extract patterns from raw text into structured columns.
 - **Implementation:** `src/preprocessing/regex_preprocessing.py`
 - **Status:** Complete, production-ready
+- **Features:** 10 extraction categories including Digit_Sequences for slash/dash notation
+
+### Glossary Generator ✓ Implemented
+Generate glossary from synthetic config files at build time.
+- **Implementation:** `src/preprocessing/glossary_generator.py`
+- **Output:** `config/glossaries/synthetic_glossary.json`
+- **Status:** Complete - 56 terms extracted from 3 source files
+
+### Preprocessing Adapter ✓ Implemented
+Bridge synthetic generator output to regex extraction pipeline.
+- **Implementation:** `src/preprocessing/preprocessing_adapter.py`
+- **Status:** Complete - produces `canonical.parquet` from `raw.parquet`
 
 ### Component Routing (Pending)
-High-level wrapper: load glossary, extract, route to components.
+Route records to components based on extraction signals.
 - **Implementation:** `src/preprocessing/component_router.py`
 - **Status:** Not started
-- **Design:** Use extracted `Unit_Terms`, `Org_Terms` to infer likely component (Army, Navy, Air Force, etc.)
+- **Design:** Use extracted `Unit_Terms`, `Org_Terms`, `Digit_Sequences` to infer likely component
 
-### ID Resolution (Pending)
+### ID Resolution (Deferred)
 Apply corr table to resolve old soldier IDs to current canonical IDs.
 - **Implementation:** `src/preprocessing/id_resolver.py`
-- **Status:** Not started
-- **Design:** Join on old ID, replace with new ID, log unmatched
+- **Status:** Deferred - `corr.parquet` not yet needed for synthetic data
 
 ## Key Design Questions
 
@@ -181,8 +245,25 @@ Apply corr table to resolve old soldier IDs to current canonical IDs.
 | Subcomponent | Status | Location |
 |--------------|--------|----------|
 | Regex Extraction | ✓ Complete | `src/preprocessing/regex_preprocessing.py` |
-| Component Routing | Not started | `src/preprocessing/component_router.py` |
-| ID Resolution | Not started | `src/preprocessing/id_resolver.py` |
+| Glossary Generator | ✓ Complete | `src/preprocessing/glossary_generator.py` |
+| Preprocessing Adapter | ✓ Complete | `src/preprocessing/preprocessing_adapter.py` |
+| Component Routing | Pending | `src/preprocessing/component_router.py` |
+| ID Resolution | Deferred | `src/preprocessing/id_resolver.py` |
+
+## Changelog
+
+### v1.1.0 (2026-01-14)
+- Added `glossary_generator.py` - auto-generates glossary from synthetic configs
+- Added `preprocessing_adapter.py` - bridges synthetic output to regex extraction
+- Added `Digit_Sequences` extraction for slash/dash notation (e.g., "2/116", "1-2-116")
+- Generated `config/glossaries/synthetic_glossary.json` (56 terms)
+- Produced `data/synthetic/canonical.parquet` from synthetic raw data
+- Fixed pandas 2.x compatibility issue in broadcast loop
+
+### v1.0.0 (2026-01-12)
+- Initial `regex_preprocessing.py` implementation
+- Factorize-extract-broadcast optimization
+- Unicode-safe boundaries, paired category extraction
 
 ## Future Enhancements
 
@@ -193,5 +274,7 @@ Apply corr table to resolve old soldier IDs to current canonical IDs.
 ## References
 
 - **Architecture:** `docs/architecture/CURRENT.md`
+- **Synthetic data:** `docs/components/synthetic_data_generation/CURRENT.md`
 - **Implementation:** `src/preprocessing/regex_preprocessing.py` (docstring for API details)
+- **Glossary:** `config/glossaries/synthetic_glossary.json`
 - **Example usage:** See inline comments at end of `regex_preprocessing.py`
