@@ -13,11 +13,13 @@ Measure strategy performance against ground truth validation data. Enable object
 - Confidence calibration analysis
 - Strategy comparison
 - Error categorization
+ - Leakage enforcement per ADR-001
 
 ## Dependencies
 
 - **Upstream:** Strategy execution (consolidated results)
 - **Reference:** Validation data (ground truth)
+ - **Policy:** `docs/architecture/decisions/ADR-001_validation-leakage-policy.md`
 
 ## Metrics
 
@@ -31,6 +33,14 @@ Measure strategy performance against ground truth validation data. Enable object
 - **Transfer detection accuracy:** Correctly identifies unit changes
 - **Confidence calibration:** High confidence = actually correct?
 - **Token efficiency:** Cost per soldier
+
+## Data Splits and Leakage Policy
+
+Evaluation must comply with ADR-001:
+- Train/test splits are soldier-level and disjoint by `soldier_id`.
+- No `source_id` overlap between splits.
+- Evaluation fails if leakage checks do not pass.
+- Optional holdout split reserved for generalization tests.
 
 ## Key Design Questions (Open)
 

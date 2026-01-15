@@ -102,11 +102,14 @@ When a **sparse component** builds its own resolver:
 2. **Target ratio:** 75% train / 25% test
 3. **Minimum test set:** Configurable, e.g., 10 soldiers per component
 4. **Per-stratum minimum:** At least 1 test soldier per regiment (if regiment has ≥4 total)
+5. **Leakage policy:** Must comply with ADR-001 (soldier-level disjoint splits, no source overlap)
 
 ### Handling Sparse Components
 
 - Components below threshold: No split — all data available for limited resolver or few-shot examples
 - Marginal strata: Flag in registry as `evaluation_unreliable`
+
+**Reference policy:** `docs/architecture/decisions/ADR-001_validation-leakage-policy.md`
 
 ---
 
