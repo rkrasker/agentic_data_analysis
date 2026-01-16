@@ -74,9 +74,11 @@ Synthetic Generator → raw.parquet → [Regex Preprocessing] → canonical.parq
 
 1. Raw text is primary LLM input (ADR-XXX)
 2. Component-based batching for efficiency (ADR-XXX)
-3. Strategy plugin architecture (ADR-XXX)
-4. Proportional confidence tiers (ADR-XXX)
-5. Conservative exclusions — presence only (ADR-XXX)
+3. LLM batching statefulness for resolver generation (ADR-002)
+4. Row similarity reduction vs signal loss (ADR-003)
+5. Strategy plugin architecture (ADR-XXX)
+6. Proportional confidence tiers (ADR-XXX)
+7. Conservative exclusions — presence only (ADR-XXX)
 
 ## Strategies
 
