@@ -79,7 +79,7 @@ Example usage in `examples/sandbox_usage.py`.
 
 ## Current Status
 
-**Focus:** Preprocessing pipeline - bridging synthetic data to LLM strategies
+**Focus:** Resolver generation workflow - building strategy components
 
 **Implemented:**
 | Component | Status | Data Artifacts |
@@ -88,18 +88,24 @@ Example usage in `examples/sandbox_usage.py`.
 | Regex Extraction | ✓ Complete | 25 extraction columns |
 | Glossary Generator | ✓ Complete | `synthetic_glossary.json` (56 terms) |
 | Preprocessing Adapter | ✓ Complete | `canonical.parquet` |
+| **Harness Foundation** | ✓ Complete | Strategy-agnostic framework |
+| ↳ LLM Infrastructure | ✓ Complete | Multi-provider (Gemini ready) |
+| ↳ Base Strategy Interface | ✓ Complete | Plugin architecture |
+| ↳ Train/Test Splitter | ✓ Complete | Stratified splitting |
+| ↳ Batching Manager | ✓ Complete | Component-based grouping |
+| ↳ Evaluation Framework | ✓ Complete | Metrics + cost tracking |
 
 **Recent:**
+- Harness foundation complete - strategy-agnostic framework (2026-01-15)
+- Resolver generation workflow fully specified (2026-01-15)
+- Multi-provider LLM infrastructure via LangChain (2026-01-15)
 - Preprocessing adapter bridging synthetic → regex extraction (2026-01-14)
 - Glossary generator from synthetic configs (2026-01-14)
-- Digit_Sequences extraction for slash/dash notation (2026-01-14)
-- Synthetic data generator v3 complete - 10K records (2026-01-14)
-- v3 style spec with clerk archetypes and situational vocabulary (2026-01-13)
 
 **Next:**
-- Component routing - use extraction signals to route records
-- Batching - group records for efficient LLM processing
+- Resolver generation workflow - implement 7 modules
 - Zero-shot strategy - baseline consolidation approach
+- Resolver executor - apply resolvers at consolidation time
 
 **Deferred:**
 - Scale up synthetic data: 10K → 250K records (after pipeline validation)
@@ -117,4 +123,14 @@ python3.11 -m src.preprocessing.glossary_generator
 
 # Run preprocessing
 python3.11 -m src.preprocessing.preprocessing_adapter --timing
+
+# Run harness demo
+python examples/harness_demo.py
 ```
+
+## Cost Estimates
+
+| Operation | Model | Estimated Cost |
+|-----------|-------|----------------|
+| Resolver generation (one-time) | Gemini 2.0 Flash | $5-15 |
+| Evaluation run | Gemini 2.0 Flash | $0.50-2.00 |

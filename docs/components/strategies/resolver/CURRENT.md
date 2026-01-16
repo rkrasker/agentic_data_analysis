@@ -1,6 +1,6 @@
 # Resolver Strategy
 
-**Status:** Design phase
+**Status:** Harness complete, resolver generation pending
 **Last Updated:** 2026-01-15
 
 ## Purpose
@@ -383,15 +383,233 @@ See `docs/data-structures/CURRENT.md` for full schema.
 
 ## Implementation Status
 
+**Harness Foundation (Strategy-Agnostic):**
 | Component | Status | Location |
 |-----------|--------|----------|
-| Threshold Calculator | Not started | `src/strategies/resolver/generator/thresholds.py` |
-| Train/Test Splitter | Not started | `src/strategies/resolver/generator/split.py` |
-| Phase 1-2 (Structure) | Not started | `src/strategies/resolver/generator/structure.py` |
-| Phase 3 (Sampling) | Not started | `src/strategies/resolver/generator/sampling.py` |
-| Phase 4-8 (LLM Phases) | Not started | `src/strategies/resolver/generator/llm_phases.py` |
-| Registry Manager | Not started | `src/strategies/resolver/generator/registry.py` |
-| Resolver Executor | Not started | `src/strategies/resolver/executor/` |
+| Base Strategy Interface | ✓ Complete | `src/strategies/base_strategy.py` |
+| Train/Test Splitter | ✓ Complete | `src/evaluation/split.py` |
+| Batching Manager | ✓ Complete | `src/batching/batch_manager.py` |
+| Evaluation Framework | ✓ Complete | `src/evaluation/metrics.py` |
+| LLM Infrastructure | ✓ Complete | `src/utils/llm/` (Gemini ready, Claude/OpenAI stubs) |
+| Demo/Examples | ✓ Complete | `examples/harness_demo.py` |
+
+**Resolver-Specific Components:**
+| Component | Status | Location |
+|-----------|--------|----------|
+| Threshold Calculator | Pending | `src/strategies/resolver/generator/thresholds.py` |
+| Phase 1-2 (Structure) | Pending | `src/strategies/resolver/generator/structure.py` |
+| Phase 3 (Sampling) | Pending | `src/strategies/resolver/generator/sampling.py` |
+| Phase 4-8 (LLM Phases) | Pending | `src/strategies/resolver/generator/llm_phases.py` |
+| Registry Manager | Pending | `src/strategies/resolver/generator/registry.py` |
+| Resolver Executor | Pending | `src/strategies/resolver/executor/` |
+| Resolver Strategy Class | Pending | `src/strategies/resolver/strategy.py` |
+
+---
+
+## Implementation Specification (7 Modules)
+
+The resolver generation workflow is implemented as 7 modules that can be built and tested independently.
+
+**Prerequisites (already built):**
+- ✓ Train/Test Splitter (`src/evaluation/split.py`)
+- ✓ LLM Infrastructure (`src/utils/llm/`)
+- ✓ Cost Tracker (`src/utils/cost_tracker.py`)
+
+### Module 1: Threshold Calculator
+
+**File:** `src/strategies/resolver/generator/thresholds.py`
+
+Computes relative threshold tiers from validation data distribution.
+
+```python
+@dataclass
+class ThresholdResult:
+    thresholds: Dict[str, float]  # p25, median, p75
+    component_tiers: Dict[str, str]  # component_id -> tier
+    component_counts: Dict[str, int]  # component_id -> count
+
+def compute_thresholds(validation_df: pd.DataFrame) -> ThresholdResult:
+    """
+    Compute tier thresholds from validation distribution.
+    Groups by component, computes p25/median/p75, assigns tiers.
+    """
+```
+
+### Module 2: Structure Extractor
+
+**File:** `src/strategies/resolver/generator/structure.py`
+
+Extracts valid designators from hierarchy and detects collisions (Phases 1-2).
+
+```python
+@dataclass
+class ComponentStructure:
+    component_id: str
+    valid_regiments: List[int]
+    valid_battalions: List[Union[int, str]]
+    valid_companies: List[str]
+    battalion_type: str  # "numeric" or "alphabetic"
+
+@dataclass
+class StructureResult:
+    structures: Dict[str, ComponentStructure]
+    collisions: Dict[Tuple, Set[str]]  # (level, value) -> {component_ids}
+
+def extract_structure(hierarchy_path: Path) -> StructureResult:
+    """Extract valid designators and collision map from hierarchy."""
+```
+
+### Module 3: Collision Sampler
+
+**File:** `src/strategies/resolver/generator/sampling.py`
+
+Creates head-to-head soldier samples for collision pairs (Phase 3).
+
+```python
+@dataclass
+class CollisionSample:
+    component_a: str
+    component_b: str
+    soldiers_a: List[str]
+    soldiers_b: List[str]
+    records_a: pd.DataFrame
+    records_b: pd.DataFrame
+    undersampled_a: bool
+    undersampled_b: bool
+
+def sample_collisions(
+    train_df: pd.DataFrame,
+    raw_df: pd.DataFrame,
+    collisions: Dict[Tuple, Set[str]],
+    thresholds: ThresholdResult,
+    samples_per_side: int = 20,
+) -> Dict[Tuple[str, str], CollisionSample]:
+    """Sample soldiers for collision analysis."""
+```
+
+### Module 4: LLM Phases Orchestrator
+
+**File:** `src/strategies/resolver/generator/llm_phases.py`
+
+Orchestrates LLM-based discovery phases (Phases 4-8). This is the largest module.
+
+**Phase 4 - Pattern Discovery:**
+```python
+def discover_patterns(component_id, collision_samples, llm, tier) -> PatternResult:
+    """Discover text patterns that identify the component. Skip if sparse."""
+```
+
+**Phase 5 - Exclusion Mining:**
+```python
+def mine_exclusions(component_id, structure, all_structures, collision_samples, llm, tier) -> ExclusionResult:
+    """Mine exclusion rules. Structural always generated; value-based skipped for sparse/under_represented."""
+```
+
+**Phase 6 - Vocabulary Discovery:**
+```python
+def discover_vocabulary(component_id, train_df, raw_df, llm, tier) -> VocabularyResult:
+    """Discover characteristic vocabulary. Skip for sparse/under_represented."""
+```
+
+**Phase 7 - Differentiator Generation:**
+```python
+def generate_differentiators(component_id, rivals, collision_samples, patterns, exclusions, vocabulary, llm, tier, rival_tiers) -> Dict[str, DifferentiatorResult]:
+    """Generate rival-specific disambiguation rules."""
+```
+
+**Phase 8 - Tier Assignment:**
+```python
+def assign_pattern_tiers(patterns, train_df, raw_df) -> Dict[str, Dict]:
+    """Assign confidence tiers to patterns based on validation accuracy."""
+```
+
+### Module 5: Registry Manager
+
+**File:** `src/strategies/resolver/generator/registry.py`
+
+Tracks resolver generation status and rebuild triggers.
+
+```python
+@dataclass
+class RegistryEntry:
+    component_id: str
+    tier: str
+    sample_size: int
+    pct_of_median: float
+    generated_utc: str
+    generation_mode: str  # "full", "limited", "hierarchy_only"
+    # Section status fields...
+    rebuild_when_tier: Optional[str] = None
+    rebuild_when_sample_size: Optional[int] = None
+
+class RegistryManager:
+    def should_rebuild(self, component_id, current_tier, current_sample) -> bool:
+        """Check if resolver should be regenerated."""
+```
+
+### Module 6: Resolver Assembler
+
+**File:** `src/strategies/resolver/generator/assembler.py`
+
+Assembles all phase outputs into final resolver JSON.
+
+```python
+def assemble_resolver(
+    component_id, tier, sample_size, pct_of_median,
+    structure, patterns, exclusions, vocabulary, differentiators,
+) -> Dict:
+    """Assemble resolver JSON from all phase outputs."""
+```
+
+### Module 7: Main Orchestrator
+
+**File:** `src/strategies/resolver/generator/generate.py`
+
+Main entry point that orchestrates all modules.
+
+```python
+def generate_all_resolvers(
+    validation_path: Path,
+    raw_path: Path,
+    hierarchy_path: Path,
+    output_dir: Path,
+    split_path: Optional[Path] = None,
+    model_name: str = "gemini-2.0-flash",
+) -> GenerationSummary:
+    """
+    Generate resolvers for all components.
+
+    Steps:
+    1. Load data and create/load split
+    2. Compute thresholds (Module 1)
+    3. Extract structure and collisions (Module 2)
+    4. Sample collisions (Module 3)
+    5. For each component: run LLM phases, assemble, save, update registry
+    6. Return summary with cost tracking
+    """
+```
+
+### Recommended Build Order
+
+**Phase 1 - Non-LLM Foundation (no LLM dependency):**
+1. Module 1: Threshold Calculator
+2. Module 2: Structure Extractor
+3. Module 3: Collision Sampler
+4. Module 5: Registry Manager
+
+**Phase 2 - Prompt Engineering:**
+- Create `prompts.py` with templates for pattern/exclusion/vocabulary/differentiator discovery
+- Test prompts manually with LLM infrastructure
+
+**Phase 3 - LLM Phases:**
+- Module 4: LLM Phases Orchestrator (largest module)
+
+**Phase 4 - Assembly:**
+- Module 6: Resolver Assembler
+- Module 7: Main Orchestrator
+
+**Phase 5 - Executor:**
+- Implement `ResolverStrategy(BaseStrategy)` to apply resolvers at consolidation time
 
 ---
 

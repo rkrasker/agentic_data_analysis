@@ -73,6 +73,22 @@ Raw Records → [Regex Preprocessing] → canonical.parquet (routing only)
 
 ---
 
+## Session Recovery
+
+If resuming after a session timeout:
+
+1. **Check current status:** `README.md` → Current Status section
+2. **Review component docs:** `docs/components/[name]/CURRENT.md`
+3. **Check implementation status:** Look at `src/` structure and existing code
+4. **Run demo to verify:** `python examples/harness_demo.py`
+
+**Key entry points:**
+- Harness foundation: `docs/components/harness/CURRENT.md`
+- Resolver strategy: `docs/components/strategies/resolver/CURRENT.md`
+- Architecture: `docs/architecture/CURRENT.md`
+
+---
+
 ## Session Prompt
 
 What aspect are you working on today? State:
