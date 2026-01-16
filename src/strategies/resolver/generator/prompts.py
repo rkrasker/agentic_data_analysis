@@ -6,9 +6,34 @@ Contains prompts for:
 - Phase 5: Exclusion Mining
 - Phase 6: Vocabulary Discovery
 - Phase 7: Differentiator Generation
+
+Updated for dual-run workflow (ADR-002):
+- All extraction prompts now include hard case flagging
+- Hard cases are soldiers that are ambiguous or difficult to classify
 """
 
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
+
+
+# =============================================================================
+# HARD CASE FLAGGING INSTRUCTIONS (shared across phases)
+# =============================================================================
+
+HARD_CASE_INSTRUCTIONS = """
+HARD CASE FLAGGING:
+As you analyze the records, identify soldiers whose records are particularly difficult to classify.
+Flag a soldier as a "hard case" if:
+- Multiple component indicators are present (conflicting signals)
+- Key identifiers are missing or ambiguous
+- Unusual notation that doesn't match known patterns
+- Assignment is uncertain despite having records
+- Transfer indicators are present
+
+Include hard cases in your response:
+"hard_cases": [
+  {"soldier_id": "S123", "reason": "conflicting_signals|ambiguous_notation|missing_identifiers|transfer_detected", "notes": "brief explanation"}
+]
+"""
 
 # =============================================================================
 # PHASE 4: PATTERN DISCOVERY
@@ -33,6 +58,8 @@ def build_pattern_discovery_prompt(
     target_texts: List[str],
     rival_texts: List[str],
     collision_levels: List[tuple],
+    prior_context: Optional[str] = None,
+    soldier_ids: Optional[List[str]] = None,
 ) -> str:
     """
     Build prompt for pattern discovery phase.
@@ -45,6 +72,8 @@ def build_pattern_discovery_prompt(
         target_texts: Raw text records from target component
         rival_texts: Raw text records from rival component
         collision_levels: List of (level, value) collision points
+        prior_context: Optional context from previous batches (for stateful extraction)
+        soldier_ids: Optional list of soldier IDs corresponding to target_texts
 
     Returns:
         Formatted prompt string
@@ -53,15 +82,30 @@ def build_pattern_discovery_prompt(
         f"{level} {value}" for level, value in collision_levels
     )
 
-    target_sample = "\n".join(f"- {t}" for t in target_texts[:15])
+    # Format target texts with soldier IDs if available
+    if soldier_ids and len(soldier_ids) == len(target_texts):
+        target_sample = "\n".join(f"- [{sid}] {t}" for sid, t in zip(soldier_ids, target_texts[:15]))
+    else:
+        target_sample = "\n".join(f"- {t}" for t in target_texts[:15])
+
     rival_sample = "\n".join(f"- {t}" for t in rival_texts[:15])
+
+    # Add prior context if provided (stateful extraction)
+    prior_section = ""
+    if prior_context:
+        prior_section = f"""
+CONTEXT FROM PREVIOUS BATCHES:
+{prior_context}
+
+Build upon these findings, but also look for NEW patterns.
+"""
 
     return f"""Analyze these military records to find text patterns that distinguish {component_name} from {rival_name}.
 
 COLLISION CONTEXT:
 These units share the following designators: {collision_desc}
 This means records mentioning these designators could belong to either unit.
-
+{prior_section}
 RECORDS FROM {component_name.upper()} ({component_id}):
 {target_sample}
 
@@ -76,7 +120,7 @@ For each pattern, provide:
 2. What it means (unit assignment interpretation)
 3. Confidence level (robust/strong/moderate/tentative)
 4. Any caveats or conditions
-
+{HARD_CASE_INSTRUCTIONS}
 Respond in JSON format:
 {{
   "patterns": [
@@ -86,6 +130,9 @@ Respond in JSON format:
       "tier": "robust|strong|moderate|tentative",
       "note": "optional caveat"
     }}
+  ],
+  "hard_cases": [
+    {{"soldier_id": "S123", "reason": "conflicting_signals", "notes": "brief explanation"}}
   ],
   "observations": "brief summary of key distinguishing features"
 }}"""
@@ -198,6 +245,8 @@ def build_vocabulary_discovery_prompt(
     component_id: str,
     aliases: List[str],
     texts: List[str],
+    prior_context: Optional[str] = None,
+    soldier_ids: Optional[List[str]] = None,
 ) -> str:
     """
     Build prompt for vocabulary discovery.
@@ -207,18 +256,35 @@ def build_vocabulary_discovery_prompt(
         component_id: Component ID
         aliases: Known aliases from hierarchy
         texts: Sample raw text records
+        prior_context: Optional context from previous batches (for stateful extraction)
+        soldier_ids: Optional list of soldier IDs corresponding to texts
 
     Returns:
         Formatted prompt string
     """
     alias_section = ", ".join(aliases) if aliases else "None known"
-    text_sample = "\n".join(f"- {t}" for t in texts[:25])
+
+    # Format texts with soldier IDs if available
+    if soldier_ids and len(soldier_ids) == len(texts):
+        text_sample = "\n".join(f"- [{sid}] {t}" for sid, t in zip(soldier_ids, texts[:25]))
+    else:
+        text_sample = "\n".join(f"- {t}" for t in texts[:25])
+
+    # Add prior context if provided (stateful extraction)
+    prior_section = ""
+    if prior_context:
+        prior_section = f"""
+CONTEXT FROM PREVIOUS BATCHES:
+{prior_context}
+
+Build upon these findings, but also look for NEW vocabulary.
+"""
 
     return f"""Analyze records to discover vocabulary characteristic of {component_name}.
 
 KNOWN ALIASES:
 {alias_section}
-
+{prior_section}
 SAMPLE RECORDS FROM {component_name.upper()}:
 {text_sample}
 
@@ -228,7 +294,7 @@ Identify vocabulary terms that are characteristic of this unit. Categorize by st
 - **Strong**: Terms that almost always indicate this unit
 - **Moderate**: Terms that suggest this unit but may appear in other contexts
 - **Weak**: Terms that are somewhat associated but require other evidence
-
+{HARD_CASE_INSTRUCTIONS}
 Respond in JSON format:
 {{
   "vocabulary": {{
@@ -237,6 +303,9 @@ Respond in JSON format:
     "weak": ["term5", "term6"]
   }},
   "discovered_aliases": ["any new nicknames or abbreviations found"],
+  "hard_cases": [
+    {{"soldier_id": "S123", "reason": "conflicting_signals", "notes": "brief explanation"}}
+  ],
   "observations": "notes on vocabulary patterns"
 }}"""
 
@@ -398,6 +467,22 @@ Respond in JSON format:
 # OUTPUT SCHEMAS (for structured output)
 # =============================================================================
 
+HARD_CASE_SCHEMA = {
+    "type": "array",
+    "items": {
+        "type": "object",
+        "properties": {
+            "soldier_id": {"type": "string"},
+            "reason": {
+                "type": "string",
+                "enum": ["conflicting_signals", "ambiguous_notation", "missing_identifiers", "transfer_detected", "low_confidence"]
+            },
+            "notes": {"type": "string"}
+        },
+        "required": ["soldier_id", "reason"]
+    }
+}
+
 PATTERN_DISCOVERY_SCHEMA = {
     "type": "object",
     "properties": {
@@ -414,6 +499,7 @@ PATTERN_DISCOVERY_SCHEMA = {
                 "required": ["pattern", "means", "tier"]
             }
         },
+        "hard_cases": HARD_CASE_SCHEMA,
         "observations": {"type": "string"}
     },
     "required": ["patterns"]
@@ -451,6 +537,7 @@ VOCABULARY_DISCOVERY_SCHEMA = {
             }
         },
         "discovered_aliases": {"type": "array", "items": {"type": "string"}},
+        "hard_cases": HARD_CASE_SCHEMA,
         "observations": {"type": "string"}
     },
     "required": ["vocabulary"]

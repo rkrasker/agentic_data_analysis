@@ -3,17 +3,20 @@ Module 7: Main Orchestrator
 
 Main entry point for resolver generation workflow.
 Coordinates all modules to generate resolvers for all components.
+
+Updated for ADR-002: Dual-run stateful extraction with hard case reconciliation.
 """
 
 import logging
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Optional, Any, Literal
 
 import pandas as pd
 
-from src.utils.llm import create_provider, BaseLLMProvider
+from src.utils.llm import create_provider, BaseLLMProvider, TokenBatcher, TokenBatchConfig, TokenBatch, Message
+from src.utils.llm.structured import extract_json_from_text
 from src.evaluation.split import StratifiedSplitter, SplitConfig, TrainTestSplit
 
 from .thresholds import compute_thresholds, ThresholdResult, TierName
@@ -28,9 +31,39 @@ from .registry import (
 )
 from .llm_phases import run_all_phases, PhaseResults
 from .assembler import assemble_resolver, save_resolver
+from .dual_run import (
+    DualRunOrchestrator,
+    DualRunResult,
+    BatchExtractionResult,
+    HardCase,
+    StatefulAccumulator,
+    run_dual_extraction,
+)
+from .reconciliation import (
+    Reconciler,
+    ReconciliationResult,
+    reconcile_patterns,
+)
+from .prompts import (
+    PATTERN_DISCOVERY_SYSTEM,
+    build_pattern_discovery_prompt,
+)
 
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass
+class GenerationConfig:
+    """Configuration for resolver generation."""
+    use_dual_run: bool = True
+    """Whether to use dual-run extraction (ADR-002). If False, uses single-pass."""
+
+    token_budget: int = 8000
+    """Token budget per LLM batch."""
+
+    checkpoint_dir: Optional[Path] = None
+    """Directory to save checkpoints. If None, no checkpointing."""
 
 
 @dataclass
@@ -57,8 +90,15 @@ class GenerationSummary:
     # Tier breakdown
     by_tier: Dict[str, int] = field(default_factory=dict)
 
+    # Dual-run metrics (ADR-002)
+    dual_run_enabled: bool = True
+    total_hard_cases: int = 0
+    hard_cases_both_runs: int = 0
+    robust_patterns: int = 0
+    order_dependent_patterns: int = 0
+
     def to_dict(self) -> Dict[str, Any]:
-        return {
+        result = {
             "timing": {
                 "started_utc": self.started_utc,
                 "completed_utc": self.completed_utc,
@@ -79,6 +119,16 @@ class GenerationSummary:
             "errors": self.errors,
         }
 
+        if self.dual_run_enabled:
+            result["dual_run"] = {
+                "total_hard_cases": self.total_hard_cases,
+                "hard_cases_both_runs": self.hard_cases_both_runs,
+                "robust_patterns": self.robust_patterns,
+                "order_dependent_patterns": self.order_dependent_patterns,
+            }
+
+        return result
+
 
 def generate_all_resolvers(
     validation_path: Path,
@@ -89,6 +139,7 @@ def generate_all_resolvers(
     model_name: str = "gemini-2.5-pro",
     components_filter: Optional[List[str]] = None,
     rebuild_existing: bool = False,
+    config: Optional[GenerationConfig] = None,
 ) -> GenerationSummary:
     """
     Generate resolvers for all components.
@@ -104,14 +155,20 @@ def generate_all_resolvers(
         model_name: LLM model to use
         components_filter: Optional list of component IDs to process
         rebuild_existing: If True, regenerate all resolvers
+        config: Generation configuration (uses defaults if None)
 
     Returns:
         GenerationSummary with results
     """
+    config = config or GenerationConfig()
     started = datetime.utcnow().isoformat() + "Z"
 
     logger.info("=" * 60)
     logger.info("RESOLVER GENERATION WORKFLOW")
+    if config.use_dual_run:
+        logger.info("Mode: Dual-Run with Hard Case Reconciliation (ADR-002)")
+    else:
+        logger.info("Mode: Single-Pass (legacy)")
     logger.info("=" * 60)
 
     # Initialize summary
@@ -122,6 +179,7 @@ def generate_all_resolvers(
         successful=0,
         failed=0,
         skipped=0,
+        dual_run_enabled=config.use_dual_run,
     )
 
     # Step 1: Load data
@@ -206,6 +264,7 @@ def generate_all_resolvers(
             result = _generate_single_resolver(
                 component_id=component_id,
                 all_samples=all_samples,
+                raw_df=raw_df,
                 structure_result=structure_result,
                 thresholds=thresholds,
                 llm=llm,
@@ -213,12 +272,22 @@ def generate_all_resolvers(
                 registry_manager=registry_manager,
                 output_dir=output_dir,
                 rebuild_existing=rebuild_existing,
+                config=config,
             )
 
-            if result == "success":
+            if result["status"] == "success":
                 summary.successful += 1
                 summary.component_results[component_id] = "success"
-            elif result == "skipped":
+                # Accumulate dual-run metrics
+                if config.use_dual_run and "dual_run" in result:
+                    summary.total_hard_cases += result["dual_run"].get("hard_cases", 0)
+                    summary.hard_cases_both_runs += result["dual_run"].get("hard_cases_both", 0)
+                    summary.robust_patterns += result["dual_run"].get("robust_patterns", 0)
+                    summary.order_dependent_patterns += result["dual_run"].get("order_dependent", 0)
+                # Accumulate tokens
+                summary.total_input_tokens += result.get("input_tokens", 0)
+                summary.total_output_tokens += result.get("output_tokens", 0)
+            elif result["status"] == "skipped":
                 summary.skipped += 1
                 summary.component_results[component_id] = "skipped"
 
@@ -237,8 +306,8 @@ def generate_all_resolvers(
     summary.completed_utc = datetime.utcnow().isoformat() + "Z"
 
     # Estimate cost
-    config = llm.config
-    summary.estimated_cost_usd = config.estimate_cost(
+    model_config = llm.config
+    summary.estimated_cost_usd = model_config.estimate_cost(
         summary.total_input_tokens,
         summary.total_output_tokens,
     )
@@ -253,12 +322,17 @@ def generate_all_resolvers(
     logger.info(f"  Tokens: {summary.total_input_tokens} in, {summary.total_output_tokens} out")
     logger.info(f"  Estimated cost: ${summary.estimated_cost_usd:.4f}")
 
+    if config.use_dual_run:
+        logger.info(f"  Hard cases: {summary.total_hard_cases} total, {summary.hard_cases_both_runs} in both runs")
+        logger.info(f"  Patterns: {summary.robust_patterns} robust, {summary.order_dependent_patterns} order-dependent")
+
     return summary
 
 
 def _generate_single_resolver(
     component_id: str,
     all_samples: Dict[str, ComponentSamples],
+    raw_df: pd.DataFrame,
     structure_result: StructureResult,
     thresholds: ThresholdResult,
     llm: BaseLLMProvider,
@@ -266,12 +340,13 @@ def _generate_single_resolver(
     registry_manager: RegistryManager,
     output_dir: Path,
     rebuild_existing: bool,
-) -> str:
+    config: GenerationConfig,
+) -> Dict[str, Any]:
     """
     Generate resolver for a single component.
 
     Returns:
-        "success", "skipped", or raises exception
+        Dict with "status" ("success" or "skipped"), token counts, and dual-run metrics
     """
     tier = thresholds.get_tier(component_id)
     sample_size = thresholds.get_count(component_id)
@@ -283,29 +358,47 @@ def _generate_single_resolver(
     if not rebuild_existing:
         if not registry_manager.should_rebuild(component_id, tier, sample_size):
             logger.info("  Skipping - no rebuild needed")
-            return "skipped"
+            return {"status": "skipped"}
 
     # Get samples
     component_samples = all_samples.get(component_id)
     if not component_samples:
         logger.warning(f"  No samples for {component_id}")
-        return "skipped"
-
-    # Run LLM phases
-    phase_results = run_all_phases(
-        component_id=component_id,
-        component_samples=component_samples,
-        all_structures=structure_result.structures,
-        all_samples=all_samples,
-        llm=llm,
-        tier=tier,
-        thresholds_result=thresholds,
-    )
+        return {"status": "skipped"}
 
     # Get structure
     structure = structure_result.structures.get(component_id)
     if not structure:
         raise ValueError(f"No structure found for {component_id}")
+
+    result = {"status": "success", "input_tokens": 0, "output_tokens": 0}
+
+    if config.use_dual_run:
+        # Dual-run mode (ADR-002)
+        phase_results, dual_run_metrics = _run_dual_mode(
+            component_id=component_id,
+            component_samples=component_samples,
+            raw_df=raw_df,
+            structure=structure,
+            structure_result=structure_result,
+            all_samples=all_samples,
+            thresholds=thresholds,
+            llm=llm,
+            tier=tier,
+            config=config,
+        )
+        result["dual_run"] = dual_run_metrics
+    else:
+        # Legacy single-pass mode
+        phase_results = run_all_phases(
+            component_id=component_id,
+            component_samples=component_samples,
+            all_structures=structure_result.structures,
+            all_samples=all_samples,
+            llm=llm,
+            tier=tier,
+            thresholds_result=thresholds,
+        )
 
     # Assemble resolver
     resolver = assemble_resolver(
@@ -316,6 +409,11 @@ def _generate_single_resolver(
         structure=structure,
         phase_results=phase_results,
     )
+
+    # Add dual-run metadata to resolver if applicable
+    if config.use_dual_run and "dual_run" in result:
+        resolver["meta"]["validation_mode"] = "dual_run_reconciliation"
+        resolver["meta"]["hard_cases_flagged"] = result["dual_run"].get("hard_cases", 0)
 
     # Save resolver
     resolver_path = save_resolver(resolver, output_dir, component_id)
@@ -338,9 +436,153 @@ def _generate_single_resolver(
         recommendations=recommendations,
     )
 
+    result["input_tokens"] = phase_results.total_input_tokens
+    result["output_tokens"] = phase_results.total_output_tokens
     logger.info(f"  Tokens: {phase_results.total_input_tokens} in, {phase_results.total_output_tokens} out")
 
-    return "success"
+    return result
+
+
+def _run_dual_mode(
+    component_id: str,
+    component_samples: ComponentSamples,
+    raw_df: pd.DataFrame,
+    structure: Any,
+    structure_result: StructureResult,
+    all_samples: Dict[str, ComponentSamples],
+    thresholds: ThresholdResult,
+    llm: BaseLLMProvider,
+    tier: TierName,
+    config: GenerationConfig,
+) -> tuple:
+    """
+    Run dual-run extraction with reconciliation for pattern discovery.
+
+    Returns:
+        Tuple of (PhaseResults, dual_run_metrics dict)
+    """
+    logger.info("  Running dual-run extraction (ADR-002)")
+
+    # For now, run the existing phases but with dual-run for pattern discovery
+    # This is a transitional implementation - full integration would replace all phases
+
+    # Create extraction function for pattern discovery
+    def pattern_extraction_fn(batch: TokenBatch, accumulator: StatefulAccumulator, llm_provider: BaseLLMProvider) -> BatchExtractionResult:
+        """Extract patterns from a batch."""
+        # Get texts and soldier IDs from batch
+        texts = batch.get_all_texts()
+        soldier_ids = batch.get_soldier_ids()
+
+        # Build prompt with prior context
+        prior_context = accumulator.to_context_string() if accumulator.patterns else None
+
+        # For pattern discovery, we need rival texts too
+        # For this simplified version, we'll use the existing phase logic
+        # A full implementation would restructure the collision-based extraction
+
+        prompt = build_pattern_discovery_prompt(
+            component_name=structure.canonical_name,
+            component_id=component_id,
+            rival_name="(comparison)",  # Simplified for batch extraction
+            rival_id="",
+            target_texts=texts,
+            rival_texts=[],  # Would need rival batching too
+            collision_levels=[],
+            prior_context=prior_context,
+            soldier_ids=soldier_ids,
+        )
+
+        messages = [
+            Message(role="system", content=PATTERN_DISCOVERY_SYSTEM),
+            Message(role="human", content=prompt),
+        ]
+
+        response = llm_provider.invoke(messages)
+        result_json = extract_json_from_text(response.content)
+
+        patterns = result_json.get("patterns", []) if result_json else []
+        hard_cases_raw = result_json.get("hard_cases", []) if result_json else []
+
+        hard_cases = [
+            HardCase(
+                soldier_id=hc.get("soldier_id", ""),
+                reason=hc.get("reason", "unknown"),
+                notes=hc.get("notes", ""),
+            )
+            for hc in hard_cases_raw
+        ]
+
+        return BatchExtractionResult(
+            batch_id=batch.batch_id,
+            patterns=patterns,
+            hard_cases=hard_cases,
+            input_tokens=response.input_tokens,
+            output_tokens=response.output_tokens,
+            raw_response=response.content,
+        )
+
+    # Get records for this component
+    if component_samples.all_records is not None and not component_samples.all_records.empty:
+        records_df = component_samples.all_records
+    else:
+        # Fallback: get from raw_df
+        soldier_ids = component_samples.all_soldiers
+        records_df = raw_df[raw_df["soldier_id"].isin(soldier_ids)].copy()
+
+    # Run dual extraction for pattern discovery
+    dual_result = run_dual_extraction(
+        component_id=component_id,
+        records_df=records_df,
+        llm=llm,
+        extraction_fn=pattern_extraction_fn,
+        phase="patterns",
+        token_budget=config.token_budget,
+    )
+
+    # Run reconciliation
+    reconciler = Reconciler(llm)
+    reconciliation = reconciler.reconcile(
+        dual_run_result=dual_result,
+        records_df=records_df,
+        component_name=structure.canonical_name,
+    )
+
+    # Collect metrics
+    dual_run_metrics = {
+        "hard_cases": len(dual_result.all_hard_case_ids),
+        "hard_cases_both": sum(1 for v in dual_result.hard_case_agreement.values() if v == "both"),
+        "robust_patterns": len(reconciliation.robust_patterns),
+        "order_dependent": len(reconciliation.order_dependent_patterns),
+    }
+
+    logger.info(f"  Dual-run: {dual_run_metrics['robust_patterns']} robust patterns, "
+               f"{dual_run_metrics['hard_cases']} hard cases")
+
+    # Now run the remaining phases (exclusions, vocabulary, differentiators)
+    # using the original single-pass approach for now
+    # A full implementation would apply dual-run to these as well
+
+    phase_results = run_all_phases(
+        component_id=component_id,
+        component_samples=component_samples,
+        all_structures=structure_result.structures,
+        all_samples=all_samples,
+        llm=llm,
+        tier=tier,
+        thresholds_result=thresholds,
+    )
+
+    # Merge reconciled patterns into phase results
+    # Replace the single-pass patterns with reconciled patterns
+    if reconciliation.final_patterns:
+        phase_results.patterns.patterns = reconciliation.final_patterns
+        phase_results.patterns.status = "complete"
+
+    # Add dual-run token usage
+    phase_results.patterns.input_tokens += dual_result.total_input_tokens + reconciliation.input_tokens
+    phase_results.patterns.output_tokens += dual_result.total_output_tokens + reconciliation.output_tokens
+
+    return phase_results, dual_run_metrics
 
 
 def generate_single_component(
@@ -447,6 +689,17 @@ def main():
         help="Rebuild all resolvers regardless of registry state",
     )
     parser.add_argument(
+        "--no-dual-run",
+        action="store_true",
+        help="Disable dual-run extraction (use legacy single-pass)",
+    )
+    parser.add_argument(
+        "--token-budget",
+        type=int,
+        default=8000,
+        help="Token budget per LLM batch (default: 8000)",
+    )
+    parser.add_argument(
         "--verbose",
         action="store_true",
         help="Enable verbose logging",
@@ -461,6 +714,12 @@ def main():
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     )
 
+    # Create generation config from CLI args
+    config = GenerationConfig(
+        use_dual_run=not args.no_dual_run,
+        token_budget=args.token_budget,
+    )
+
     # Run generation
     summary = generate_all_resolvers(
         validation_path=args.validation,
@@ -471,6 +730,7 @@ def main():
         model_name=args.model,
         components_filter=args.components,
         rebuild_existing=args.rebuild,
+        config=config,
     )
 
     # Print summary

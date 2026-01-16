@@ -2,8 +2,11 @@
 Base LLM wrapper providing a unified interface across providers.
 
 Designed for LangChain 0.2.x+ compatibility with graceful degradation.
+Includes retry logic with exponential backoff for fault tolerance.
 """
 
+import logging
+import time
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Type, TypeVar, Union
@@ -15,6 +18,30 @@ from .structured import StructuredOutputHandler, parse_to_model, create_json_pro
 
 T = TypeVar("T", bound=BaseModel)
 
+logger = logging.getLogger(__name__)
+
+
+@dataclass
+class RetryConfig:
+    """Configuration for retry behavior."""
+    max_retries: int = 3
+    """Maximum number of retry attempts."""
+
+    initial_delay: float = 1.0
+    """Initial delay in seconds before first retry."""
+
+    max_delay: float = 60.0
+    """Maximum delay between retries."""
+
+    exponential_base: float = 2.0
+    """Base for exponential backoff calculation."""
+
+    retry_on_timeout: bool = True
+    """Whether to retry on timeout errors."""
+
+    retry_on_rate_limit: bool = True
+    """Whether to retry on rate limit errors."""
+
 
 @dataclass
 class LLMResponse:
@@ -25,6 +52,7 @@ class LLMResponse:
     model: str
     raw_response: Any = None
     finish_reason: Optional[str] = None
+    retry_count: int = 0
 
     @property
     def total_tokens(self) -> int:
@@ -58,6 +86,8 @@ class BaseLLMProvider(ABC):
     Subclasses implement provider-specific initialization and token counting.
     The base class handles common operations like message conversion and
     structured output.
+
+    Includes retry logic with exponential backoff for fault tolerance.
     """
 
     def __init__(
@@ -65,6 +95,7 @@ class BaseLLMProvider(ABC):
         model_name: str,
         temperature: float = 0.0,
         max_tokens: Optional[int] = None,
+        retry_config: Optional[RetryConfig] = None,
         **kwargs
     ):
         """
@@ -74,12 +105,14 @@ class BaseLLMProvider(ABC):
             model_name: Name of the model (must be in MODEL_REGISTRY)
             temperature: Sampling temperature (0.0 = deterministic)
             max_tokens: Max output tokens (uses model default if None)
+            retry_config: Configuration for retry behavior (uses defaults if None)
             **kwargs: Provider-specific arguments
         """
         self.config = get_model_config(model_name)
         self.model_name = model_name
         self.temperature = temperature
         self.max_tokens = max_tokens or self.config.max_tokens
+        self.retry_config = retry_config or RetryConfig()
 
         # Initialize the underlying LangChain model
         self._model = self._create_model(**kwargs)
@@ -121,6 +154,75 @@ class BaseLLMProvider(ABC):
                 raise TypeError(f"Unsupported message type: {type(msg)}")
         return result
 
+    def _is_retryable_error(self, error: Exception) -> bool:
+        """Check if an error is retryable based on retry config."""
+        error_str = str(error).lower()
+
+        # Timeout errors
+        if self.retry_config.retry_on_timeout:
+            timeout_indicators = ["timeout", "timed out", "deadline exceeded"]
+            if any(ind in error_str for ind in timeout_indicators):
+                return True
+
+        # Rate limit errors
+        if self.retry_config.retry_on_rate_limit:
+            rate_limit_indicators = ["rate limit", "quota exceeded", "429", "too many requests"]
+            if any(ind in error_str for ind in rate_limit_indicators):
+                return True
+
+        # Connection errors (usually transient)
+        connection_indicators = ["connection", "network", "refused", "reset"]
+        if any(ind in error_str for ind in connection_indicators):
+            return True
+
+        return False
+
+    def _calculate_delay(self, attempt: int) -> float:
+        """Calculate delay for retry attempt using exponential backoff."""
+        delay = self.retry_config.initial_delay * (
+            self.retry_config.exponential_base ** attempt
+        )
+        return min(delay, self.retry_config.max_delay)
+
+    def _invoke_with_retry(
+        self,
+        lc_messages: List[Any],
+        **kwargs
+    ) -> tuple:
+        """
+        Invoke the model with retry logic.
+
+        Returns:
+            Tuple of (response, retry_count)
+        """
+        last_error = None
+
+        for attempt in range(self.retry_config.max_retries + 1):
+            try:
+                response = self._model.invoke(lc_messages, **kwargs)
+                return response, attempt
+
+            except Exception as e:
+                last_error = e
+
+                if attempt >= self.retry_config.max_retries:
+                    logger.error(f"LLM call failed after {attempt + 1} attempts: {e}")
+                    raise
+
+                if not self._is_retryable_error(e):
+                    logger.error(f"Non-retryable error: {e}")
+                    raise
+
+                delay = self._calculate_delay(attempt)
+                logger.warning(
+                    f"LLM call failed (attempt {attempt + 1}/{self.retry_config.max_retries + 1}), "
+                    f"retrying in {delay:.1f}s: {e}"
+                )
+                time.sleep(delay)
+
+        # Should not reach here, but just in case
+        raise last_error
+
     def invoke(
         self,
         messages: Union[List[Message], List[Dict], List[Any]],
@@ -128,6 +230,8 @@ class BaseLLMProvider(ABC):
     ) -> LLMResponse:
         """
         Invoke the model with messages.
+
+        Includes automatic retry with exponential backoff for transient errors.
 
         Args:
             messages: List of messages (Message objects, dicts, or LangChain messages)
@@ -137,7 +241,7 @@ class BaseLLMProvider(ABC):
             LLMResponse with content and token usage
         """
         lc_messages = self._convert_messages(messages)
-        response = self._model.invoke(lc_messages, **kwargs)
+        response, retry_count = self._invoke_with_retry(lc_messages, **kwargs)
 
         input_tokens, output_tokens = self._extract_token_usage(response)
 
@@ -148,6 +252,7 @@ class BaseLLMProvider(ABC):
             model=self.model_name,
             raw_response=response,
             finish_reason=getattr(response, "response_metadata", {}).get("finish_reason"),
+            retry_count=retry_count,
         )
 
     def invoke_structured(

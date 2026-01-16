@@ -43,6 +43,7 @@ from .base import (
     BaseLLMProvider,
     LLMResponse,
     Message,
+    RetryConfig,
     create_provider,
 )
 from .config import (
@@ -59,12 +60,20 @@ from .structured import (
     create_json_prompt_suffix,
     StructuredOutputHandler,
 )
+from .token_batcher import (
+    TokenBatcher,
+    TokenBatchConfig,
+    TokenBatch,
+    SoldierTexts,
+    create_token_batches,
+)
 
 __all__ = [
     # Core classes
     "BaseLLMProvider",
     "LLMResponse",
     "Message",
+    "RetryConfig",
     # Factory
     "create_provider",
     # Config
@@ -79,4 +88,10 @@ __all__ = [
     "parse_to_model",
     "create_json_prompt_suffix",
     "StructuredOutputHandler",
+    # Token batching
+    "TokenBatcher",
+    "TokenBatchConfig",
+    "TokenBatch",
+    "SoldierTexts",
+    "create_token_batches",
 ]

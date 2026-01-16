@@ -31,14 +31,54 @@ Resolver generation does NOT require routing — validation.parquet already cont
 
 ---
 
-## LLM Batch Statefulness (Open Decision)
+## LLM Batch Statefulness (Decided)
 
-Resolver generation currently samples and truncates records per phase, but does not define how to split larger samples into multiple LLM calls while preserving cross-batch context. This is a distinct decision from total sample size.
+**Decision: Dual-Run Stateful with Hard Case Reconciliation** (ADR-002)
 
-**Open questions:**
-- How many records per LLM call for each phase (pattern discovery, exclusions, vocabulary, differentiators, tier assignment)?
-- How to preserve state across batches (e.g., LangChain memory, rolling summary, or structured accumulator)?
-- How to reconcile/merge findings across batches without reprocessing all text?
+Resolver generation uses a dual-run approach to balance contextual disambiguation (critical for this project) against drift risk from ordering effects.
+
+### Architecture
+
+```
+Run 1 (Forward Order):
+  Batch A → {patterns, hard_cases: [S12, S45]}
+  Batch B → {patterns, hard_cases: [S67]}        (stateful, carrying context)
+  Batch C → {patterns, hard_cases: [S89, S91]}
+  Output: {final_patterns, all_hard_cases}
+
+Run 2 (Inverted Order):
+  Batch C → {patterns, hard_cases: [S91, S23]}
+  Batch B → {patterns, hard_cases: [S45]}        (stateful, carrying context)
+  Batch A → {patterns, hard_cases: [S12]}
+  Output: {final_patterns, all_hard_cases}
+
+Reconciliation:
+  - Compare patterns from both runs
+  - Validate against hard cases (full records provided)
+  - Produce final patterns with validated confidence
+```
+
+### Key Principles
+
+1. **Dual-run exposes drift**: Patterns found in both orderings are robust; single-run patterns are order-dependent
+2. **Hard case flagging**: LLM identifies ambiguous soldiers during extraction; these become the validation corpus
+3. **Hard case agreement is signal**: Cases flagged by both runs are genuinely hard; single-run flags reveal where ordering "helped"
+4. **Token-budget batching**: Batches sized by token count, with soldier coherence (all records for a soldier in same batch)
+
+### Applies To
+
+- Phase 4: Pattern Discovery
+- Phase 6: Vocabulary Discovery
+- Phase 7: Differentiator Generation
+
+### Hard Case Criteria
+
+Flag soldier as hard case if:
+- Multiple component indicators present (conflicting signals)
+- Key identifiers missing or ambiguous
+- Unusual notation not matching known patterns
+- Low confidence despite having records
+- Transfer indicators present
 
 **Reference:** `docs/architecture/decisions/ADR-002_llm-batching-statefulness.md`
 
@@ -412,12 +452,20 @@ See `docs/data-structures/CURRENT.md` for full schema.
 | Threshold Calculator | ✓ Complete | `src/strategies/resolver/generator/thresholds.py` |
 | Phase 1-2 (Structure) | ✓ Complete | `src/strategies/resolver/generator/structure.py` |
 | Phase 3 (Sampling) | ✓ Complete | `src/strategies/resolver/generator/sampling.py` |
-| Phase 4-8 (LLM Phases) | ✓ Complete | `src/strategies/resolver/generator/llm_phases.py` |
+| Phase 4-8 (LLM Phases) | Needs update | `src/strategies/resolver/generator/llm_phases.py` |
+| Dual-Run Orchestrator | ✓ Complete | `src/strategies/resolver/generator/dual_run.py` |
+| Reconciliation | ✓ Complete | `src/strategies/resolver/generator/reconciliation.py` |
 | Registry Manager | ✓ Complete | `src/strategies/resolver/generator/registry.py` |
 | Prompts | ✓ Complete | `src/strategies/resolver/generator/prompts.py` |
 | Assembler | ✓ Complete | `src/strategies/resolver/generator/assembler.py` |
-| Main Orchestrator | ✓ Complete | `src/strategies/resolver/generator/generate.py` |
+| Main Orchestrator | Needs update | `src/strategies/resolver/generator/generate.py` |
 | Resolver Executor | ✓ Complete | `src/strategies/resolver/executor/strategy.py` |
+
+**Infrastructure (Global Utilities):**
+| Component | Status | Location |
+|-----------|--------|----------|
+| Token Budget Batcher | ✓ Complete | `src/utils/llm/token_batcher.py` |
+| LLM Retry Logic | ✓ Complete | `src/utils/llm/base.py` |
 
 ---
 
@@ -589,7 +637,7 @@ def generate_all_resolvers(
     hierarchy_path: Path,
     output_dir: Path,
     split_path: Optional[Path] = None,
-    model_name: str = "gemini-2.0-flash",
+    model_name: str = "gemini-2.5-pro",
 ) -> GenerationSummary:
     """
     Generate resolvers for all components.
@@ -599,32 +647,108 @@ def generate_all_resolvers(
     2. Compute thresholds (Module 1)
     3. Extract structure and collisions (Module 2)
     4. Sample collisions (Module 3)
-    5. For each component: run LLM phases, assemble, save, update registry
-    6. Return summary with cost tracking
+    5. For each component: run dual-run extraction + reconciliation
+    6. Assemble, save, update registry
+    7. Return summary with cost tracking
     """
 ```
 
+### Module 8: Dual-Run Orchestrator (NEW)
+
+**File:** `src/strategies/resolver/generator/dual_run.py`
+
+Orchestrates dual-run stateful extraction per ADR-002.
+
+```python
+@dataclass
+class DualRunResult:
+    forward_patterns: PatternResult
+    inverted_patterns: PatternResult
+    forward_hard_cases: List[HardCase]
+    inverted_hard_cases: List[HardCase]
+    all_hard_case_ids: Set[str]
+    hard_case_agreement: Dict[str, str]  # soldier_id -> "both" | "forward_only" | "inverted_only"
+
+def run_dual_extraction(
+    component_id: str,
+    batches: List[TokenBatch],
+    llm: BaseLLMProvider,
+    phase: str,  # "patterns" | "vocabulary" | "differentiators"
+) -> DualRunResult:
+    """
+    Run extraction twice with inverted batch order.
+
+    1. Forward pass: batches in original order, stateful accumulator
+    2. Inverted pass: batches reversed, fresh accumulator
+    3. Collect hard cases from both runs
+    4. Return results for reconciliation
+    """
+```
+
+### Module 9: Reconciliation (NEW)
+
+**File:** `src/strategies/resolver/generator/reconciliation.py`
+
+Reconciles dual-run results and validates against hard cases.
+
+```python
+@dataclass
+class ReconciliationResult:
+    robust_patterns: List[Dict]      # Found in both runs
+    order_dependent: List[Dict]      # Found in one run only (flagged)
+    validated_patterns: List[Dict]   # Passed hard case validation
+    rejected_patterns: List[Dict]    # Failed hard case validation
+    hard_case_analysis: Dict[str, str]  # Per-soldier analysis
+
+def reconcile_patterns(
+    dual_run_result: DualRunResult,
+    hard_case_records: pd.DataFrame,
+    llm: BaseLLMProvider,
+) -> ReconciliationResult:
+    """
+    Reconcile dual-run results.
+
+    1. Identify robust patterns (both runs)
+    2. Flag order-dependent patterns (one run only)
+    3. Validate all patterns against hard case records
+    4. Produce final pattern set with confidence tiers
+    """
+```
+
+**Reconciliation Prompt Tasks:**
+- Compare pattern lists from both runs
+- For disagreements: test against hard case records to determine correctness
+- For hard cases flagged by one run only: identify what context resolved them
+- Assign final confidence tiers based on robustness + hard case performance
+
 ### Recommended Build Order
 
-**Phase 1 - Non-LLM Foundation (no LLM dependency):**
-1. Module 1: Threshold Calculator
-2. Module 2: Structure Extractor
-3. Module 3: Collision Sampler
-4. Module 5: Registry Manager
+**Phase 1 - Infrastructure (Global Utilities):**
+1. Token Budget Batcher (`src/utils/llm/token_batcher.py`)
+2. LLM Retry Logic (enhance `src/utils/llm/base.py`)
 
-**Phase 2 - Prompt Engineering:**
-- Create `prompts.py` with templates for pattern/exclusion/vocabulary/differentiator discovery
+**Phase 2 - Non-LLM Foundation (already complete):**
+1. Module 1: Threshold Calculator ✓
+2. Module 2: Structure Extractor ✓
+3. Module 3: Collision Sampler ✓
+4. Module 5: Registry Manager ✓
+
+**Phase 3 - Prompt Engineering Updates:**
+- Update `prompts.py` to include hard case flagging in extraction prompts
+- Add reconciliation prompts
 - Test prompts manually with LLM infrastructure
 
-**Phase 3 - LLM Phases:**
-- Module 4: LLM Phases Orchestrator (largest module)
+**Phase 4 - Dual-Run and Reconciliation:**
+- Module 8: Dual-Run Orchestrator (new)
+- Module 9: Reconciliation (new)
+- Update Module 4: LLM Phases to use token batching + hard case flagging
 
-**Phase 4 - Assembly:**
-- Module 6: Resolver Assembler
-- Module 7: Main Orchestrator
+**Phase 5 - Assembly Updates:**
+- Update Module 6: Resolver Assembler (add reconciliation metadata)
+- Update Module 7: Main Orchestrator (integrate dual-run workflow)
 
-**Phase 5 - Executor:**
-- Implement `ResolverStrategy(BaseStrategy)` to apply resolvers at consolidation time
+**Phase 6 - Executor (already complete):**
+- `ResolverStrategy(BaseStrategy)` ✓
 
 ---
 
