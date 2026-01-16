@@ -1,7 +1,7 @@
 # Batching
 
 **Status:** Not yet implemented  
-**Last Updated:** YYYY-MM-DD
+**Last Updated:** 2026-01-15
 
 ## Purpose
 
@@ -12,6 +12,7 @@ Group soldiers by likely component to enable focused context loading. Batch sold
 - Component-based grouping
 - Batch size optimization (token budget)
 - Context loading per batch (hierarchy, strategy data)
+- Cross-cutting LLM batch sizing + statefulness policy (resolver generation and other LLM phases)
 
 ## Dependencies
 
@@ -23,6 +24,8 @@ Group soldiers by likely component to enable focused context loading. Batch sold
 - [ ] Optimal batch size per model?
 - [ ] How to handle ambiguous component assignments?
 - [ ] Multi-component batch handling?
+- [ ] LLM batch sizing vs total sample size: how many records per LLM call, and how state is preserved across batches?
+- [ ] Row similarity reduction vs signal loss for real data (ADR-003)?
 
 ## Implementation Status
 
@@ -33,3 +36,5 @@ Group soldiers by likely component to enable focused context loading. Batch sold
 ## References
 
 - Architecture: `docs/architecture/CURRENT.md`
+- ADR: `docs/architecture/decisions/ADR-002_llm-batching-statefulness.md`
+- ADR: `docs/architecture/decisions/ADR-003_row-dedup-dim-reduction.md`

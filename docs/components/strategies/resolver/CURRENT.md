@@ -1,6 +1,6 @@
 # Resolver Strategy
 
-**Status:** Harness complete, resolver generation pending
+**Status:** Complete - all modules implemented
 **Last Updated:** 2026-01-15
 
 ## Purpose
@@ -28,6 +28,19 @@ Consolidation using raw text + hierarchy + pre-learned heuristics (resolvers). R
 | **Resolver Gen** | Component → Patterns | Ground truth grouping | Learned heuristics |
 
 Resolver generation does NOT require routing — validation.parquet already contains ground truth component assignments. The workflow groups by known component and learns distinguishing patterns.
+
+---
+
+## LLM Batch Statefulness (Open Decision)
+
+Resolver generation currently samples and truncates records per phase, but does not define how to split larger samples into multiple LLM calls while preserving cross-batch context. This is a distinct decision from total sample size.
+
+**Open questions:**
+- How many records per LLM call for each phase (pattern discovery, exclusions, vocabulary, differentiators, tier assignment)?
+- How to preserve state across batches (e.g., LangChain memory, rolling summary, or structured accumulator)?
+- How to reconcile/merge findings across batches without reprocessing all text?
+
+**Reference:** `docs/architecture/decisions/ADR-002_llm-batching-statefulness.md`
 
 ### Data Requirements
 
@@ -396,13 +409,15 @@ See `docs/data-structures/CURRENT.md` for full schema.
 **Resolver-Specific Components:**
 | Component | Status | Location |
 |-----------|--------|----------|
-| Threshold Calculator | Pending | `src/strategies/resolver/generator/thresholds.py` |
-| Phase 1-2 (Structure) | Pending | `src/strategies/resolver/generator/structure.py` |
-| Phase 3 (Sampling) | Pending | `src/strategies/resolver/generator/sampling.py` |
-| Phase 4-8 (LLM Phases) | Pending | `src/strategies/resolver/generator/llm_phases.py` |
-| Registry Manager | Pending | `src/strategies/resolver/generator/registry.py` |
-| Resolver Executor | Pending | `src/strategies/resolver/executor/` |
-| Resolver Strategy Class | Pending | `src/strategies/resolver/strategy.py` |
+| Threshold Calculator | ✓ Complete | `src/strategies/resolver/generator/thresholds.py` |
+| Phase 1-2 (Structure) | ✓ Complete | `src/strategies/resolver/generator/structure.py` |
+| Phase 3 (Sampling) | ✓ Complete | `src/strategies/resolver/generator/sampling.py` |
+| Phase 4-8 (LLM Phases) | ✓ Complete | `src/strategies/resolver/generator/llm_phases.py` |
+| Registry Manager | ✓ Complete | `src/strategies/resolver/generator/registry.py` |
+| Prompts | ✓ Complete | `src/strategies/resolver/generator/prompts.py` |
+| Assembler | ✓ Complete | `src/strategies/resolver/generator/assembler.py` |
+| Main Orchestrator | ✓ Complete | `src/strategies/resolver/generator/generate.py` |
+| Resolver Executor | ✓ Complete | `src/strategies/resolver/executor/strategy.py` |
 
 ---
 
