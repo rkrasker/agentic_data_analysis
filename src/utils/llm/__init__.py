@@ -10,7 +10,7 @@ Usage:
     from src.utils.llm import create_provider, Message
 
     # Create a provider
-    llm = create_provider("gemini-2.0-flash", temperature=0.0)
+    llm = create_provider("gemini-2.5-pro", temperature=0.0)
 
     # Simple invocation
     response = llm.invoke([

@@ -101,7 +101,7 @@ class GeminiProvider(BaseLLMProvider):
 
 
 def get_gemini_model(
-    model_name: str = "gemini-2.0-flash",
+    model_name: str = "gemini-2.5-pro",
     temperature: float = 0.0,
     **kwargs
 ) -> GeminiProvider:
@@ -109,7 +109,7 @@ def get_gemini_model(
     Convenience function to get a configured Gemini provider.
 
     Args:
-        model_name: Gemini model name (default: gemini-2.0-flash)
+        model_name: Gemini model name (default: gemini-2.5-pro)
         temperature: Sampling temperature
         **kwargs: Additional model arguments
 

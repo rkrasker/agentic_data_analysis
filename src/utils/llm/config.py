@@ -120,7 +120,7 @@ MODEL_REGISTRY: Dict[str, ModelConfig] = {
 
 # Default models per provider
 DEFAULT_MODELS: Dict[Provider, str] = {
-    Provider.GEMINI: "gemini-2.0-flash",
+    Provider.GEMINI: "gemini-2.5-pro",
     Provider.ANTHROPIC: "claude-3-5-sonnet",
     Provider.OPENAI: "gpt-4o-mini",
 }
