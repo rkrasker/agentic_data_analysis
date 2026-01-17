@@ -1,0 +1,210 @@
+{
+  "meta": {
+    "component_id": "101st_airborne_division",
+    "generated_utc": "2026-01-17T01:34:47.434230Z",
+    "tier": "adequately_represented",
+    "sample_size": 227,
+    "pct_of_median": 112.7,
+    "generation_mode": "full",
+    "validation_mode": "dual_run_reconciliation",
+    "hard_cases_flagged": 2
+  },
+  "structure": {
+    "status": "complete",
+    "battalion_designator_type": "alphabetic",
+    "valid_regiments": [
+      1,
+      3,
+      6
+    ],
+    "valid_battalions": [
+      "A",
+      "B",
+      "C"
+    ],
+    "valid_companies": [
+      "1",
+      "2",
+      "3",
+      "4"
+    ]
+  },
+  "patterns": {
+    "status": "complete",
+    "entries": {
+      "PIR": {
+        "means": "unit_type=Parachute Infantry Regiment",
+        "tier": "strong"
+      },
+      "101AB": {
+        "means": "division=101st Airborne Division",
+        "tier": "robust"
+      },
+      "DZ-": {
+        "means": "location_type=Drop Zone",
+        "tier": "moderate"
+      },
+      "101st AB": {
+        "means": "division=101st Airborne Division",
+        "tier": "robust"
+      }
+    }
+  },
+  "vocabulary": {
+    "status": "complete",
+    "strong": [
+      "Screaming Eagles",
+      "101st AB",
+      "PIR",
+      "DZ-C",
+      "DZ-O"
+    ],
+    "moderate": [
+      "1st Mar",
+      "3rd Mar",
+      "6th Mar"
+    ]
+  },
+  "exclusions": {
+    "structural": {
+      "status": "complete",
+      "rules": [
+        {
+          "if": "contains 'Marine' or 'USMC' or 'MarDiv'",
+          "then": "exclude",
+          "source": "branch_mismatch"
+        },
+        {
+          "if": "contains 'Combat Command' or 'CCA' or 'CCB' or 'CCR'",
+          "then": "exclude",
+          "source": "unit_type_mismatch"
+        }
+      ]
+    },
+    "value_based": {
+      "status": "complete",
+      "rules": [
+        {
+          "if": "Regiment is explicitly listed as invalid: ['2', '5', '7', '8', '9', '11']",
+          "then": "exclude",
+          "confidence": "high"
+        },
+        {
+          "if": "Record contains branch-specific terminology for a non-Army or non-Airborne unit type, such as 'Armd' (Armored) or 'Cav' (Cavalry)",
+          "then": "exclude",
+          "confidence": "high"
+        },
+        {
+          "if": "Battalion designator is a letter other than 'A', 'B', or 'C', or a number other than '1'",
+          "then": "exclude",
+          "confidence": "high"
+        },
+        {
+          "if": "Company designator is a number other than '1', '2', '3', '4' OR a letter not in the set ['C', 'I', 'L', 'M'] observed in valid records",
+          "then": "exclude",
+          "confidence": "high"
+        }
+      ]
+    }
+  },
+  "differentiators": {
+    "vs_2nd_infantry_division": {
+      "status": "complete",
+      "rival_sample_size": 20,
+      "rival_tier": "under_represented",
+      "rules": [
+        "Record contains 'Screaming Eagles' OR '101st AB' OR '101st Abn' -> 101st Airborne Division",
+        "Record contains 'PIR' (Parachute Infantry Regiment) OR a known 101st subordinate unit nickname (e.g., 'Geronimo', 'Currahee') -> 101st Airborne Division",
+        "Record contains 'Airborne' OR 'A/B' in the unit title -> 101st Airborne Division",
+        "Record contains 'Indianhead' OR '2ID' -> 2nd Infantry Division",
+        "Record contains a known 2nd ID subordinate regiment (e.g., 9th Inf, 23rd Inf, 38th Inf) -> 2nd Infantry Division",
+        "Record contains '2d' or 'Second' AND lacks airborne-specific terms ('Airborne', 'Abn', 'PIR') -> 2nd Infantry Division",
+        "A full, unambiguous unit name (e.g., '101st Airborne Division') takes precedence over a shared component designator (e.g., '1st Regiment').",
+        "The presence of a unique component type ('Parachute Infantry') is a stronger indicator for the parent division than a generic component type ('Infantry')."
+      ],
+      "notes": "These rules rely on unique identifiers such as nicknames ('Screaming Eagles', 'Indianhead') and specialized unit types ('PIR'). The rule for the 2nd Infantry Division that relies on the *absence* of airborne terms should be applied with lower precedence than rules based on positive identification."
+    },
+    "vs_36th_infantry_division": {
+      "status": "rival_undersampled",
+      "rival_sample_size": 20,
+      "rival_tier": "sparse",
+      "rules": [
+        "Regiment 6 -> 101st Airborne Division",
+        "Regiment 2 -> 36th Infantry Division"
+      ],
+      "not_generated": [
+        "vocabulary-based differentiators"
+      ]
+    },
+    "vs_82nd_airborne_division": {
+      "status": "complete",
+      "rival_sample_size": 20,
+      "rival_tier": "well_represented",
+      "rules": [
+        "Contains 'Screaming Eagles' -> 101st Airborne Division",
+        "Contains '101st AB' or '101st Abn' -> 101st Airborne Division",
+        "Contains regiment '501st', '502nd', '506th', '327th', or '187th' -> 101st Airborne Division",
+        "Contains 'Bastogne' or 'Rakkasans' -> 101st Airborne Division",
+        "Contains 'DZ-C' or 'DZ-O' -> 101st Airborne Division",
+        "Contains regiment '6th' AND component 'PIR' -> 101st Airborne Division",
+        "Contains 'All-American' or 'All American' -> 82nd Airborne Division",
+        "Contains '82nd AB' or '82nd Abn' -> 82nd Airborne Division",
+        "Contains regiment '325th', '504th', '505th', '507th', or '508th' -> 82nd Airborne Division",
+        "Contains 'AA' (in context of a unit patch or motto) -> 82nd Airborne Division",
+        "Contains 'Fort Bragg' -> 82nd Airborne Division",
+        "The presence of a unique regimental designator (e.g., 502nd, 504th) definitively assigns the record to its parent division, overriding ambiguity in shared lower-echelon designators."
+      ],
+      "notes": "These rules rely on unique identifiers such as nicknames, explicit division numbers, and historically distinct regimental assignments. The term 'PIR' by itself is not a discriminator as both divisions contained Parachute Infantry Regiments; it must be paired with a specific regimental number. Associations with locations like 'Fort Bragg' (82nd) or events like 'Bastogne' (101st) provide strong contextual clues."
+    },
+    "vs_1st_infantry_division": {
+      "status": "complete",
+      "rival_sample_size": 20,
+      "rival_tier": "well_represented",
+      "rules": [
+        "Record contains 'regiment 1' AND any of ['Screaming Eagles', '101st AB', '101st Abn', 'PIR', 'Parachute Infantry', 'Air Assault', 'AASLT'] -> 101st Airborne Division",
+        "Record contains 'regiment 1' AND any of ['Big Red One', 'BRO', 'Fighting First', '1st ID', '1st Inf Div'] -> 1st Infantry Division",
+        "Record contains 'regiment 1' AND does NOT contain any airborne-specific terms (e.g., 'PIR', 'Abn', 'Air Assault', 'Screaming Eagles') -> 1st Infantry Division",
+        "A specific division designator (e.g., '101st Abn Div', '1st Inf Div') in the same record overrides ambiguity from a shared lower-echelon unit.",
+        "A unit type specific to a division type (e.g., 'Parachute Infantry Regiment' for an Airborne division) can be used to infer the parent division."
+      ],
+      "notes": "The rules rely on the presence of unique vocabulary or unit types. The final rule for the 1st Infantry Division acts as a default, assuming that a record for '1st Regiment' without any airborne-specific language belongs to the standard infantry division."
+    },
+    "vs_1st_marine_division": {
+      "status": "complete",
+      "rival_sample_size": 20,
+      "rival_tier": "well_represented",
+      "rules": [
+        "Record contains any of ['Screaming Eagles', '101st AB', 'PIR', 'Airborne', 'Abn', 'DZ-C', 'DZ-O'] -> 101st Airborne Division",
+        "Record contains any of ['Marine', 'Marines', 'USMC', 'MARDIV', 'The Old Breed'] -> 1st Marine Division",
+        "The presence of a branch-specific term is the primary structural differentiator. 'Marine' or 'USMC' indicates the 1st Marine Division, while 'Airborne' or 'PIR' (Parachute Infantry Regiment) indicates the 101st Airborne Division."
+      ],
+      "notes": "The disambiguation between these two units is highly reliable due to their belonging to different military branches (Army vs. Marine Corps). The presence of branch-specific vocabulary ('Marine', 'Airborne', 'PIR') is a definitive indicator. A record containing only '1st Regiment' with no other context remains ambiguous, but such cases are rare in practice."
+    },
+    "vs_2nd_marine_division": {
+      "status": "complete",
+      "rival_sample_size": 20,
+      "rival_tier": "under_represented",
+      "rules": [
+        "Text contains a regimental designator '6' AND an airborne-specific term like 'PIR' (Parachute Infantry Regiment), 'Abn', or 'Airborne' -> 101st Airborne Division",
+        "Text contains a regimental designator '6' AND a marine-specific term like 'Marine', 'Mar', or 'USMC' -> 2nd Marine Division",
+        "When a full unit string is present, the regimental designator is assigned to the explicitly named parent division (e.g., in '6th Marines, 2nd Marine Division', the 6th belongs to the 2nd Marine Division)."
+      ],
+      "notes": "These rules rely on the strong, mutually exclusive terminology used by the U.S. Army Airborne ('PIR', 'Abn') and the U.S. Marine Corps ('Marine', 'Mar'). The co-occurrence of the shared number '6' with one of these specific terms resolves the ambiguity. The presence of the parent division's name ('101st' or '2nd Marine') is the ultimate tie-breaker."
+    },
+    "vs_3rd_marine_division": {
+      "status": "complete",
+      "rival_sample_size": 20,
+      "rival_tier": "adequately_represented",
+      "rules": [
+        "Record contains 'regiment=3' AND any of ['Airborne', 'Abn', 'PIR', 'Parachute Infantry', 'Screaming Eagles'] -> 101st Airborne Division",
+        "Record contains 'regiment=3' AND is associated with a higher echelon of '101st' -> 101st Airborne Division",
+        "Record contains 'regiment=3' AND any of ['Marine', 'Marines', 'USMC', 'MarDiv', 'FMF'] -> 3rd Marine Division",
+        "Record contains 'regiment=3' AND is associated with a higher echelon of 'III MEF' -> 3rd Marine Division",
+        "The text pattern matches '[Number]/3' (e.g., '1/3', '2/3') -> 3rd Marine Division",
+        "The regimental designator '3' is immediately followed by 'Marine' or 'Marines' -> 3rd Marine Division",
+        "The regimental designator '3' is immediately followed by 'PIR' or 'Parachute Infantry' -> 101st Airborne Division"
+      ],
+      "notes": "The terminological differences between US Army Airborne and the US Marine Corps are stark, making disambiguation highly reliable. The USMC's battalion/regiment notation (e.g., '1/3') is a particularly strong and unique structural identifier."
+    }
+  }
+}

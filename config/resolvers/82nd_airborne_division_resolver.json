@@ -1,0 +1,220 @@
+{
+  "meta": {
+    "component_id": "82nd_airborne_division",
+    "generated_utc": "2026-01-17T00:02:26.874211Z",
+    "tier": "well_represented",
+    "sample_size": 272,
+    "pct_of_median": 135.0,
+    "generation_mode": "full",
+    "validation_mode": "dual_run_reconciliation",
+    "hard_cases_flagged": 2
+  },
+  "structure": {
+    "status": "complete",
+    "battalion_designator_type": "alphabetic",
+    "valid_regiments": [
+      3,
+      5,
+      7
+    ],
+    "valid_battalions": [
+      "A",
+      "B",
+      "C"
+    ],
+    "valid_companies": [
+      "1",
+      "2",
+      "3",
+      "4"
+    ]
+  },
+  "patterns": {
+    "status": "complete",
+    "entries": {
+      "DZ-N": {
+        "means": "Contextual indicator for 82nd Airborne Division",
+        "tier": "strong"
+      },
+      "82AB": {
+        "means": "division=82nd Airborne Division",
+        "tier": "robust"
+      },
+      "82nd AB": {
+        "means": "division=82nd Airborne Division",
+        "tier": "robust"
+      }
+    }
+  },
+  "vocabulary": {
+    "status": "complete",
+    "strong": [
+      "PIR",
+      "3rd PIR",
+      "5th PIR",
+      "7th PIR",
+      "82nd Abn Div"
+    ],
+    "moderate": [
+      "Abn",
+      "C-47"
+    ],
+    "weak": [
+      "Inf",
+      "3rd Inf",
+      "5th Inf",
+      "7th Inf"
+    ],
+    "discovered_aliases": [
+      "82AB",
+      "82nd Abn Div"
+    ]
+  },
+  "exclusions": {
+    "structural": {
+      "status": "complete",
+      "rules": [
+        {
+          "if": "contains 'Marine' or 'USMC' or 'MarDiv'",
+          "then": "exclude",
+          "source": "branch_mismatch"
+        },
+        {
+          "if": "contains 'Combat Command' or 'CCA' or 'CCB' or 'CCR'",
+          "then": "exclude",
+          "source": "unit_type_mismatch"
+        }
+      ]
+    },
+    "value_based": {
+      "status": "complete",
+      "rules": [
+        {
+          "if": "The record contains branch-specific terminology for the Marine Corps, such as 'Mar', 'Marine', or 'USMC'.",
+          "then": "exclude",
+          "confidence": "high"
+        },
+        {
+          "if": "The record specifies a regiment number known to be invalid for this division, such as '1', '2', '6', '8', '9', or '11'.",
+          "then": "exclude",
+          "confidence": "high"
+        },
+        {
+          "if": "The record contains a battalion designator that is numeric (e.g., '1st Bn', '2nd Bn', 'Bn 3') instead of alphabetic.",
+          "then": "exclude",
+          "confidence": "high"
+        },
+        {
+          "if": "The record contains a battalion designator that is a letter other than 'A', 'B', or 'C' (e.g., 'D Bn', 'Hq Bn').",
+          "then": "exclude",
+          "confidence": "high"
+        },
+        {
+          "if": "The record indicates a unit type that is structurally incompatible with an Airborne division, such as 'Armd' (Armored), 'Cav' (Cavalry), or 'Mech' (Mechanized).",
+          "then": "exclude",
+          "confidence": "high"
+        }
+      ]
+    }
+  },
+  "differentiators": {
+    "vs_1st_marine_division": {
+      "status": "complete",
+      "rival_sample_size": 20,
+      "rival_tier": "well_represented",
+      "rules": [
+        "Record contains a shared regiment (5 or 7) AND contains the term 'PIR', 'Parachute', or 'Airborne' -> 82nd Airborne Division",
+        "Record contains a shared regiment (5 or 7) AND contains the term 'Marine', 'Marines', 'USMC', or 'Mar Div' -> 1st Marine Division",
+        "The specific text pattern '[Number] Marines' (e.g., '5th Marines', '7th Marines') identifies the 1st Marine Division.",
+        "The specific text pattern '[Number] PIR' (e.g., '5th PIR', '7th PIR') identifies the 82nd Airborne Division."
+      ],
+      "notes": "Disambiguation is highly effective due to the distinct and mutually exclusive terminology used by the US Army Airborne ('PIR') and the US Marine Corps ('Marines'). A record containing only a regimental number without these specific identifiers would be ambiguous."
+    },
+    "vs_10th_mountain_division": {
+      "status": "rival_undersampled",
+      "rival_sample_size": 20,
+      "rival_tier": "sparse",
+      "rules": [
+        "Regiment 3 -> 82nd Airborne Division",
+        "Regiment 9 -> 10th Mountain Division"
+      ],
+      "not_generated": [
+        "vocabulary-based differentiators"
+      ]
+    },
+    "vs_1st_infantry_division": {
+      "status": "complete",
+      "rival_sample_size": 20,
+      "rival_tier": "well_represented",
+      "rules": [
+        "If the record contains 'PIR', 'Abn', 'AB', or 'TCG' -> 82nd Airborne Division",
+        "If the record contains a shared designator (regiment 5, regiment 7) AND does NOT contain 'PIR', 'Abn', 'AB', or 'TCG' -> 1st Infantry Division",
+        "The presence of airborne-specific unit types like 'PIR' (Parachute Infantry Regiment) indicates an airborne division structure, which is fundamentally different from a standard infantry division's structure."
+      ],
+      "notes": "The distinction between an airborne division and a standard infantry division is very clear. The presence of airborne-specific terminology like 'PIR' is a definitive marker for the 82nd Airborne Division. The rule for the 1st Infantry Division works by exclusion in this specific two-unit context."
+    },
+    "vs_101st_airborne_division": {
+      "status": "complete",
+      "rival_sample_size": 20,
+      "rival_tier": "adequately_represented",
+      "rules": [
+        "Record contains '82nd', '82d', '82 AB', '82AB', or the nickname 'All-American' -> 82nd Airborne Division",
+        "Record contains a unique 82nd Airborne component designator ('325th', '504th', '505th', '507th', '508th') -> 82nd Airborne Division",
+        "Record contains a unique 82nd Airborne artillery designator ('319th', '320th', '376th', '456th') -> 82nd Airborne Division",
+        "Record contains '3rd PIR', '5th PIR', or '7th PIR' (based on provided strong vocabulary) -> 82nd Airborne Division",
+        "Record contains 'TCG' (Troop Carrier Group) in proximity to a shared designator -> 82nd Airborne Division",
+        "Record contains '101st', '101d', or the nickname 'Screaming Eagle' -> 101st Airborne Division",
+        "Record contains a unique 101st Airborne component designator ('327th', '501st', '502nd', '506th') -> 101st Airborne Division",
+        "Record contains a unique 101st Airborne artillery designator ('321st', '377th', '463rd', '907th') -> 101st Airborne Division",
+        "Disambiguation relies on identifying the unique parent regiment (e.g., '504th' vs '501st') rather than a difference in the Echelon structure (Division -> Regiment -> Battalion)."
+      ],
+      "notes": "Both divisions utilized Parachute Infantry Regiments (PIR) and Glider Infantry Regiments (GIR), so the presence of these terms alone is not a differentiator. The key is the specific regimental number associated with them. The presence of a unique regimental or artillery battalion number is the strongest indicator after an explicit mention of the division number or nickname."
+    },
+    "vs_3rd_marine_division": {
+      "status": "complete",
+      "rival_sample_size": 20,
+      "rival_tier": "adequately_represented",
+      "rules": [
+        "If '3' co-occurs with 'PIR', 'Abn', 'Airborne', or 'TCG' -> 82nd Airborne Division",
+        "If '3' co-occurs with 'Marine', 'Marines', 'Mar Div', or 'USMC' -> 3rd Marine Division",
+        "The pattern '[Number] PIR' (Parachute Infantry Regiment) is specific to Army Airborne units. The pattern '[Number] Marines' is specific to Marine Corps units."
+      ],
+      "notes": "Disambiguation is highly effective due to the use of service-specific terminology. 'PIR' and 'Airborne' are definitive terms for the Army's 82nd Airborne Division, while 'Marine(s)' is a definitive term for the 3rd Marine Division."
+    },
+    "vs_36th_infantry_division": {
+      "status": "rival_undersampled",
+      "rival_sample_size": 20,
+      "rival_tier": "sparse",
+      "rules": [
+        "Regiment 5 or 7 -> 82nd Airborne Division",
+        "Regiment 1 or 2 -> 36th Infantry Division"
+      ],
+      "not_generated": [
+        "vocabulary-based differentiators"
+      ]
+    },
+    "vs_2nd_infantry_division": {
+      "status": "complete",
+      "rival_sample_size": 20,
+      "rival_tier": "under_represented",
+      "rules": [
+        "If the record contains an airborne-specific term such as 'PIR', 'Abn', or 'AB' -> 82nd Airborne Division",
+        "If the record contains regiment=3 and does NOT contain an airborne-specific term ('PIR', 'Abn', 'AB') -> 2nd Infantry Division",
+        "The unit type 'Parachute Infantry Regiment' (PIR) is subordinate to an Airborne Division, not a standard Infantry Division."
+      ],
+      "notes": "The primary differentiator is the 'Airborne' status of the 82nd Division. The presence of airborne-specific terminology like 'PIR' (Parachute Infantry Regiment) or 'Abn' is the most reliable signal. The absence of these terms when regiment 3 is mentioned defaults the identification to the standard 2nd Infantry Division."
+    },
+    "vs_3rd_infantry_division": {
+      "status": "rival_undersampled",
+      "rival_sample_size": 20,
+      "rival_tier": "sparse",
+      "rules": [
+        "Regiment 3 -> 82nd Airborne Division",
+        "Regiment 11 -> 3rd Infantry Division"
+      ],
+      "not_generated": [
+        "vocabulary-based differentiators"
+      ]
+    }
+  }
+}

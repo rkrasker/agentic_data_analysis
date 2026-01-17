@@ -82,6 +82,12 @@ Flag soldier as hard case if:
 
 **Reference:** `docs/architecture/decisions/ADR-002_llm-batching-statefulness.md`
 
+### Implementation Findings (Captured)
+
+- Hard case IDs can be dropped when batch-level `soldier_ids` (per soldier) do not align with per-record `target_texts`, which prevents the LLM from returning valid `hard_cases`.
+- Dual-run mode currently runs the single-pass pattern discovery and then overwrites it, which doubles LLM cost and inflates token accounting.
+- Hard case record lookup compares string IDs from the LLM to `records_df[soldier_id_col]` directly; if the dataframe column is numeric, reconciliation can see empty hard case records.
+
 ### Data Requirements
 
 **Input files:**

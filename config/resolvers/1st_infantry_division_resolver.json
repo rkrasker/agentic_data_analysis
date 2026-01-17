@@ -1,0 +1,278 @@
+{
+  "meta": {
+    "component_id": "1st_infantry_division",
+    "generated_utc": "2026-01-17T01:26:09.943892Z",
+    "tier": "well_represented",
+    "sample_size": 291,
+    "pct_of_median": 144.4,
+    "generation_mode": "full",
+    "validation_mode": "dual_run_reconciliation",
+    "hard_cases_flagged": 6
+  },
+  "structure": {
+    "status": "complete",
+    "battalion_designator_type": "numeric",
+    "valid_regiments": [
+      1,
+      5,
+      7
+    ],
+    "valid_battalions": [
+      1,
+      2,
+      3
+    ],
+    "valid_companies": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G",
+      "H",
+      "I",
+      "K",
+      "L",
+      "M"
+    ]
+  },
+  "patterns": {
+    "status": "complete",
+    "entries": {
+      "1ID": {
+        "means": "1st Infantry Division",
+        "tier": "robust"
+      },
+      "1st Div": {
+        "means": "1st Division",
+        "tier": "robust"
+      },
+      "[A-Z]/[0-9]/[0-9]/1ID": {
+        "means": "Company/Battalion/Regiment/Division",
+        "tier": "strong"
+      },
+      "[A-Z]/[0-9]/[0-9] 1ID": {
+        "means": "Company/Battalion/Regiment, division=1st Infantry Division",
+        "tier": "strong"
+      },
+      "1ID/[0-9]/[0-9]/[A-Z]": {
+        "means": "1st Infantry Division / Regiment / Battalion / Company",
+        "tier": "strong"
+      },
+      "1st Inf, 1st Div": {
+        "means": "component=1st Infantry Regiment, division=1st Infantry Division",
+        "tier": "robust"
+      }
+    }
+  },
+  "vocabulary": {
+    "status": "complete",
+    "strong": [
+      "1st Div",
+      "1ID",
+      "1ID/[#]/[#]/[L]",
+      "1st Inf",
+      "5th Inf",
+      "7th Inf"
+    ],
+    "moderate": [
+      "[#]Bn [#]Inf",
+      "1st Bn",
+      "2nd Bn",
+      "3rd Bn",
+      "[#]/[#]"
+    ],
+    "weak": [
+      "Bth-B",
+      "Bth-E"
+    ],
+    "discovered_aliases": [
+      "1st Div"
+    ]
+  },
+  "exclusions": {
+    "structural": {
+      "status": "complete",
+      "rules": [
+        {
+          "if": "contains 'Marine' or 'USMC' or 'MarDiv'",
+          "then": "exclude",
+          "source": "branch_mismatch"
+        },
+        {
+          "if": "contains 'PIR' or 'parachute' or 'airborne' or 'glider'",
+          "then": "exclude",
+          "source": "unit_type_mismatch"
+        },
+        {
+          "if": "contains 'Combat Command' or 'CCA' or 'CCB' or 'CCR'",
+          "then": "exclude",
+          "source": "unit_type_mismatch"
+        }
+      ]
+    },
+    "value_based": {
+      "status": "complete",
+      "rules": [
+        {
+          "if": "Record contains a regiment designator that is not '1', '5', or '7' (e.g., '2', '3', '6', '8', '9', '11').",
+          "then": "exclude",
+          "confidence": "high"
+        },
+        {
+          "if": "Record contains a battalion designator that is not '1', '2', or '3' (e.g., '4', '6', '13', '14').",
+          "then": "exclude",
+          "confidence": "high"
+        },
+        {
+          "if": "Record contains a company letter that is not in the valid set [A, B, C, D, E, F, G, H, I, K, L, M] (e.g., 'J', 'N', 'O', 'P').",
+          "then": "exclude",
+          "confidence": "high"
+        },
+        {
+          "if": "Record contains terminology specific to other branches or unit types, such as 'Marine', 'USMC', 'Airborne', 'PIR' (Parachute Infantry Regiment), 'GIR' (Glider Infantry Regiment), or 'Armored'.",
+          "then": "exclude",
+          "confidence": "high"
+        }
+      ]
+    }
+  },
+  "differentiators": {
+    "vs_82nd_airborne_division": {
+      "status": "complete",
+      "rival_sample_size": 20,
+      "rival_tier": "well_represented",
+      "rules": [
+        "CONTAINS('1ID', '1st Inf Div', '1st Division') -> 1st Infantry Division",
+        "MATCHES_REGEX('\\b[1-9]/(5|7)\\b') AND NOT CONTAINS('Airborne', 'ABN', 'PIR') -> 1st Infantry Division",
+        "CONTAINS('5th Inf', '7th Inf') -> 1st Infantry Division",
+        "CONTAINS('82nd', 'Airborne', 'ABN', 'All American') -> 82nd Airborne Division",
+        "CONTAINS('PIR', 'Parachute') -> 82nd Airborne Division",
+        "The presence of an explicit parent division identifier (e.g., '1ID', '82nd ABN') is the most reliable rule and should be prioritized.",
+        "The structural pattern '[Battalion]/[Regiment]' (e.g., '2/5') strongly indicates a standard infantry structure like the 1st Infantry Division when 'Airborne' terminology is absent."
+      ],
+      "notes": "The primary distinction between these units lies in their type: standard Infantry (1st ID) versus Airborne/Parachute Infantry (82nd ABN). Keywords like 'Airborne', 'ABN', and 'PIR' are definitive for the 82nd Airborne Division. The Battalion/Regiment shorthand ('#/#') is a strong, though not exclusive, indicator for the 1st Infantry Division in this specific context."
+    },
+    "vs_10th_mountain_division": {
+      "status": "rival_undersampled",
+      "rival_sample_size": 20,
+      "rival_tier": "sparse",
+      "rules": [
+        "Regiment 1 -> 1st Infantry Division",
+        "Regiment 9 -> 10th Mountain Division"
+      ],
+      "not_generated": [
+        "vocabulary-based differentiators"
+      ]
+    },
+    "vs_1st_marine_division": {
+      "status": "complete",
+      "rival_sample_size": 20,
+      "rival_tier": "well_represented",
+      "rules": [
+        "CONTAINS('1ID', 'Big Red One', 'BRO', '1st Inf Div', '1st Infantry Division') -> 1st Infantry Division",
+        "CONTAINS('Army', 'USA', 'BDE', 'Brigade', 'Field Artillery', 'FA') AND CONTAINS('1st Div') -> 1st Infantry Division",
+        "CONTAINS('16th Inf', '18th Inf', '26th Inf') -> 1st Infantry Division",
+        "CONTAINS('1st MARDIV', '1MARDIV', 'The Old Breed', '1st Marine Division') -> 1st Marine Division",
+        "CONTAINS('Marine', 'Marines', 'USMC', 'MARDIV', 'MEF', 'RCT') -> 1st Marine Division",
+        "CONTAINS('1st Marines', '5th Marines', '7th Marines', '11th Marines') -> 1st Marine Division",
+        "MATCHES_REGEX('^1ID/\\d+/\\d+/[A-Z]') -> 1st Infantry Division",
+        "MATCHES_REGEX('\\d-\\d+\\s+(IN|FA|CAV)') -> 1st Infantry Division",
+        "MATCHES_REGEX('\\d/\\d+') AND NOT CONTAINS('1ID', 'Army', 'Infantry') -> 1st Marine Division"
+      ],
+      "notes": "The primary source of ambiguity is the shared regimental numbers (1, 5, 7). These are the organic infantry regiments of the 1st Marine Division. The 1st Infantry Division's historic regiments are the 16th, 18th, and 26th. The rules prioritize branch-specific keywords ('Marine', 'Infantry', '1ID', 'MARDIV') as the most reliable differentiators. The battalion/regiment slash notation (e.g., '1/5', '3/7') is overwhelmingly a Marine Corps convention; the hierarchy rule defaults to this interpretation unless an Army-specific term is present."
+    },
+    "vs_3rd_marine_division": {
+      "status": "complete",
+      "rival_sample_size": 20,
+      "rival_tier": "adequately_represented",
+      "rules": [
+        "Contains the acronym '1ID' -> 1st Infantry Division",
+        "Contains the phrase '1st Inf' or '1st Infantry' -> 1st Infantry Division",
+        "Contains a shared battalion designator (e.g., '1st Bn', '2nd Bn') AND a known 1st ID regimental designator (e.g., '16th Inf', '18th Inf', '26th Inf', '7th FA') -> 1st Infantry Division",
+        "Contains the term 'Marine', 'Marines', or 'MarDiv' in proximity to '3rd Division' or '3d Div' -> 3rd Marine Division",
+        "Contains a shared battalion designator (e.g., '1st Bn', '2nd Bn', '3rd Bn') AND a known 3rd Marine Division regimental designator (e.g., '3rd Marines', '4th Marines', '9th Marines', '12th Marines') -> 3rd Marine Division",
+        "Contains 'FMF' (Fleet Marine Force) in proximity to '3rd Division' -> 3rd Marine Division",
+        "The presence of branch-specific terms ('Infantry', 'Inf', 'ID' for Army; 'Marine', 'Marines', 'MarDiv' for USMC) is the primary method for disambiguating divisions.",
+        "Regimental designators are branch-specific and can identify the parent division of a shared battalion (e.g., '16th Infantry' is an Army regiment; '3rd Marines' is a Marine regiment)."
+      ],
+      "notes": "Simple numeric patterns like '1/3' (1st Battalion, 3rd Regiment) are ambiguous without a branch-specific term (e.g., 'Infantry' or 'Marines') or a higher-echelon identifier ('1ID', '3rd MarDiv'). These rules rely on the presence of such explicit identifiers."
+    },
+    "vs_2nd_infantry_division": {
+      "status": "complete",
+      "rival_sample_size": 20,
+      "rival_tier": "under_represented",
+      "rules": [
+        "Contains '1ID', '1st Inf Div', 'First Infantry Division', or the nickname 'Big Red One' -> 1st Infantry Division",
+        "Contains a unique 1st ID regimental designator such as '16th Inf', '18th Inf', or '26th Inf' -> 1st Infantry Division",
+        "Contains '1st Inf Regt' -> 1st Infantry Division",
+        "Contains '2ID', '2nd Inf Div', 'Second Infantry Division', or the nickname 'Indianhead' -> 2nd Infantry Division",
+        "Contains a unique 2nd ID regimental designator such as '9th Inf', '23rd Inf', or '38th Inf' -> 2nd Infantry Division",
+        "Contains terms related to its unique combined mission with South Korean forces, such as 'KATUSA' or 'Combined Division' -> 2nd Infantry Division",
+        "An explicit division-level identifier (e.g., '1ID', '2nd Inf Div') takes precedence over any lower-echelon designator.",
+        "A unique regimental designator (e.g., '16th Infantry', '9th Infantry') is sufficient to identify the parent division, resolving ambiguity from shared battalion or company numbers."
+      ],
+      "notes": "These rules rely on identifiers that are historically unique to each division. The generic pattern '[Battalion]/[Regiment]' provided in the prompt is only reliable when the regiment itself is a unique identifier for a division. Geographic context (e.g., 'Korea' for 2nd ID) can serve as a strong secondary indicator but is not included as a primary rule due to unit deployments."
+    },
+    "vs_36th_infantry_division": {
+      "status": "rival_undersampled",
+      "rival_sample_size": 20,
+      "rival_tier": "sparse",
+      "rules": [
+        "Regiment 5 or 7 -> 1st Infantry Division",
+        "Regiment 2 or 3 -> 36th Infantry Division"
+      ],
+      "not_generated": [
+        "vocabulary-based differentiators"
+      ]
+    },
+    "vs_101st_airborne_division": {
+      "status": "complete",
+      "rival_sample_size": 20,
+      "rival_tier": "adequately_represented",
+      "rules": [
+        "Contains '1ID' OR '1st Inf Div' OR '1st Infantry Division' -> 1st Infantry Division",
+        "Contains '101st' OR '101 ABN' OR '101st Airborne' -> 101st Airborne Division",
+        "Contains unit type 'Airborne', 'ABN', 'PIR' (Parachute Infantry Regiment), or 'GIR' (Glider Infantry Regiment) -> 101st Airborne Division",
+        "Contains a known 101st Airborne regiment (e.g., 187th, 327th, 501st, 502nd, 506th) -> 101st Airborne Division",
+        "Contains '1st BCT' or '1st Brigade Combat Team' -> 101st Airborne Division",
+        "Contains a known 1st ID regiment (e.g., 16th, 18th, 26th, 28th) AND the term 'Inf' or 'Infantry' -> 1st Infantry Division",
+        "Contains '1st Inf Regt' -> 1st Infantry Division",
+        "If text contains the number '101', it is the 101st Airborne Division.",
+        "If text begins with the pattern '1ID/', it is the 1st Infantry Division.",
+        "If text contains the specific unit type 'Airborne' or 'ABN', it is the 101st Airborne Division.",
+        "If text contains '1st' immediately followed by 'BCT' or 'Brigade', it is the 101st Airborne Division.",
+        "If text contains '1st' immediately followed by 'Inf Div', it is the 1st Infantry Division."
+      ],
+      "notes": "Disambiguation is highly effective due to unique divisional numbers ('1' vs '101') and unit types ('Infantry' vs 'Airborne'). The primary collision on the designator '1' is resolved by examining the type of unit it refers to: a '1st Brigade Combat Team' (BCT) belongs to the 101st, while a '1st Infantry Regiment' is associated with the 1st ID in this context."
+    },
+    "vs_2nd_marine_division": {
+      "status": "complete",
+      "rival_sample_size": 20,
+      "rival_tier": "under_represented",
+      "rules": [
+        "Contains '1ID', '1st ID', or '1st Inf Div' -> 1st Infantry Division",
+        "Contains 'Infantry Regiment', 'Inf Regt', or the pattern '[Number] IN' (e.g., '16 IN') -> 1st Infantry Division",
+        "Contains 'Army' in conjunction with a shared designator (e.g., '1st Battalion, US Army') -> 1st Infantry Division",
+        "Contains '2d MARDIV', '2nd MarDiv', or '2nd Marine Division' -> 2nd Marine Division",
+        "Contains 'Marine Regiment' or the pattern '[Number]th Marines' (e.g., '2nd Marines', '6th Marines') -> 2nd Marine Division",
+        "Contains 'Marine', 'Marines', or 'USMC' in conjunction with a shared designator (e.g., '1st Battalion, USMC') -> 2nd Marine Division",
+        "The presence of a branch-specific identifier immediately following a regimental number (e.g., '16th Infantry' or '16 IN' vs. '2nd Marines') is the primary structural rule. Army units explicitly state the branch type ('Infantry'), while Marine units use the service name ('Marines')."
+      ],
+      "notes": "The core distinction relies on branch-specific terminology ('Army'/'Infantry' vs. 'Marine'/'USMC'). A simple numeric pattern like '1/8' (1st Battalion, 8th Regiment) is ambiguous without this additional context and should not be used as a primary rule."
+    },
+    "vs_3rd_infantry_division": {
+      "status": "rival_undersampled",
+      "rival_sample_size": 20,
+      "rival_tier": "sparse",
+      "rules": [
+        "Regiment 1 -> 1st Infantry Division",
+        "Regiment 11 -> 3rd Infantry Division"
+      ],
+      "not_generated": [
+        "vocabulary-based differentiators"
+      ]
+    }
+  }
+}

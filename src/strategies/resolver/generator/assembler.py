@@ -9,10 +9,26 @@ import json
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Any, Optional
+import numpy as np
 
 from .thresholds import TierName, get_generation_mode
 from .structure import ComponentStructure
 from .llm_phases import PhaseResults
+
+
+class NumpyEncoder(json.JSONEncoder):
+    """Custom JSON encoder that handles numpy types."""
+
+    def default(self, obj):
+        if isinstance(obj, (np.integer, np.int64, np.int32)):
+            return int(obj)
+        if isinstance(obj, (np.floating, np.float64, np.float32)):
+            return float(obj)
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+        if isinstance(obj, np.bool_):
+            return bool(obj)
+        return super().default(obj)
 
 
 def assemble_resolver(
@@ -298,7 +314,7 @@ def save_resolver(
     output_path = output_dir / filename
 
     with open(output_path, "w") as f:
-        json.dump(resolver, f, indent=2)
+        json.dump(resolver, f, indent=2, cls=NumpyEncoder)
 
     return output_path
 

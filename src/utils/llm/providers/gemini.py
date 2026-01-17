@@ -47,6 +47,7 @@ class GeminiProvider(BaseLLMProvider):
             "temperature": self.temperature,
             "max_output_tokens": self.max_tokens,
             "google_api_key": api_key,
+            "timeout": kwargs.pop("timeout", 120),  # 120 second timeout to prevent indefinite hangs
         }
 
         # LangChain 0.2.x vs 1.0+ compatibility

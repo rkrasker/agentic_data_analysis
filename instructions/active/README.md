@@ -28,7 +28,7 @@ Number sequentially. Gaps are fine (after completion/removal).
 
 | # | Task | Status | Component |
 |---|------|--------|-----------|
-| — | *No active instructions* | — | — |
+| 002 | Collision Sampling + Synthetic Fix | Pending | resolver, synthetic |
 
 ## Recently Completed
 

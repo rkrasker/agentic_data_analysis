@@ -10,8 +10,10 @@ from dataclasses import dataclass, field, asdict
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional, Any
+import numpy as np
 
 from .thresholds import ThresholdResult, TierName
+from .assembler import NumpyEncoder
 
 
 @dataclass
@@ -184,7 +186,7 @@ class RegistryManager:
         self.registry_path.parent.mkdir(parents=True, exist_ok=True)
 
         with open(self.registry_path, "w") as f:
-            json.dump(registry.to_dict(), f, indent=2)
+            json.dump(registry.to_dict(), f, indent=2, cls=NumpyEncoder)
 
         self._registry = registry
 
