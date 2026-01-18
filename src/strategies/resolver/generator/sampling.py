@@ -5,11 +5,14 @@ Creates head-to-head soldier samples for collision pairs (Phase 3).
 Samples soldiers from both sides of a collision for LLM analysis.
 """
 
+import logging
 from dataclasses import dataclass, field
 from typing import Dict, List, Set, Tuple, Optional
 
 import numpy as np
 import pandas as pd
+
+logger = logging.getLogger(__name__)
 
 from .thresholds import ThresholdResult, TierName
 from .structure import StructureResult
@@ -173,12 +176,41 @@ def sample_collisions(
             rival_soldiers = component_soldiers[rival_id]
             collision_levels = structure_result.get_collision_levels(component_id, rival_id)
 
-            # Sample from both sides
+            # Filter to soldiers in colliding sub-units
+            soldiers_in_collision_a = _filter_to_collision(
+                all_soldiers, train, collision_levels
+            )
+            soldiers_in_collision_b = _filter_to_collision(
+                rival_soldiers, train, collision_levels
+            )
+
+            # Log filtering results
+            logger.info(
+                f"Collision filter {component_id} vs {rival_id}: "
+                f"{len(all_soldiers)} -> {len(soldiers_in_collision_a)} soldiers (A), "
+                f"{len(rival_soldiers)} -> {len(soldiers_in_collision_b)} soldiers (B)"
+            )
+
+            # Fallback to all soldiers if filter returns empty
+            if not soldiers_in_collision_a:
+                logger.warning(
+                    f"Collision filter returned no soldiers for {component_id}, "
+                    f"falling back to all {len(all_soldiers)} soldiers"
+                )
+                soldiers_in_collision_a = all_soldiers
+            if not soldiers_in_collision_b:
+                logger.warning(
+                    f"Collision filter returned no soldiers for {rival_id}, "
+                    f"falling back to all {len(rival_soldiers)} soldiers"
+                )
+                soldiers_in_collision_b = rival_soldiers
+
+            # Sample from filtered soldiers
             sample_a, undersampled_a = _sample_soldiers(
-                all_soldiers, samples_per_side, rng
+                soldiers_in_collision_a, samples_per_side, rng
             )
             sample_b, undersampled_b = _sample_soldiers(
-                rival_soldiers, samples_per_side, rng
+                soldiers_in_collision_b, samples_per_side, rng
             )
 
             # Get raw records for samples
@@ -230,6 +262,50 @@ def _sample_soldiers(
     indices = rng.choice(available, size=target_size, replace=False)
     sampled = [soldiers[i] for i in indices]
     return sampled, False
+
+
+def _filter_to_collision(
+    soldiers: List[str],
+    train_df: pd.DataFrame,
+    collision_levels: List[Tuple[str, str]],
+) -> List[str]:
+    """
+    Filter to soldiers in colliding sub-units.
+
+    For example, if 82nd and 101st both have regiment 3, this filters
+    to only soldiers in regiment 3 so the LLM sees the actual collision.
+
+    Args:
+        soldiers: List of soldier IDs to filter
+        train_df: Training data with hierarchy columns (regiment, battalion, etc.)
+        collision_levels: List of (level, value) tuples where collision occurs
+            e.g., [("regiment", "3")] means both components have regiment 3
+
+    Returns:
+        Filtered list of soldier IDs in colliding sub-units
+    """
+    if not collision_levels:
+        return soldiers
+
+    df = train_df[train_df["soldier_id"].isin(soldiers)]
+    if df.empty:
+        return soldiers
+
+    # Build masks for each collision level
+    masks = []
+    for level, value in collision_levels:
+        if level in df.columns:
+            masks.append(df[level] == value)
+
+    if not masks:
+        return soldiers
+
+    # Combine with OR - soldier is in collision if they match ANY collision level
+    combined = masks[0]
+    for m in masks[1:]:
+        combined |= m
+
+    return df[combined]["soldier_id"].unique().tolist()
 
 
 def get_samples_for_component(

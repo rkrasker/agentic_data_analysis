@@ -14,6 +14,7 @@ import logging
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Any, Tuple
 
+import pandas as pd
 from pydantic import BaseModel
 
 from src.utils.llm import create_provider, Message, LLMResponse, BaseLLMProvider
@@ -37,6 +38,91 @@ from .prompts import (
 
 
 logger = logging.getLogger(__name__)
+
+
+# =============================================================================
+# QUALITY TIER FILTERING
+# =============================================================================
+
+def _filter_records_by_quality(
+    records: pd.DataFrame,
+    mode: str = "vocab",
+    max_records: int = 40,
+) -> pd.DataFrame:
+    """
+    Filter records by quality tier for different LLM phases.
+
+    Modes:
+        - "vocab": Skew toward lower quality (tiers 3-5 preferred, then 2, minimize 1)
+        - "differentiator": Exclude tier 1, limit tier 2 to ~20% of sample
+
+    Args:
+        records: DataFrame with raw_text and quality_tier columns
+        mode: Filtering mode ("vocab" or "differentiator")
+        max_records: Maximum records to return
+
+    Returns:
+        Filtered DataFrame
+    """
+    if records is None or records.empty:
+        return records
+
+    if "quality_tier" not in records.columns:
+        logger.warning("quality_tier column not found, returning unfiltered records")
+        return records.head(max_records)
+
+    if mode == "vocab":
+        # Vocabulary discovery: prefer degraded/fragmentary records
+        # Priority: tiers 5, 4, 3, then 2 if needed, minimize tier 1
+        tier_priority = [5, 4, 3, 2, 1]
+        result_records = []
+        remaining = max_records
+
+        for tier in tier_priority:
+            tier_records = records[records["quality_tier"] == tier]
+            if not tier_records.empty and remaining > 0:
+                take = min(len(tier_records), remaining)
+                result_records.append(tier_records.head(take))
+                remaining -= take
+
+        if result_records:
+            return pd.concat(result_records, ignore_index=True)
+        return records.head(max_records)
+
+    elif mode == "differentiator":
+        # Differentiator/pattern discovery: exclude tier 1, limit tier 2
+        # No tier 1, tier 2 limited to ~20% of sample
+        # Priority order: tier 5, 4, 3, then limited tier 2
+        tier_2_limit = max(1, int(max_records * 0.20))
+
+        result_records = []
+        remaining = max_records
+
+        # First take from tiers 5, 4, 3 in priority order
+        for tier in [5, 4, 3]:
+            tier_records = records[records["quality_tier"] == tier]
+            if not tier_records.empty and remaining > 0:
+                take = min(len(tier_records), remaining)
+                result_records.append(tier_records.head(take))
+                remaining -= take
+
+        # Then add limited tier 2 if we still have room
+        if remaining > 0:
+            tier_2_take = min(remaining, tier_2_limit)
+            tier_2 = records[records["quality_tier"] == 2].head(tier_2_take)
+            if not tier_2.empty:
+                result_records.append(tier_2)
+
+        if result_records:
+            return pd.concat(result_records, ignore_index=True)
+
+        # Fallback: use tier 2 if no tier 3-5 available
+        logger.warning("No tier 3-5 records found for differentiator, using tier 2 only")
+        return records[records["quality_tier"] == 2].head(max_records)
+
+    else:
+        logger.warning(f"Unknown quality filter mode: {mode}, returning unfiltered")
+        return records.head(max_records)
 
 
 # =============================================================================
@@ -210,14 +296,29 @@ def discover_patterns(
         if not rival_structure:
             continue
 
+        # Filter records by quality - exclude tier 1, limit tier 2
+        filtered_a = _filter_records_by_quality(
+            collision_sample.records_a, mode="differentiator", max_records=20
+        )
+        filtered_b = _filter_records_by_quality(
+            collision_sample.records_b, mode="differentiator", max_records=20
+        )
+        target_texts = filtered_a["raw_text"].tolist() if filtered_a is not None and not filtered_a.empty else []
+        rival_texts = filtered_b["raw_text"].tolist() if filtered_b is not None and not filtered_b.empty else []
+
+        logger.debug(
+            f"Pattern discovery {component_id} vs {rival_id}: "
+            f"{len(target_texts)} target texts, {len(rival_texts)} rival texts (quality-filtered)"
+        )
+
         # Build prompt
         prompt = build_pattern_discovery_prompt(
             component_name=component_name,
             component_id=component_id,
             rival_name=rival_structure.canonical_name,
             rival_id=rival_id,
-            target_texts=collision_sample.get_texts_a(),
-            rival_texts=collision_sample.get_texts_b(),
+            target_texts=target_texts,
+            rival_texts=rival_texts,
             collision_levels=collision_sample.collision_levels,
         )
 
@@ -307,10 +408,14 @@ def mine_exclusions(
         # Get invalid designators
         invalid = get_invalid_designators(component_id, structure, all_structures)
 
-        # Get sample texts
+        # Get sample texts - exclude tier 1, limit tier 2
         texts = []
         if component_samples.all_records is not None:
-            texts = component_samples.all_records["raw_text"].tolist()[:30]
+            filtered = _filter_records_by_quality(
+                component_samples.all_records, mode="differentiator", max_records=30
+            )
+            texts = filtered["raw_text"].tolist()
+            logger.debug(f"Exclusion mining using {len(texts)} records (quality-filtered)")
 
         if texts:
             prompt = build_exclusion_mining_prompt(
@@ -378,10 +483,14 @@ def discover_vocabulary(
         logger.info(f"Skipping vocabulary discovery for {component_id} (tier: {tier})")
         return VocabularyResult(status="not_generated")
 
-    # Get sample texts
+    # Get sample texts - prefer lower quality records for vocab discovery
     texts = []
     if component_samples.all_records is not None:
-        texts = component_samples.all_records["raw_text"].tolist()[:40]
+        filtered = _filter_records_by_quality(
+            component_samples.all_records, mode="vocab", max_records=40
+        )
+        texts = filtered["raw_text"].tolist()
+        logger.debug(f"Vocabulary discovery using {len(texts)} records (quality-filtered)")
 
     if not texts:
         return VocabularyResult(status="not_generated")
