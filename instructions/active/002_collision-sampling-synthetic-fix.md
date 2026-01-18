@@ -1,7 +1,7 @@
 # 002: Collision Sampling + Synthetic Degradation Fix
 
 **Created:** 2026-01-17
-**Status:** Pending
+**Status:** Phase 1 Complete (pending validation)
 **Components:** resolver, synthetic
 **Depends on:** `src/strategies/resolver/generator/sampling.py`, `src/synthetic/renderer.py`
 
@@ -39,7 +39,7 @@ LLM sees non-overlapping regiments and produces trivial rules.
 
 ### Tasks
 
-1. [ ] **Add `_filter_to_collision()` helper** in `sampling.py`
+1. [x] **Add `_filter_to_collision()` helper** in `sampling.py`
    ```python
    def _filter_to_collision(
        soldiers: List[str],
@@ -63,7 +63,7 @@ LLM sees non-overlapping regiments and produces trivial rules.
        return df[combined]["soldier_id"].unique().tolist()
    ```
 
-2. [ ] **Modify `sample_collisions()`** to use the filter (around line 169)
+2. [x] **Modify `sample_collisions()`** to use the filter (around line 169)
    ```python
    for rival_id in rivals:
        collision_levels = structure_result.get_collision_levels(component_id, rival_id)
@@ -84,9 +84,9 @@ LLM sees non-overlapping regiments and produces trivial rules.
        )
    ```
 
-3. [ ] **Handle empty collision case** - if filter returns no soldiers, fall back to all soldiers with warning
+3. [x] **Handle empty collision case** - if filter returns no soldiers, fall back to all soldiers with warning
 
-4. [ ] **Add logging** to verify filtering works:
+4. [x] **Add logging** to verify filtering works:
    ```python
    logger.info(f"Collision filter: {len(all_soldiers)} -> {len(soldiers_in_collision_a)} for {component_id}")
    ```

@@ -28,7 +28,8 @@ Number sequentially. Gaps are fine (after completion/removal).
 
 | # | Task | Status | Component |
 |---|------|--------|-----------|
-| 002 | Collision Sampling + Synthetic Fix | Pending | resolver, synthetic |
+| 002 | Collision Sampling + Synthetic Fix | Phase 1 Complete | resolver, synthetic |
+| 003 | Synthetic Degradation Redesign (Phase 2) | Code Complete (pending validation) | synthetic |
 
 ## Recently Completed
 
