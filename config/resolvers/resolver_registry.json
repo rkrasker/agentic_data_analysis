@@ -1,6 +1,6 @@
 {
   "meta": {
-    "generated_utc": "2026-01-16T23:45:58.866306Z",
+    "generated_utc": "2026-01-17T15:37:54.066922Z",
     "validation_source": "data/synthetic/validation.parquet",
     "model_used": "gemini-2.5-pro"
   },
@@ -14,7 +14,7 @@
       "tier": "well_represented",
       "sample_size": 272,
       "pct_of_median": 135.0,
-      "generated_utc": "2026-01-17T00:02:26.875076Z",
+      "generated_utc": "2026-01-17T15:46:44.359119Z",
       "generation_mode": "full",
       "sections": {
         "structure": "complete",
