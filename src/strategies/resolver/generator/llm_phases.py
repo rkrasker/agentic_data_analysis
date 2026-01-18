@@ -131,22 +131,50 @@ def _filter_records_by_quality(
 
 @dataclass
 class PatternResult:
-    """Result of pattern discovery phase."""
+    """Result of pattern discovery phase.
+
+    Updated for ADR-004: patterns now track provenance (observed vs inferred)
+    and ambiguous patterns are explicitly captured.
+    """
     status: str  # "complete", "limited", "not_generated"
     patterns: List[Dict[str, Any]] = field(default_factory=list)
+    ambiguous_patterns: List[Dict[str, Any]] = field(default_factory=list)
     observations: str = ""
     input_tokens: int = 0
     output_tokens: int = 0
 
     def to_dict(self) -> Dict[str, Any]:
-        return {
-            "status": self.status,
-            "entries": {p["pattern"]: {
+        if self.status == "not_generated":
+            return {"status": "not_generated"}
+
+        # Group patterns by provenance
+        observed = {}
+        inferred = {}
+        for p in self.patterns:
+            entry = {
                 "means": p.get("means", ""),
                 "tier": p.get("tier", "tentative"),
+                "example_records": p.get("example_records", []),
                 "note": p.get("note")
-            } for p in self.patterns}
+            }
+            if p.get("provenance") == "inferred":
+                inferred[p["pattern"]] = entry
+            else:
+                observed[p["pattern"]] = entry
+
+        result = {
+            "status": self.status,
+            "observed": observed,
+            "inferred": inferred,
         }
+
+        if self.ambiguous_patterns:
+            result["ambiguous"] = {
+                p["pattern"]: p.get("note", "")
+                for p in self.ambiguous_patterns
+            }
+
+        return result
 
 
 @dataclass
@@ -175,15 +203,38 @@ class ExclusionResult:
 
 @dataclass
 class VocabularyResult:
-    """Result of vocabulary discovery phase."""
+    """Result of vocabulary discovery phase.
+
+    Updated for ADR-004: vocabulary now separates observed (grounded in records)
+    from inferred (from LLM training knowledge). Each term includes strength
+    and example records for observed terms.
+    """
     status: str  # "complete", "not_generated"
-    strong: List[str] = field(default_factory=list)
-    moderate: List[str] = field(default_factory=list)
-    weak: List[str] = field(default_factory=list)
+    observed: List[Dict[str, Any]] = field(default_factory=list)  # [{term, strength, example_records}]
+    inferred: List[Dict[str, Any]] = field(default_factory=list)  # [{term, strength, note}]
     discovered_aliases: List[str] = field(default_factory=list)
     observations: str = ""
     input_tokens: int = 0
     output_tokens: int = 0
+
+    # Legacy properties for backward compatibility
+    @property
+    def strong(self) -> List[str]:
+        """Legacy: return strong terms from both observed and inferred."""
+        return [t["term"] for t in self.observed if t.get("strength") == "strong"] + \
+               [t["term"] for t in self.inferred if t.get("strength") == "strong"]
+
+    @property
+    def moderate(self) -> List[str]:
+        """Legacy: return moderate terms from both observed and inferred."""
+        return [t["term"] for t in self.observed if t.get("strength") == "moderate"] + \
+               [t["term"] for t in self.inferred if t.get("strength") == "moderate"]
+
+    @property
+    def weak(self) -> List[str]:
+        """Legacy: return weak terms from both observed and inferred."""
+        return [t["term"] for t in self.observed if t.get("strength") == "weak"] + \
+               [t["term"] for t in self.inferred if t.get("strength") == "weak"]
 
     def to_dict(self) -> Dict[str, Any]:
         if self.status == "not_generated":
@@ -191,38 +242,91 @@ class VocabularyResult:
                 "status": "not_generated",
                 "reason": "insufficient_sample"
             }
+
+        # Group observed by strength
+        observed_by_strength = {"strong": [], "moderate": [], "weak": []}
+        for t in self.observed:
+            strength = t.get("strength", "weak")
+            observed_by_strength.get(strength, observed_by_strength["weak"]).append(t["term"])
+
+        # Group inferred by strength
+        inferred_by_strength = {"strong": [], "moderate": [], "weak": []}
+        for t in self.inferred:
+            strength = t.get("strength", "weak")
+            inferred_by_strength.get(strength, inferred_by_strength["weak"]).append(t["term"])
+
         return {
             "status": self.status,
-            "strong": self.strong,
-            "moderate": self.moderate,
-            "weak": self.weak
+            "observed": observed_by_strength,
+            "inferred": inferred_by_strength,
+            "discovered_aliases": self.discovered_aliases
         }
 
 
 @dataclass
 class DifferentiatorResult:
-    """Result of differentiator generation for one rival."""
+    """Result of differentiator generation for one rival.
+
+    Updated for ADR-004: differentiators now use confidence-based signals
+    instead of deterministic rules. Signals are separated into:
+    - positive_signals: presence of X increases confidence in unit
+    - conflict_signals: presence of X decreases confidence (based on conflicting evidence)
+    - structural_rules: hierarchy-based identification rules
+    - ambiguous_when: conditions under which disambiguation is not possible
+    """
     rival_id: str
     status: str  # "complete", "rival_undersampled", "hierarchy_only"
     rival_sample_size: int = 0
     rival_tier: Optional[TierName] = None
-    rules: List[str] = field(default_factory=list)
-    hierarchy_rules: List[str] = field(default_factory=list)
+    positive_signals: List[Dict[str, Any]] = field(default_factory=list)
+    conflict_signals: List[Dict[str, Any]] = field(default_factory=list)
+    structural_rules: List[Dict[str, Any]] = field(default_factory=list)
+    ambiguous_when: Optional[Dict[str, Any]] = None
     not_generated: List[str] = field(default_factory=list)
     notes: str = ""
     input_tokens: int = 0
     output_tokens: int = 0
 
+    # Legacy property for backward compatibility
+    @property
+    def rules(self) -> List[str]:
+        """Legacy: convert signals to rule strings."""
+        result = []
+        for sig in self.positive_signals:
+            target = sig.get("target", "unknown")
+            condition = sig.get("if_contains", "")
+            result.append(f"Contains '{condition}' -> {target}")
+        return result
+
+    @property
+    def hierarchy_rules(self) -> List[str]:
+        """Legacy: convert structural rules to strings."""
+        result = []
+        for sig in self.structural_rules:
+            target = sig.get("target", "unknown")
+            condition = sig.get("if_contains", "")
+            result.append(f"Contains '{condition}' -> {target}")
+        return result
+
     def to_dict(self) -> Dict[str, Any]:
         result = {
             "status": self.status,
             "rival_sample_size": self.rival_sample_size,
-            "rules": self.rules + self.hierarchy_rules,
+            "positive_signals": self.positive_signals,
+            "conflict_signals": self.conflict_signals,
+            "structural_rules": self.structural_rules,
         }
+
+        if self.ambiguous_when:
+            result["ambiguous_when"] = self.ambiguous_when
+
         if self.rival_tier:
             result["rival_tier"] = self.rival_tier
         if self.not_generated:
             result["not_generated"] = self.not_generated
+        if self.notes:
+            result["notes"] = self.notes
+
         return result
 
 
@@ -286,6 +390,7 @@ def discover_patterns(
         return PatternResult(status="limited", observations="No collision rivals found")
 
     all_patterns: List[Dict[str, Any]] = []
+    all_ambiguous: List[Dict[str, Any]] = []
     total_input = 0
     total_output = 0
     observations = []
@@ -333,11 +438,21 @@ def discover_patterns(
             total_input += response.input_tokens
             total_output += response.output_tokens
 
-            # Parse response
+            # Parse response (updated for ADR-004 format)
             result = extract_json_from_text(response.content)
             if result:
                 patterns = result.get("patterns", [])
+                # Ensure provenance is set for each pattern
+                for p in patterns:
+                    if "provenance" not in p:
+                        # Default to observed if example_records present, else inferred
+                        p["provenance"] = "observed" if p.get("example_records") else "inferred"
                 all_patterns.extend(patterns)
+
+                # Collect ambiguous patterns
+                ambiguous = result.get("ambiguous_patterns", [])
+                all_ambiguous.extend(ambiguous)
+
                 if result.get("observations"):
                     observations.append(f"vs {rival_id}: {result['observations']}")
 
@@ -354,11 +469,21 @@ def discover_patterns(
             seen.add(key)
             unique_patterns.append(p)
 
+    # Deduplicate ambiguous patterns
+    seen_ambig = set()
+    unique_ambiguous = []
+    for p in all_ambiguous:
+        key = p.get("pattern", "").lower()
+        if key and key not in seen_ambig:
+            seen_ambig.add(key)
+            unique_ambiguous.append(p)
+
     status = "complete" if unique_patterns else "limited"
 
     return PatternResult(
         status=status,
         patterns=unique_patterns,
+        ambiguous_patterns=unique_ambiguous,
         observations="; ".join(observations),
         input_tokens=total_input,
         output_tokens=total_output,
@@ -513,11 +638,26 @@ def discover_vocabulary(
         result = extract_json_from_text(response.content)
         if result:
             vocab = result.get("vocabulary", {})
+
+            # Handle new ADR-004 format (observed/inferred structure)
+            if "observed" in vocab or "inferred" in vocab:
+                observed = vocab.get("observed", [])
+                inferred = vocab.get("inferred", [])
+            else:
+                # Legacy format fallback: convert strong/moderate/weak to observed
+                observed = []
+                for term in vocab.get("strong", []):
+                    observed.append({"term": term, "strength": "strong"})
+                for term in vocab.get("moderate", []):
+                    observed.append({"term": term, "strength": "moderate"})
+                for term in vocab.get("weak", []):
+                    observed.append({"term": term, "strength": "weak"})
+                inferred = []
+
             return VocabularyResult(
                 status="complete",
-                strong=vocab.get("strong", []),
-                moderate=vocab.get("moderate", []),
-                weak=vocab.get("weak", []),
+                observed=observed,
+                inferred=inferred,
                 discovered_aliases=result.get("discovered_aliases", []),
                 observations=result.get("observations", ""),
                 input_tokens=response.input_tokens,
@@ -575,8 +715,7 @@ def generate_differentiators(
         if tier == "sparse":
             # Sparse component: hierarchy-only
             status = "hierarchy_only"
-            rules = []
-            hierarchy_rules = _generate_hierarchy_rules(
+            structural_rules = _generate_hierarchy_rules(
                 component_id, component_name,
                 rival_id, rival_structure.canonical_name,
                 all_structures
@@ -588,8 +727,11 @@ def generate_differentiators(
                 status=status,
                 rival_sample_size=len(collision_sample.soldiers_b),
                 rival_tier=rival_tier,
-                rules=rules,
-                hierarchy_rules=hierarchy_rules,
+                structural_rules=structural_rules,
+                ambiguous_when={
+                    "condition": "Only shared designators present, no distinguishing features",
+                    "recommendation": "cannot_determine"
+                },
                 not_generated=not_generated,
             )
             continue
@@ -597,7 +739,7 @@ def generate_differentiators(
         if collision_sample.undersampled_b or rival_tier == "sparse":
             # Undersampled rival: limited differentiators
             status = "rival_undersampled"
-            hierarchy_rules = _generate_hierarchy_rules(
+            structural_rules = _generate_hierarchy_rules(
                 component_id, component_name,
                 rival_id, rival_structure.canonical_name,
                 all_structures
@@ -608,8 +750,11 @@ def generate_differentiators(
                 status=status,
                 rival_sample_size=len(collision_sample.soldiers_b),
                 rival_tier=rival_tier,
-                rules=[],
-                hierarchy_rules=hierarchy_rules,
+                structural_rules=structural_rules,
+                ambiguous_when={
+                    "condition": "Only shared designators present, no distinguishing features",
+                    "recommendation": "cannot_determine"
+                },
                 not_generated=["vocabulary-based differentiators"],
             )
             continue
@@ -646,13 +791,45 @@ def generate_differentiators(
 
             result = extract_json_from_text(response.content)
             if result:
+                # Parse new ADR-004 format
+                positive_signals = result.get("positive_signals", [])
+                conflict_signals = result.get("conflict_signals", [])
+                structural_rules = result.get("structural_rules", [])
+                ambiguous_when = result.get("ambiguous_when")
+
+                # Handle legacy format fallback
+                if not positive_signals and "rules" in result:
+                    # Convert legacy rules to positive signals
+                    for rule_str in result.get("rules", []):
+                        # Try to parse "Contains X -> Unit" format
+                        if "->" in rule_str:
+                            parts = rule_str.split("->")
+                            if len(parts) == 2:
+                                condition = parts[0].strip()
+                                target = parts[1].strip()
+                                positive_signals.append({
+                                    "if_contains": condition,
+                                    "then": "increase_confidence",
+                                    "target": target,
+                                    "strength": "moderate",
+                                    "provenance": "observed"
+                                })
+
+                if not ambiguous_when:
+                    ambiguous_when = {
+                        "condition": "Only shared designators present",
+                        "recommendation": "cannot_determine"
+                    }
+
                 results[rival_id] = DifferentiatorResult(
                     rival_id=rival_id,
-                    status=result.get("confidence", "complete"),
+                    status="complete",
                     rival_sample_size=len(collision_sample.soldiers_b),
                     rival_tier=rival_tier,
-                    rules=result.get("rules", []),
-                    hierarchy_rules=result.get("hierarchy_rules", []),
+                    positive_signals=positive_signals,
+                    conflict_signals=conflict_signals,
+                    structural_rules=structural_rules,
+                    ambiguous_when=ambiguous_when,
                     notes=result.get("notes", ""),
                     input_tokens=response.input_tokens,
                     output_tokens=response.output_tokens,
@@ -663,11 +840,15 @@ def generate_differentiators(
                     rival_id=rival_id,
                     status="hierarchy_only",
                     rival_sample_size=len(collision_sample.soldiers_b),
-                    hierarchy_rules=_generate_hierarchy_rules(
+                    structural_rules=_generate_hierarchy_rules(
                         component_id, component_name,
                         rival_id, rival_structure.canonical_name,
                         all_structures
                     ),
+                    ambiguous_when={
+                        "condition": "Only shared designators present",
+                        "recommendation": "cannot_determine"
+                    },
                 )
 
         except Exception as e:
@@ -676,11 +857,15 @@ def generate_differentiators(
                 rival_id=rival_id,
                 status="hierarchy_only",
                 rival_sample_size=len(collision_sample.soldiers_b),
-                hierarchy_rules=_generate_hierarchy_rules(
+                structural_rules=_generate_hierarchy_rules(
                     component_id, component_name,
                     rival_id, rival_structure.canonical_name,
                     all_structures
                 ),
+                ambiguous_when={
+                    "condition": "Only shared designators present",
+                    "recommendation": "cannot_determine"
+                },
                 notes=f"Error: {str(e)}",
             )
 
@@ -693,9 +878,12 @@ def _generate_hierarchy_rules(
     comp_b_id: str,
     comp_b_name: str,
     all_structures: Dict[str, ComponentStructure],
-) -> List[str]:
-    """Generate hierarchy-based disambiguation rules."""
-    rules = []
+) -> List[Dict[str, Any]]:
+    """Generate hierarchy-based disambiguation rules.
+
+    Updated for ADR-004: returns structured signal dicts instead of rule strings.
+    """
+    rules: List[Dict[str, Any]] = []
 
     struct_a = all_structures.get(comp_a_id)
     struct_b = all_structures.get(comp_b_id)
@@ -712,23 +900,59 @@ def _generate_hierarchy_rules(
 
     if unique_to_a:
         regs = sorted(unique_to_a)
-        rules.append(f"Regiment {' or '.join(regs)} -> {comp_a_name}")
+        rules.append({
+            "if_contains": f"Regiment {' or '.join(regs)}",
+            "then": "identifies",
+            "target": comp_a_name,
+            "strength": "strong",
+            "note": "Unique regiment designation"
+        })
 
     if unique_to_b:
         regs = sorted(unique_to_b)
-        rules.append(f"Regiment {' or '.join(regs)} -> {comp_b_name}")
+        rules.append({
+            "if_contains": f"Regiment {' or '.join(regs)}",
+            "then": "identifies",
+            "target": comp_b_name,
+            "strength": "strong",
+            "note": "Unique regiment designation"
+        })
 
     # Service branch rules
     if struct_a.service_branch != struct_b.service_branch:
         if struct_a.service_branch == "marines":
-            rules.append(f"Marine/USMC context -> {comp_a_name}")
+            rules.append({
+                "if_contains": "Marine or USMC",
+                "then": "identifies",
+                "target": comp_a_name,
+                "strength": "strong",
+                "note": "Branch-specific terminology"
+            })
         elif struct_b.service_branch == "marines":
-            rules.append(f"Marine/USMC context -> {comp_b_name}")
+            rules.append({
+                "if_contains": "Marine or USMC",
+                "then": "identifies",
+                "target": comp_b_name,
+                "strength": "strong",
+                "note": "Branch-specific terminology"
+            })
 
         if "airborne" in comp_a_id:
-            rules.append(f"Airborne/PIR context -> {comp_a_name}")
+            rules.append({
+                "if_contains": "Airborne or PIR or ABN",
+                "then": "increase_confidence",
+                "target": comp_a_name,
+                "strength": "strong",
+                "note": "Unit type indicator (but may be abbreviated in some records)"
+            })
         elif "airborne" in comp_b_id:
-            rules.append(f"Airborne/PIR context -> {comp_b_name}")
+            rules.append({
+                "if_contains": "Airborne or PIR or ABN",
+                "then": "increase_confidence",
+                "target": comp_b_name,
+                "strength": "strong",
+                "note": "Unit type indicator (but may be abbreviated in some records)"
+            })
 
     return rules
 
@@ -742,6 +966,9 @@ def assign_pattern_tiers(
     """
     Phase 8: Assign confidence tiers to patterns based on validation.
 
+    Updated for ADR-004: Also validates provenance claims - patterns marked
+    as "observed" are checked against the actual records.
+
     Args:
         patterns: Pattern discovery result
         validation_texts: Sample texts for validation
@@ -749,7 +976,7 @@ def assign_pattern_tiers(
         component_name: Component name
 
     Returns:
-        Updated PatternResult with validated tiers
+        Updated PatternResult with validated tiers and provenance
     """
     if patterns.status == "not_generated" or not patterns.patterns:
         return patterns
@@ -773,12 +1000,31 @@ def assign_pattern_tiers(
 
         result = extract_json_from_text(response.content)
         if result and "validated_patterns" in result:
-            # Update pattern tiers
+            # Update pattern tiers and provenance validation
             validated = {p["pattern"]: p for p in result["validated_patterns"]}
 
             for pattern in patterns.patterns:
                 if pattern["pattern"] in validated:
-                    pattern["tier"] = validated[pattern["pattern"]].get("tier", pattern.get("tier", "tentative"))
+                    v = validated[pattern["pattern"]]
+                    pattern["tier"] = v.get("tier", pattern.get("tier", "tentative"))
+
+                    # Update provenance based on validation
+                    if v.get("validated_provenance") is False:
+                        # Pattern claimed as observed but not found in records
+                        if pattern.get("provenance") == "observed":
+                            pattern["provenance"] = "inferred"
+                            pattern["provenance_note"] = "Claimed observed but not validated in records"
+                    elif v.get("validated_provenance") is True:
+                        # Confirmed in records
+                        pattern["validated"] = True
+                        if v.get("example_matches"):
+                            pattern["validated_examples"] = v["example_matches"]
+
+            # Add ungrounded patterns to observations
+            ungrounded = result.get("ungrounded_patterns", [])
+            if ungrounded:
+                ungrounded_note = f"Ungrounded patterns: {[p['pattern'] for p in ungrounded]}"
+                patterns.observations = f"{patterns.observations}; {ungrounded_note}" if patterns.observations else ungrounded_note
 
             patterns.input_tokens += response.input_tokens
             patterns.output_tokens += response.output_tokens
@@ -801,6 +1047,7 @@ def run_all_phases(
     llm: BaseLLMProvider,
     tier: TierName,
     thresholds_result: Any,
+    progress_callback: Optional[callable] = None,
 ) -> PhaseResults:
     """
     Run all LLM phases for a single component.
@@ -813,6 +1060,7 @@ def run_all_phases(
         llm: LLM provider
         tier: Component tier
         thresholds_result: Threshold result for tier lookups
+        progress_callback: Optional callback(phase_name: str) to report progress
 
     Returns:
         PhaseResults with all phase outputs
@@ -826,6 +1074,8 @@ def run_all_phases(
     logger.info(f"Running LLM phases for {component_id} (tier: {tier})")
 
     # Phase 4: Pattern Discovery
+    if progress_callback:
+        progress_callback("Pattern Discovery")
     logger.info(f"  Phase 4: Pattern Discovery")
     patterns = discover_patterns(
         component_id=component_id,
@@ -837,6 +1087,8 @@ def run_all_phases(
     )
 
     # Phase 5: Exclusion Mining
+    if progress_callback:
+        progress_callback("Exclusion Mining")
     logger.info(f"  Phase 5: Exclusion Mining")
     exclusions = mine_exclusions(
         component_id=component_id,
@@ -849,6 +1101,8 @@ def run_all_phases(
     )
 
     # Phase 6: Vocabulary Discovery
+    if progress_callback:
+        progress_callback("Vocabulary Discovery")
     logger.info(f"  Phase 6: Vocabulary Discovery")
     vocabulary = discover_vocabulary(
         component_id=component_id,
@@ -871,6 +1125,8 @@ def run_all_phases(
     # For now, we only have the current component's patterns
 
     # Phase 7: Differentiator Generation
+    if progress_callback:
+        progress_callback("Differentiator Generation")
     logger.info(f"  Phase 7: Differentiator Generation")
     differentiators = generate_differentiators(
         component_id=component_id,
@@ -888,9 +1144,14 @@ def run_all_phases(
 
     # Phase 8: Tier Assignment
     if patterns.status != "not_generated" and component_samples.all_records is not None:
+        if progress_callback:
+            progress_callback("Tier Assignment")
         logger.info(f"  Phase 8: Tier Assignment")
         validation_texts = component_samples.all_records["raw_text"].tolist()[:20]
         patterns = assign_pattern_tiers(patterns, validation_texts, llm, component_name)
+
+    if progress_callback:
+        progress_callback("Complete")
 
     return PhaseResults(
         component_id=component_id,

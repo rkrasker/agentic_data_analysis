@@ -10,10 +10,41 @@ Contains prompts for:
 Updated for dual-run workflow (ADR-002):
 - All extraction prompts now include hard case flagging
 - Hard cases are soldiers that are ambiguous or difficult to classify
+
+Updated for grounded inference (ADR-004):
+- Absence of evidence is NOT evidence of absence
+- All patterns/vocabulary must be grounded in example records
+- Ambiguity is a valid outcome - not all records can be disambiguated
+- Distinguish observed (in records) vs inferred (from training knowledge)
 """
 
 from typing import List, Dict, Any, Optional
 
+
+# =============================================================================
+# CORE INFERENCE PRINCIPLES (shared across all phases)
+# =============================================================================
+
+GROUNDING_PRINCIPLES = """
+CRITICAL INFERENCE PRINCIPLES:
+
+1. ABSENCE IS NOT EVIDENCE: A record lacking a term (e.g., no "ABN" for airborne)
+   is UNINFORMATIVE, not negative evidence. Records are often abbreviated or
+   context-dependent. Do NOT treat missing modifiers as signals.
+
+2. GROUNDED CLAIMS ONLY: Every pattern or vocabulary term you identify must be
+   supported by the example records provided. If you cannot point to a specific
+   record containing the term, mark it as "inferred" rather than "observed".
+
+3. AMBIGUITY IS VALID: Some records cannot be disambiguated without additional
+   context. "Cannot determine" is an acceptable and often correct conclusion.
+   Do not force classification when evidence is insufficient.
+
+4. POSITIVE SIGNALS ONLY: Only the PRESENCE of a term counts as a signal.
+   - "Contains 'ABN'" → positive signal FOR airborne unit ✓
+   - "Does NOT contain 'ABN'" → NOT a valid signal ✗
+   - "Contains 'Marine'" when expecting Army → conflict signal ✓
+"""
 
 # =============================================================================
 # HARD CASE FLAGGING INSTRUCTIONS (shared across phases)
@@ -28,10 +59,11 @@ Flag a soldier as a "hard case" if:
 - Unusual notation that doesn't match known patterns
 - Assignment is uncertain despite having records
 - Transfer indicators are present
+- Record contains only shared designators with no distinguishing features
 
 Include hard cases in your response:
 "hard_cases": [
-  {"soldier_id": "S123", "reason": "conflicting_signals|ambiguous_notation|missing_identifiers|transfer_detected", "notes": "brief explanation"}
+  {"soldier_id": "S123", "reason": "conflicting_signals|ambiguous_notation|missing_identifiers|transfer_detected|insufficient_evidence", "notes": "brief explanation"}
 ]
 """
 
@@ -42,12 +74,19 @@ Include hard cases in your response:
 PATTERN_DISCOVERY_SYSTEM = """You are an expert at analyzing historical military records to identify text patterns that indicate unit assignments. Your task is to discover patterns that distinguish one military unit from similar units.
 
 Focus on:
-1. Explicit unit names and designations
-2. Abbreviations and shorthand notations
+1. Explicit unit names and designations ACTUALLY PRESENT in the example records
+2. Abbreviations and shorthand notations you can cite from specific records
 3. Slashes and combined notations (e.g., "2/5" for 2nd Battalion, 5th Regiment)
-4. Common variations in how units are referenced
+4. Observable variations in how units are referenced in the provided samples
 
-Be precise and conservative. Only identify patterns you're confident about."""
+CRITICAL CONSTRAINTS:
+- Only identify patterns that appear in the provided example records
+- For each pattern, you must be able to cite which record(s) contain it
+- If you know a pattern from general knowledge but it doesn't appear in the examples,
+  mark it as "provenance": "inferred" rather than "observed"
+- Do NOT generate rules based on ABSENCE of patterns (e.g., "lacks ABN")
+
+Be precise and conservative. Ground every claim in the provided examples."""
 
 
 def build_pattern_discovery_prompt(
@@ -101,7 +140,7 @@ Build upon these findings, but also look for NEW patterns.
 """
 
     return f"""Analyze these military records to find text patterns that distinguish {component_name} from {rival_name}.
-
+{GROUNDING_PRINCIPLES}
 COLLISION CONTEXT:
 These units share the following designators: {collision_desc}
 This means records mentioning these designators could belong to either unit.
@@ -119,7 +158,8 @@ For each pattern, provide:
 1. The exact text pattern
 2. What it means (unit assignment interpretation)
 3. Confidence level (robust/strong/moderate/tentative)
-4. Any caveats or conditions
+4. Provenance: "observed" if you can cite specific records, "inferred" if from general knowledge
+5. Example records where this pattern appears (if observed)
 {HARD_CASE_INSTRUCTIONS}
 Respond in JSON format:
 {{
@@ -128,11 +168,19 @@ Respond in JSON format:
       "pattern": "exact text pattern",
       "means": "interpretation (e.g., component=X, regiment=Y)",
       "tier": "robust|strong|moderate|tentative",
+      "provenance": "observed|inferred",
+      "example_records": ["record text where pattern appears"],
       "note": "optional caveat"
     }}
   ],
   "hard_cases": [
     {{"soldier_id": "S123", "reason": "conflicting_signals", "notes": "brief explanation"}}
+  ],
+  "ambiguous_patterns": [
+    {{
+      "pattern": "pattern that appears in BOTH unit's records",
+      "note": "why this pattern alone cannot disambiguate"
+    }}
   ],
   "observations": "brief summary of key distinguishing features"
 }}"""
@@ -144,13 +192,25 @@ Respond in JSON format:
 
 EXCLUSION_MINING_SYSTEM = """You are an expert at analyzing military organizational structures to identify exclusion rules. An exclusion rule definitively indicates that a record does NOT belong to a specific unit.
 
-Focus on:
-1. Unit type indicators (infantry vs. airborne vs. marine)
-2. Branch-specific terminology
-3. Invalid designator combinations
-4. Structural impossibilities
+IMPORTANT: Exclusion rules must be based on POSITIVE EVIDENCE of incompatibility, not absence.
 
-Be conservative. Only identify exclusions that are definitive."""
+VALID exclusion signals (based on PRESENCE of conflicting evidence):
+- "Contains 'Marine' or 'USMC'" → exclude from Army units (positive branch conflict)
+- "Contains regiment '7'" → exclude from unit that only has regiments 1, 3, 6 (positive structural conflict)
+- "Contains 'Tank' or 'Armored'" → exclude from infantry unit (positive type conflict)
+
+INVALID exclusion signals (based on ABSENCE):
+- "Does not contain 'ABN'" → NOT a valid exclusion ❌
+- "Lacks airborne terminology" → NOT a valid exclusion ❌
+- "Missing division identifier" → NOT a valid exclusion ❌
+
+Focus on:
+1. Positive indicators of a DIFFERENT branch (Marine vs Army)
+2. Positive indicators of a DIFFERENT unit type (Armored vs Infantry)
+3. Structural impossibilities (regiment numbers that don't exist in this unit)
+4. Explicit identifiers for OTHER units
+
+Be conservative. Only identify exclusions based on positive conflicting evidence."""
 
 
 def build_exclusion_mining_prompt(
@@ -193,7 +253,7 @@ def build_exclusion_mining_prompt(
     text_sample = "\n".join(f"- {t}" for t in all_texts[:20])
 
     return f"""Analyze records to find exclusion rules for {component_name}.
-
+{GROUNDING_PRINCIPLES}
 COMPONENT STRUCTURE:
 {valid_section}
 
@@ -204,19 +264,26 @@ SAMPLE RECORDS (all confirmed as {component_name}):
 {text_sample}
 
 TASK:
-Identify value-based patterns that would EXCLUDE a record from being {component_name}.
+Identify patterns whose PRESENCE would EXCLUDE a record from being {component_name}.
 
-For example:
-- Specific regiment numbers that this division never had
-- Battalion designators incompatible with this unit's structure
-- Company letters that don't exist in this organization
+VALID exclusion patterns (positive evidence of conflict):
+- Specific regiment numbers that this division never had (e.g., "contains regiment 7")
+- Battalion designators incompatible with this unit's structure (e.g., "contains 'D Battalion'")
+- Branch-specific terms for OTHER branches (e.g., "contains 'Marine' or 'USMC'")
+- Explicit identifiers for other units (e.g., "contains '82nd' when this is 101st")
+
+INVALID exclusion patterns (do NOT include these):
+- "Does not contain X" ❌
+- "Lacks Y" ❌
+- "Missing Z" ❌
 
 Respond in JSON format:
 {{
   "value_based_exclusions": [
     {{
-      "if": "condition description",
+      "if_contains": "the positive indicator that conflicts",
       "then": "exclude",
+      "reason": "why this positively indicates a different unit",
       "confidence": "high|medium"
     }}
   ],
@@ -230,14 +297,26 @@ Respond in JSON format:
 
 VOCABULARY_DISCOVERY_SYSTEM = """You are an expert at identifying characteristic vocabulary in historical military records. Your task is to find terms, phrases, and references that are strongly associated with a specific military unit.
 
-Focus on:
-1. Unit nicknames and informal names
-2. Geographic references (theaters, locations)
-3. Campaign or operation names
-4. Equipment or organizational terms
-5. Commanding officer names (if historically associated)
+CRITICAL: Distinguish between OBSERVED and INFERRED vocabulary.
 
-Be careful to distinguish unit-specific vocabulary from general military terminology."""
+OBSERVED vocabulary (preferred):
+- Terms that ACTUALLY APPEAR in the provided example records
+- You can cite specific records containing these terms
+- These have high reliability for this specific dataset
+
+INFERRED vocabulary (use sparingly, must be labeled):
+- Terms you know are associated with this unit from general knowledge
+- Unit nicknames, historical campaigns, etc. NOT seen in the examples
+- These may or may not appear in the actual dataset
+- Mark these clearly as "provenance": "inferred"
+
+Focus on extracting vocabulary FROM THE PROVIDED RECORDS:
+1. Unit designations and abbreviations actually used
+2. Location references that appear in the records
+3. Equipment or organizational terms present in the examples
+4. Any distinctive notation patterns
+
+You may ALSO note inferred vocabulary (nicknames, campaigns) but MUST mark it as such."""
 
 
 def build_vocabulary_discovery_prompt(
@@ -281,7 +360,7 @@ Build upon these findings, but also look for NEW vocabulary.
 """
 
     return f"""Analyze records to discover vocabulary characteristic of {component_name}.
-
+{GROUNDING_PRINCIPLES}
 KNOWN ALIASES:
 {alias_section}
 {prior_section}
@@ -289,24 +368,35 @@ SAMPLE RECORDS FROM {component_name.upper()}:
 {text_sample}
 
 TASK:
-Identify vocabulary terms that are characteristic of this unit. Categorize by strength:
+Identify vocabulary terms that are characteristic of this unit.
 
-- **Strong**: Terms that almost always indicate this unit
-- **Moderate**: Terms that suggest this unit but may appear in other contexts
-- **Weak**: Terms that are somewhat associated but require other evidence
+For EACH term, you must specify:
+1. Strength: strong/moderate/weak
+2. Provenance: "observed" (appears in records above) or "inferred" (from general knowledge)
+3. For observed terms: cite at least one example record
+
+IMPORTANT:
+- Prioritize OBSERVED vocabulary over inferred
+- Inferred vocabulary (nicknames, campaigns you know about but don't see) should be clearly marked
+- Do NOT claim a term is "observed" unless you can point to a specific record containing it
 {HARD_CASE_INSTRUCTIONS}
 Respond in JSON format:
 {{
   "vocabulary": {{
-    "strong": ["term1", "term2"],
-    "moderate": ["term3", "term4"],
-    "weak": ["term5", "term6"]
+    "observed": [
+      {{"term": "ABN", "strength": "strong", "example_records": ["record containing ABN"]}},
+      {{"term": "PIR", "strength": "strong", "example_records": ["record containing PIR"]}}
+    ],
+    "inferred": [
+      {{"term": "Screaming Eagles", "strength": "strong", "note": "known nickname, not seen in examples"}},
+      {{"term": "Bastogne", "strength": "moderate", "note": "historical association, not seen in examples"}}
+    ]
   }},
-  "discovered_aliases": ["any new nicknames or abbreviations found"],
+  "discovered_aliases": ["any new nicknames or abbreviations found IN THE RECORDS"],
   "hard_cases": [
     {{"soldier_id": "S123", "reason": "conflicting_signals", "notes": "brief explanation"}}
   ],
-  "observations": "notes on vocabulary patterns"
+  "observations": "notes on vocabulary patterns, including what was NOT found in the records"
 }}"""
 
 
@@ -314,12 +404,32 @@ Respond in JSON format:
 # PHASE 7: DIFFERENTIATOR GENERATION
 # =============================================================================
 
-DIFFERENTIATOR_SYSTEM = """You are an expert at creating disambiguation rules for military unit identification. Given two units that share certain designators, create specific rules to tell them apart.
+DIFFERENTIATOR_SYSTEM = """You are an expert at creating disambiguation rules for military unit identification. Given two units that share certain designators, create rules that adjust CONFIDENCE in unit assignment.
 
-Focus on creating actionable rules that can be applied during record parsing. Each rule should be:
-1. Specific and unambiguous
-2. Based on observable text patterns
-3. Clearly state which unit the rule identifies"""
+CRITICAL PRINCIPLE: Absence of evidence is NOT evidence of absence.
+
+You must create THREE types of rules:
+
+1. POSITIVE SIGNALS: "Presence of X INCREASES confidence in Unit A"
+   - Based on terms/patterns that appear in records
+   - Example: "Contains 'ABN' or 'PIR' → increases confidence in airborne unit"
+
+2. CONFLICT SIGNALS: "Presence of X DECREASES confidence in Unit A"
+   - Based on POSITIVE evidence of a DIFFERENT unit type/branch
+   - Example: "Contains 'Marine' → decreases confidence in Army unit"
+   - NOT based on absence (e.g., "lacks ABN" is INVALID)
+
+3. AMBIGUOUS CASES: Acknowledge when disambiguation is not possible
+   - Records with only shared designators cannot be assigned
+   - "Cannot determine" is a valid and often correct outcome
+
+NEVER create rules like:
+- "Does NOT contain X → Unit B" ❌
+- "Absence of X → Unit B" ❌
+- "Lacks X → Unit B" ❌
+- "If no airborne terminology → default to infantry" ❌
+
+These are logically invalid. Records may simply be abbreviated."""
 
 
 def build_differentiator_prompt(
@@ -374,7 +484,7 @@ def build_differentiator_prompt(
             vocab_section = f"Strong vocabulary for {component_name}: {strong[:5]}"
 
     return f"""Create disambiguation rules to distinguish {component_name} from {rival_name}.
-
+{GROUNDING_PRINCIPLES}
 COLLISION CONTEXT:
 These units share: {collision_desc}
 
@@ -383,22 +493,53 @@ These units share: {collision_desc}
 {vocab_section}
 
 TASK:
-Create specific rules that determine which unit a record belongs to when it contains shared designators.
+Create rules that adjust CONFIDENCE based on OBSERVABLE EVIDENCE.
 
-Rules should be in the form:
-"[Condition] -> [Unit identification]"
+IMPORTANT CONSTRAINTS:
+1. Only use PRESENCE of terms as signals, never ABSENCE
+2. "Cannot determine" is a valid outcome for sparse records
+3. Do NOT create fallback rules like "if nothing else matches → Unit X"
 
 Respond in JSON format:
 {{
-  "rules": [
-    "[Condition] -> {component_name}",
-    "[Condition] -> {rival_name}"
+  "positive_signals": [
+    {{
+      "if_contains": "term or pattern",
+      "then": "increase_confidence",
+      "target": "{component_name}",
+      "strength": "strong|moderate|weak",
+      "provenance": "observed|inferred"
+    }},
+    {{
+      "if_contains": "term or pattern",
+      "then": "increase_confidence",
+      "target": "{rival_name}",
+      "strength": "strong|moderate|weak",
+      "provenance": "observed|inferred"
+    }}
   ],
-  "hierarchy_rules": [
-    "Rules based purely on structural differences"
+  "conflict_signals": [
+    {{
+      "if_contains": "term indicating different branch/type",
+      "then": "decrease_confidence",
+      "target": "{component_name}",
+      "reason": "why this indicates a different unit"
+    }}
   ],
-  "confidence": "complete|partial|hierarchy_only",
-  "notes": "any caveats about these rules"
+  "structural_rules": [
+    {{
+      "if_contains": "regiment/battalion unique to one unit",
+      "then": "identifies",
+      "target": "unit name",
+      "note": "structural basis for rule"
+    }}
+  ],
+  "ambiguous_when": {{
+    "condition": "description of records that cannot be disambiguated",
+    "example_patterns": ["E2-16", "A/1/3"],
+    "recommendation": "flag_for_review|use_source_context|cannot_determine"
+  }},
+  "notes": "reasoning about the rules, including what CANNOT be determined"
 }}"""
 
 
@@ -406,7 +547,11 @@ Respond in JSON format:
 # PHASE 8: TIER ASSIGNMENT (Pattern Validation)
 # =============================================================================
 
-TIER_ASSIGNMENT_SYSTEM = """You are validating discovered patterns against a sample of records. For each pattern, determine how reliably it identifies the target unit."""
+TIER_ASSIGNMENT_SYSTEM = """You are validating discovered patterns against a sample of records. For each pattern, determine:
+1. Whether it ACTUALLY APPEARS in the provided records (validates provenance)
+2. How reliably it identifies the target unit when present
+
+This is a GROUNDING check - patterns claimed as "observed" must appear in the records."""
 
 
 def build_tier_assignment_prompt(
@@ -426,7 +571,7 @@ def build_tier_assignment_prompt(
         Formatted prompt string
     """
     pattern_list = "\n".join(
-        f"- '{p.get('pattern', '')}': {p.get('means', '')}"
+        f"- '{p.get('pattern', '')}': {p.get('means', '')} (claimed provenance: {p.get('provenance', 'unknown')})"
         for p in patterns[:10]
     )
 
@@ -441,23 +586,35 @@ SAMPLE RECORDS (confirmed {component_name}):
 {text_sample}
 
 TASK:
-For each pattern, assess:
-1. How often it appears in these records
-2. Whether it correctly identifies the unit
+For each pattern, verify:
+1. Does it ACTUALLY APPEAR in the records above? (provenance check)
+2. How often does it appear? (frequency)
 3. Assign a confidence tier:
-   - robust: >90% reliable
-   - strong: 75-90% reliable
-   - moderate: 50-75% reliable
-   - tentative: <50% reliable
+   - robust: appears frequently and always indicates this unit
+   - strong: appears regularly and reliably indicates this unit
+   - moderate: appears sometimes or has some ambiguity
+   - tentative: rarely appears or uncertain reliability
+   - not_validated: claimed as observed but NOT FOUND in records
+
+IMPORTANT: If a pattern was claimed as "observed" but you cannot find it in the
+records above, mark it as "validated_provenance": false.
 
 Respond in JSON format:
 {{
   "validated_patterns": [
     {{
       "pattern": "the pattern",
-      "tier": "robust|strong|moderate|tentative",
+      "tier": "robust|strong|moderate|tentative|not_validated",
       "matches_found": number,
+      "validated_provenance": true|false,
+      "example_matches": ["specific records where pattern appears"],
       "accuracy_estimate": "percentage or description"
+    }}
+  ],
+  "ungrounded_patterns": [
+    {{
+      "pattern": "pattern claimed as observed but not found",
+      "note": "could not locate in provided records"
     }}
   ]
 }}"""
@@ -475,7 +632,7 @@ HARD_CASE_SCHEMA = {
             "soldier_id": {"type": "string"},
             "reason": {
                 "type": "string",
-                "enum": ["conflicting_signals", "ambiguous_notation", "missing_identifiers", "transfer_detected", "low_confidence"]
+                "enum": ["conflicting_signals", "ambiguous_notation", "missing_identifiers", "transfer_detected", "insufficient_evidence", "low_confidence"]
             },
             "notes": {"type": "string"}
         },
@@ -494,9 +651,21 @@ PATTERN_DISCOVERY_SCHEMA = {
                     "pattern": {"type": "string"},
                     "means": {"type": "string"},
                     "tier": {"type": "string", "enum": ["robust", "strong", "moderate", "tentative"]},
+                    "provenance": {"type": "string", "enum": ["observed", "inferred"]},
+                    "example_records": {"type": "array", "items": {"type": "string"}},
                     "note": {"type": "string"}
                 },
-                "required": ["pattern", "means", "tier"]
+                "required": ["pattern", "means", "tier", "provenance"]
+            }
+        },
+        "ambiguous_patterns": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "pattern": {"type": "string"},
+                    "note": {"type": "string"}
+                }
             }
         },
         "hard_cases": HARD_CASE_SCHEMA,
@@ -513,16 +682,28 @@ EXCLUSION_MINING_SCHEMA = {
             "items": {
                 "type": "object",
                 "properties": {
-                    "if": {"type": "string"},
-                    "then": {"type": "string"},
+                    "if_contains": {"type": "string"},
+                    "then": {"type": "string", "enum": ["exclude"]},
+                    "reason": {"type": "string"},
                     "confidence": {"type": "string", "enum": ["high", "medium"]}
                 },
-                "required": ["if", "then"]
+                "required": ["if_contains", "then", "reason"]
             }
         },
         "observations": {"type": "string"}
     },
     "required": ["value_based_exclusions"]
+}
+
+VOCABULARY_TERM_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "term": {"type": "string"},
+        "strength": {"type": "string", "enum": ["strong", "moderate", "weak"]},
+        "example_records": {"type": "array", "items": {"type": "string"}},
+        "note": {"type": "string"}
+    },
+    "required": ["term", "strength"]
 }
 
 VOCABULARY_DISCOVERY_SCHEMA = {
@@ -531,9 +712,8 @@ VOCABULARY_DISCOVERY_SCHEMA = {
         "vocabulary": {
             "type": "object",
             "properties": {
-                "strong": {"type": "array", "items": {"type": "string"}},
-                "moderate": {"type": "array", "items": {"type": "string"}},
-                "weak": {"type": "array", "items": {"type": "string"}}
+                "observed": {"type": "array", "items": VOCABULARY_TERM_SCHEMA},
+                "inferred": {"type": "array", "items": VOCABULARY_TERM_SCHEMA}
             }
         },
         "discovered_aliases": {"type": "array", "items": {"type": "string"}},
@@ -543,13 +723,67 @@ VOCABULARY_DISCOVERY_SCHEMA = {
     "required": ["vocabulary"]
 }
 
+SIGNAL_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "if_contains": {"type": "string"},
+        "then": {"type": "string", "enum": ["increase_confidence", "decrease_confidence", "identifies"]},
+        "target": {"type": "string"},
+        "strength": {"type": "string", "enum": ["strong", "moderate", "weak"]},
+        "provenance": {"type": "string", "enum": ["observed", "inferred"]},
+        "reason": {"type": "string"},
+        "note": {"type": "string"}
+    },
+    "required": ["if_contains", "then", "target"]
+}
+
 DIFFERENTIATOR_SCHEMA = {
     "type": "object",
     "properties": {
-        "rules": {"type": "array", "items": {"type": "string"}},
-        "hierarchy_rules": {"type": "array", "items": {"type": "string"}},
-        "confidence": {"type": "string", "enum": ["complete", "partial", "hierarchy_only"]},
+        "positive_signals": {"type": "array", "items": SIGNAL_SCHEMA},
+        "conflict_signals": {"type": "array", "items": SIGNAL_SCHEMA},
+        "structural_rules": {"type": "array", "items": SIGNAL_SCHEMA},
+        "ambiguous_when": {
+            "type": "object",
+            "properties": {
+                "condition": {"type": "string"},
+                "example_patterns": {"type": "array", "items": {"type": "string"}},
+                "recommendation": {"type": "string", "enum": ["flag_for_review", "use_source_context", "cannot_determine"]}
+            }
+        },
         "notes": {"type": "string"}
     },
-    "required": ["rules"]
+    "required": ["positive_signals", "ambiguous_when"]
+}
+
+TIER_ASSIGNMENT_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "validated_patterns": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "pattern": {"type": "string"},
+                    "tier": {"type": "string", "enum": ["robust", "strong", "moderate", "tentative", "not_validated"]},
+                    "matches_found": {"type": "integer"},
+                    "validated_provenance": {"type": "boolean"},
+                    "example_matches": {"type": "array", "items": {"type": "string"}},
+                    "accuracy_estimate": {"type": "string"}
+                },
+                "required": ["pattern", "tier", "validated_provenance"]
+            }
+        },
+        "ungrounded_patterns": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "pattern": {"type": "string"},
+                    "note": {"type": "string"}
+                }
+            }
+        }
+    },
+    "required": ["validated_patterns"]
 }

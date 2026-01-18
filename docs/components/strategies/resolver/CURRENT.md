@@ -279,19 +279,47 @@ When a **sparse component** builds its own resolver:
 
   "patterns": {
     "status": "complete",
-    "entries": {
-      "1st Infantry Division": {"means": "component=1st_infantry_division", "tier": "robust"},
-      "Big Red One": {"means": "component=1st_infantry_division", "tier": "robust"},
-      "2/5": {"means": "battalion=2, regiment=5", "tier": "strong"},
-      "5th Inf Regt": {"means": "regiment=5", "tier": "moderate", "note": "needs division signal"}
+    "observed": {
+      "1st Infantry Division": {
+        "means": "component=1st_infantry_division",
+        "tier": "robust",
+        "example_records": ["MURPHY SGT 1st Infantry Division E2-16"]
+      },
+      "1st ID": {
+        "means": "component=1st_infantry_division",
+        "tier": "strong",
+        "example_records": ["JONES PFC 1st ID A/1/5"]
+      },
+      "2/5": {
+        "means": "battalion=2, regiment=5",
+        "tier": "strong",
+        "example_records": ["SMITH CPL 2/5"]
+      }
+    },
+    "inferred": {
+      "Big Red One": {
+        "means": "component=1st_infantry_division",
+        "tier": "moderate",
+        "note": "Known nickname, not seen in examples"
+      }
+    },
+    "ambiguous": {
+      "5th": "Appears in multiple units without division context"
     }
   },
 
   "vocabulary": {
     "status": "complete",
-    "strong": ["Big Red One", "1st ID", "BRO"],
-    "moderate": ["1st Division", "Omaha Beach"],
-    "weak": ["Normandy", "ETO"]
+    "observed": {
+      "strong": ["1st ID", "1ID"],
+      "moderate": ["1st Division"],
+      "weak": []
+    },
+    "inferred": {
+      "strong": ["Big Red One", "BRO"],
+      "moderate": ["Omaha Beach"],
+      "weak": ["Normandy", "ETO"]
+    }
   },
 
   "exclusions": {
@@ -315,21 +343,68 @@ When a **sparse component** builds its own resolver:
     "vs_3rd_infantry_division": {
       "status": "complete",
       "rival_sample_size": 423,
-      "rules": [
-        "Regiment 11 present → 3rd ID",
-        "Regiment 1 present → 1st ID",
-        "'Rock of the Marne' vocabulary → 3rd ID",
-        "'Big Red One' vocabulary → 1st ID"
-      ]
+      "positive_signals": [
+        {
+          "if_contains": "Rock of the Marne or ROTM",
+          "then": "increase_confidence",
+          "target": "3rd Infantry Division",
+          "strength": "strong",
+          "provenance": "observed"
+        },
+        {
+          "if_contains": "1st ID or 1ID",
+          "then": "increase_confidence",
+          "target": "1st Infantry Division",
+          "strength": "strong",
+          "provenance": "observed"
+        }
+      ],
+      "structural_rules": [
+        {
+          "if_contains": "Regiment 11",
+          "then": "identifies",
+          "target": "3rd Infantry Division",
+          "strength": "strong",
+          "note": "Unique regiment designation"
+        },
+        {
+          "if_contains": "Regiment 1 or 5 or 7",
+          "then": "identifies",
+          "target": "1st Infantry Division",
+          "strength": "strong",
+          "note": "Unique regiment designation"
+        }
+      ],
+      "ambiguous_when": {
+        "condition": "Only shared battalion/company, no regiment or division identifier",
+        "example_patterns": ["A/2", "B Co"],
+        "recommendation": "cannot_determine"
+      }
     },
     "vs_36th_infantry_division": {
       "status": "rival_undersampled",
       "rival_sample_size": 23,
       "rival_tier": "sparse",
-      "rules": [
-        "Regiment 2 or 3 → 36th ID (hierarchy-derived)",
-        "Regiment 5 or 7 → 1st ID (hierarchy-derived)"
+      "structural_rules": [
+        {
+          "if_contains": "Regiment 2 or 3",
+          "then": "identifies",
+          "target": "36th Infantry Division",
+          "strength": "strong",
+          "note": "Hierarchy-derived (unique to 36th)"
+        },
+        {
+          "if_contains": "Regiment 5 or 7",
+          "then": "identifies",
+          "target": "1st Infantry Division",
+          "strength": "strong",
+          "note": "Hierarchy-derived (unique to 1st)"
+        }
       ],
+      "ambiguous_when": {
+        "condition": "Only regiment 1 present (shared by both units)",
+        "recommendation": "cannot_determine"
+      },
       "not_generated": ["vocabulary-based differentiators", "pattern-based rules"]
     }
   }
@@ -388,12 +463,35 @@ When a **sparse component** builds its own resolver:
     "generation_mode": "hierarchy_only",
     "vs_1st_infantry_division": {
       "status": "hierarchy_only",
-      "rules": ["Regiment 2 or 3 → 36th ID", "Regiment 5 or 7 → 1st ID"]
+      "structural_rules": [
+        {
+          "if_contains": "Regiment 2 or 3",
+          "then": "identifies",
+          "target": "36th Infantry Division",
+          "strength": "strong",
+          "note": "Unique regiment designation"
+        },
+        {
+          "if_contains": "Regiment 5 or 7",
+          "then": "identifies",
+          "target": "1st Infantry Division",
+          "strength": "strong",
+          "note": "Unique regiment designation"
+        }
+      ],
+      "ambiguous_when": {
+        "condition": "Only shared regiment 1 present",
+        "recommendation": "cannot_determine"
+      }
     },
     "vs_2nd_infantry_division": {
       "status": "hierarchy_only",
-      "warning": "high_collision_risk",
-      "rules": ["Regiment 1, 2, 3 shared — limited disambiguation from structure alone"]
+      "structural_rules": [],
+      "ambiguous_when": {
+        "condition": "Regiments 1, 2, 3 shared — no structural disambiguation possible",
+        "recommendation": "flag_for_review"
+      },
+      "notes": "High collision risk - both share all three regiments"
     }
   },
 
@@ -420,6 +518,55 @@ See `docs/data-structures/CURRENT.md` for full schema.
 
 ---
 
+## Grounded Inference Philosophy (ADR-005)
+
+**Updated:** 2026-01-18
+
+Resolver generation now enforces grounded inference with provenance tracking to prevent LLM knowledge leakage:
+
+### Core Principles
+
+**1. Absence is NOT evidence** - Records lacking a term (e.g., no "ABN") are uninformative, not negative signals. Clerks often abbreviate; absence means nothing.
+
+**2. Grounded claims only** - All patterns/vocabulary must be cited from example records OR explicitly marked as `inferred` (from LLM training knowledge).
+
+**3. Ambiguity is valid** - Some records cannot be disambiguated. "Cannot determine" is an acceptable outcome. Do not force classification.
+
+**4. Positive signals only** - Rules based on PRESENCE of terms, never ABSENCE:
+- ✓ "Contains 'ABN'" → positive signal FOR airborne
+- ✗ "Does NOT contain 'ABN'" → INVALID
+- ✓ "Contains 'Marine'" (when expecting Army) → conflict signal
+
+### Provenance Tracking
+
+**Observed** - Term appears in provided example records, can be cited
+**Inferred** - Term from LLM training knowledge (e.g., unit nicknames, historical campaigns)
+
+Downstream code can weight: `observed` (high trust) > `inferred` (hint only)
+
+### Confidence-Based Signals (Not Deterministic Rules)
+
+Old approach (deterministic):
+```
+"Contains ABN → 101st Airborne"
+"LACKS ABN → 2nd Infantry"  // ❌ Invalid
+```
+
+New approach (confidence-based):
+```json
+"positive_signals": [
+  {"if_contains": "ABN or PIR", "then": "increase_confidence", "target": "101st", "strength": "strong"}
+],
+"ambiguous_when": {
+  "condition": "Only regiment number, no type modifiers",
+  "recommendation": "cannot_determine"
+}
+```
+
+**Reference:** `docs/architecture/decisions/ADR-005_grounded-inference-provenance.md`
+
+---
+
 ## Key Principles
 
 - **Cross-record context:** Pattern interpretation uses ALL records for soldier
@@ -428,6 +575,7 @@ See `docs/data-structures/CURRENT.md` for full schema.
 - **Conservative exclusions:** Only incompatible PRESENCE excludes, never absence
 - **Graceful degradation:** Sparse components get hierarchy-only resolvers with explicit gaps
 - **Rebuild awareness:** Registry tracks when resolvers should be regenerated
+- **Grounded inference:** Patterns grounded in examples; provenance tracked (ADR-005)
 
 ---
 
@@ -777,6 +925,104 @@ def reconcile_patterns(
 
 **Phase 6 - Executor (already complete):**
 - `ResolverStrategy(BaseStrategy)` ✓
+
+---
+
+## Performance Optimizations (2026-01-17)
+
+### Timeout Configuration Fix
+
+**Problem:** LLM calls to Gemini API were timing out after 30-45 minutes instead of the configured 2 minutes, causing resolver generation to hang indefinitely.
+
+**Root Cause:** The `timeout` parameter in `ChatGoogleGenerativeAI` was not being properly enforced. Passing a custom `httpx.Client` object caused validation errors.
+
+**Solution:**
+- Pass `timeout` parameter directly to `ChatGoogleGenerativeAI` (line 54 in `gemini.py`)
+- Increased default timeout from 120s to 300s (5 minutes) to allow complex differentiator calls to complete
+- Reduced retry attempts from 3 to 1 to fail fast on persistent issues
+- Location: `src/utils/llm/providers/gemini.py`
+
+**Impact:**
+- Maximum time per LLM call: 10 minutes (5 min timeout × 2 attempts)
+- Phase 7 (Differentiator Generation) now completes or fails predictably instead of hanging
+- Failed calls now surface quickly for debugging
+
+### Lazy Import Optimization
+
+**Problem:** Importing any function from `src.strategies.resolver.generator` was taking 5-10 seconds due to eager loading of LangChain and Google GenAI SDK.
+
+**Root Cause:** Package `__init__.py` files imported all modules eagerly, including heavy dependencies:
+- `src/strategies/resolver/__init__.py` imported `ResolverStrategy` (which imports LangChain)
+- `src/strategies/resolver/generator/__init__.py` imported `generate.py` (which imports LLM providers)
+
+**Solution:**
+- Converted both `__init__.py` files to use lazy imports via `__getattr__`
+- Lightweight modules (thresholds, structure, sampling, registry, assembler) import eagerly
+- Heavy modules (llm_phases, generate, executor) import only when accessed
+- Location: `src/strategies/resolver/__init__.py`, `src/strategies/resolver/generator/__init__.py`
+
+**Impact:**
+- Import time reduced from ~5-10s to ~0.5-1s for lightweight utilities
+- Notebook startup significantly faster
+- Generator functions (generate_single_component, etc.) only load LangChain when actually called
+
+### Progress Callback Support
+
+**Problem:** No visibility into which phase of resolver generation was running, making it difficult to diagnose hangs.
+
+**Solution:**
+- Added `progress_callback` parameter to generation pipeline:
+  - `generate_all_resolvers()`
+  - `generate_single_component()`
+  - `_generate_single_resolver()`
+  - `_run_dual_mode()`
+  - `run_all_phases()`
+- Callback invoked at each phase transition with phase name
+- Integrated with tqdm in `resolver_generation.ipynb` for visual progress bar
+- Location: `src/strategies/resolver/generator/generate.py`, `src/strategies/resolver/generator/llm_phases.py`
+
+**Impact:**
+- Real-time visibility into current phase (Pattern Discovery, Exclusion Mining, etc.)
+- Progress bar shows completion percentage and estimated time remaining
+- Easier to identify which phase is slow or stuck
+
+**Example Usage (Notebook):**
+```python
+from tqdm.auto import tqdm
+
+pbar = tqdm(total=6, desc=f"Generating {COMPONENT_ID}", unit="phase")
+
+def update_progress(phase_name: str):
+    pbar.set_postfix_str(phase_name)
+    pbar.update(1)
+
+resolver = generate_single_component(
+    component_id=COMPONENT_ID,
+    progress_callback=update_progress,
+    ...
+)
+```
+
+### Retry Configuration
+
+**Change:** Reduced maximum retry attempts from 3 to 1 for faster failure on persistent issues.
+
+**Rationale:**
+- With 5-minute timeouts, 3 retries meant 20 minutes wasted on a failing call
+- Differentiator generation has 9 rivals, so one bad call could waste hours
+- Better to fail fast and surface the error for debugging
+
+**Configuration:** `src/strategies/resolver/generator/generate.py:241-249`
+
+```python
+retry_config = RetryConfig(
+    max_retries=1,  # Reduced from 3
+    initial_delay=2.0,
+    max_delay=10.0,
+    retry_on_timeout=True,
+    retry_on_rate_limit=True,
+)
+```
 
 ---
 
