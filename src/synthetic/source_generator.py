@@ -23,22 +23,24 @@ from .situation_manager import SituationManager
 from .vocabulary_injector import VocabularyInjector
 
 
-# Quality tier distribution
+# Quality tier distribution - rebalanced for more degraded records
+# Tier 4-5 now >= 35% to force vocabulary-based disambiguation
 QUALITY_TIER_WEIGHTS = {
-    1: 0.20,  # archival_clean
-    2: 0.35,  # standard
-    3: 0.25,  # field_worn
-    4: 0.15,  # degraded
-    5: 0.05,  # fragmentary
+    1: 0.10,  # archival_clean (reduced)
+    2: 0.25,  # standard (reduced)
+    3: 0.30,  # field_worn (increased)
+    4: 0.25,  # degraded (increased)
+    5: 0.10,  # fragmentary (increased)
 }
 
 # Archetype bias by quality tier
+# field_minimal added to tier 4-5 for records without unit type indicators
 ARCHETYPE_BIAS = {
     1: ["hq_formal", "hq_efficient", "repldep_intake"],
     2: ["battalion_methodical", "transport_ship", "marine_fmf"],
     3: ["battalion_rushed", "field_medevac", "aaf_operations"],
-    4: ["field_exhausted"],
-    5: ["field_exhausted"],
+    4: ["field_exhausted", "field_minimal"],
+    5: ["field_exhausted", "field_minimal"],
 }
 
 

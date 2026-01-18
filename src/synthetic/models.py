@@ -84,6 +84,7 @@ class UnitFormat:
     phonetic_companies: bool = False
     marine_regiment_style: str = "Mar"
     include_air_force: bool = True
+    omit_unit_type: bool = False  # When True, renders "3rd" instead of "3rd PIR"
 
 
 @dataclass

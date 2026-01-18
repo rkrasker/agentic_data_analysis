@@ -243,7 +243,10 @@ class Renderer:
 
         if assignment.regiment and clerk.unit_format.include_regiment:
             reg = self._ordinal(assignment.regiment)
-            parts.append(f"{reg} Inf")
+            if clerk.unit_format.omit_unit_type:
+                parts.append(reg)  # Just "3rd", no type indicator
+            else:
+                parts.append(f"{reg} Inf")
 
         if clerk.unit_format.include_division:
             div_name = self._get_division_short(assignment.component_id)
@@ -269,15 +272,18 @@ class Renderer:
 
         if assignment.regiment and clerk.unit_format.include_regiment:
             reg = self._ordinal(assignment.regiment)
-            div_type = self.hierarchy.get_division_type(assignment.component_id)
-            if div_type == "marine":
-                parts.append(f"{reg} Mar Regt")
-            elif div_type == "airborne":
-                parts.append(f"{reg} PIR")
-            elif div_type == "mountain":
-                parts.append(f"{reg} Mtn Inf Regt")
+            if clerk.unit_format.omit_unit_type:
+                parts.append(reg)  # Just "3rd", no type indicator
             else:
-                parts.append(f"{reg} Inf Regt")
+                div_type = self.hierarchy.get_division_type(assignment.component_id)
+                if div_type == "marine":
+                    parts.append(f"{reg} Mar Regt")
+                elif div_type == "airborne":
+                    parts.append(f"{reg} PIR")
+                elif div_type == "mountain":
+                    parts.append(f"{reg} Mtn Inf Regt")
+                else:
+                    parts.append(f"{reg} Inf Regt")
 
         if clerk.unit_format.include_division:
             div_name = self._get_division_full(assignment.component_id)
@@ -300,7 +306,10 @@ class Renderer:
             parts.append(f"{assignment.battalion}Bn")
 
         if assignment.regiment and clerk.unit_format.include_regiment:
-            parts.append(f"{assignment.regiment}Inf")
+            if clerk.unit_format.omit_unit_type:
+                parts.append(assignment.regiment)  # Just "3", no type indicator
+            else:
+                parts.append(f"{assignment.regiment}Inf")
 
         return " ".join(parts)
 
@@ -468,8 +477,11 @@ class Renderer:
 
         if assignment.regiment and clerk.unit_format.include_regiment:
             reg = self._ordinal(assignment.regiment)
-            style = clerk.unit_format.marine_regiment_style
-            parts.append(f"{reg} {style}")
+            if clerk.unit_format.omit_unit_type:
+                parts.append(reg)  # Just "7th", no type indicator
+            else:
+                style = clerk.unit_format.marine_regiment_style
+                parts.append(f"{reg} {style}")
 
         if clerk.unit_format.include_division:
             div_name = self._get_division_short(assignment.component_id)

@@ -38,6 +38,20 @@ COMPONENT_WEIGHTS = {
     "36th_infantry_division": 0.02,
 }
 
+# Focused weights for 82nd Airborne resolver validation
+# Only includes 82nd and its collision rivals from the resolver
+COMPONENT_WEIGHTS_82ND_FOCUSED = {
+    "82nd_airborne_division": 0.20,      # Target component (higher weight)
+    "101st_airborne_division": 0.12,     # Rival: airborne collision
+    "1st_infantry_division": 0.10,       # Rival: regiment collision (1, 5, 7)
+    "2nd_infantry_division": 0.10,       # Rival: regiment collision (1, 3, 9)
+    "3rd_infantry_division": 0.10,       # Rival: regiment collision (5, 7, 11)
+    "36th_infantry_division": 0.08,      # Rival: regiment collision
+    "10th_mountain_division": 0.08,      # Rival: regiment collision
+    "1st_marine_division": 0.11,         # Rival: regiment collision + branch
+    "3rd_marine_division": 0.11,         # Rival: regiment collision + branch
+}
+
 
 class Pipeline:
     """
@@ -452,6 +466,7 @@ def run_pipeline(
     output_dir: str = "data/synthetic",
     target_records: int = 10000,
     random_seed: int = 42,
+    component_weights: Optional[Dict[str, float]] = None,
 ) -> Dict[str, Any]:
     """
     Convenience function to run the full pipeline.
@@ -460,6 +475,7 @@ def run_pipeline(
         output_dir: Directory for output parquet files
         target_records: Target number of raw entries
         random_seed: Seed for reproducibility
+        component_weights: Optional custom component weights (uses COMPONENT_WEIGHTS if None)
 
     Returns:
         Pipeline statistics
@@ -480,6 +496,7 @@ def run_pipeline(
     # Generate data
     raw_records, validation_records, transfer_records = pipeline.generate(
         target_records=target_records,
+        component_weights=component_weights,
     )
 
     # Export to parquet
@@ -492,3 +509,67 @@ def run_pipeline(
 
     # Return stats
     return pipeline.get_stats()
+
+
+if __name__ == "__main__":
+    import argparse
+    import json
+
+    parser = argparse.ArgumentParser(description="Generate synthetic data")
+    parser.add_argument(
+        "--output-dir", "-o",
+        default="data/synthetic",
+        help="Output directory for parquet files"
+    )
+    parser.add_argument(
+        "--target-records", "-n",
+        type=int,
+        default=10000,
+        help="Target number of raw entries"
+    )
+    parser.add_argument(
+        "--seed", "-s",
+        type=int,
+        default=42,
+        help="Random seed for reproducibility"
+    )
+    parser.add_argument(
+        "--focused-82nd",
+        action="store_true",
+        help="Use focused weights for 82nd Airborne and its rivals only"
+    )
+
+    args = parser.parse_args()
+
+    # Select component weights
+    weights = COMPONENT_WEIGHTS_82ND_FOCUSED if args.focused_82nd else None
+
+    print(f"Generating synthetic data...")
+    print(f"  Output: {args.output_dir}")
+    print(f"  Target records: {args.target_records}")
+    print(f"  Seed: {args.seed}")
+    if args.focused_82nd:
+        print(f"  Mode: 82nd Airborne focused (9 components)")
+        print(f"  Components: {list(COMPONENT_WEIGHTS_82ND_FOCUSED.keys())}")
+
+    stats = run_pipeline(
+        output_dir=args.output_dir,
+        target_records=args.target_records,
+        random_seed=args.seed,
+        component_weights=weights,
+    )
+
+    print("\n=== Generation Complete ===")
+    print(f"Total soldiers: {stats['total_soldiers']}")
+    print(f"Total sources: {stats['total_sources']}")
+    print(f"Total entries: {stats['total_entries']}")
+    print(f"Avg entries/source: {stats['avg_entries_per_source']:.1f}")
+    print("\nSoldiers by component:")
+    for comp, count in sorted(stats['soldiers_by_component'].items()):
+        print(f"  {comp}: {count}")
+    print("\nVocabulary coverage:")
+    for key, val in stats['vocabulary_coverage'].items():
+        if isinstance(val, float):
+            print(f"  {key}: {val:.1%}")
+        else:
+            print(f"  {key}: {val}")

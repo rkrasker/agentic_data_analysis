@@ -115,6 +115,7 @@ class ClerkFactory:
             phonetic_companies=unit_data.get("phonetic_companies", False),
             marine_regiment_style=unit_data.get("marine_regiment_style", "Mar"),
             include_air_force=unit_data.get("include_air_force", True),
+            omit_unit_type=unit_data.get("omit_unit_type", False),
         )
 
         # Parse consistency
@@ -248,6 +249,7 @@ class ClerkFactory:
             phonetic_companies=base.phonetic_companies,
             marine_regiment_style=base.marine_regiment_style,
             include_air_force=base.include_air_force,
+            omit_unit_type=base.omit_unit_type,
         )
 
     def _vary_consistency(self, base: Consistency) -> Consistency:
