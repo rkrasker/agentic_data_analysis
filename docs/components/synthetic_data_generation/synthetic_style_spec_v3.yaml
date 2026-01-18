@@ -276,6 +276,46 @@ clerk_archetypes:
       incomplete_unit: 0.25  # often missing lower echelons
 
   # ---------------------------------------------------------------------------
+
+  field_minimal:
+    description: |
+      Field clerk under extreme stress. Writes bare minimum identifiers.
+      No unit type indicators (PIR, Inf, Marine) - just numbers.
+      Forces resolver to use vocabulary signals for disambiguation.
+    context_level: "field"
+
+    name_format:
+      template: "{LAST} {FIRST}"
+      drop_middle_rate: 0.70  # almost always forgets middle initial
+
+    rank_format:
+      style: "mixed"
+      form: "phonetic"
+      omit_rate: 0.20  # often forgets rank entirely
+
+    unit_format:
+      style: "minimal"
+      include_division: false
+      include_regiment: true
+      include_battalion: true
+      include_company: true
+      omit_unit_type: true  # KEY FLAG: renders "3rd" instead of "3rd PIR"
+
+    vocabulary_density: "low"
+    # Minimal notation, no extra terms
+
+    consistency:
+      format_lock: 0.60
+      minor_drift: 0.30
+      major_variation: 0.10
+
+    imperfections:
+      typo_rate: 0.10
+      abbreviation_inconsistency: 0.25
+      trailing_off: 0.15
+      mid_entry_corrections: 0.08
+
+  # ---------------------------------------------------------------------------
   # TRANSPORT/MANIFEST CLERKS - Systematic but context-specific
   # ---------------------------------------------------------------------------
 

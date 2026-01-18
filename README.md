@@ -96,11 +96,11 @@ Example usage in `examples/sandbox_usage.py`.
 | ↳ Evaluation Framework | ✓ Complete | Metrics + cost tracking |
 
 **Recent:**
+- Collision sampling fix + quality tier filtering for resolver generation (2026-01-17)
+- Dual-run stateful extraction with hard case reconciliation (2026-01-16)
 - Harness foundation complete - strategy-agnostic framework (2026-01-15)
 - Resolver generation workflow fully specified (2026-01-15)
 - Multi-provider LLM infrastructure via LangChain (2026-01-15)
-- Preprocessing adapter bridging synthetic → regex extraction (2026-01-14)
-- Glossary generator from synthetic configs (2026-01-14)
 
 **Next:**
 - Resolver generation workflow - implement 7 modules

@@ -1,7 +1,7 @@
 # Resolver Strategy
 
 **Status:** Complete - all modules implemented
-**Last Updated:** 2026-01-15
+**Last Updated:** 2026-01-17
 
 ## Purpose
 
@@ -87,6 +87,28 @@ Flag soldier as hard case if:
 - Hard case IDs can be dropped when batch-level `soldier_ids` (per soldier) do not align with per-record `target_texts`, which prevents the LLM from returning valid `hard_cases`.
 - Dual-run mode currently runs the single-pass pattern discovery and then overwrites it, which doubles LLM cost and inflates token accounting.
 - Hard case record lookup compares string IDs from the LLM to `records_df[soldier_id_col]` directly; if the dataframe column is numeric, reconciliation can see empty hard case records.
+
+### Collision-Scoped Sampling (2026-01-17)
+
+Phase 3 sampling now filters soldiers to only those in colliding sub-units before sampling:
+- Example: If 82nd and 101st both have regiment 3, only soldiers from regiment 3 are sampled
+- Prevents LLM from learning trivial rules based on non-overlapping designators
+- Falls back to all soldiers with warning if filter returns empty
+- Implemented in `sampling.py:_filter_to_collision()`
+
+### Quality Tier Filtering (2026-01-17)
+
+LLM phases now filter records by quality tier to force discovery of subtle signals:
+
+| Phase | Mode | Tier 1 | Tier 2 | Tiers 3-5 |
+|-------|------|--------|--------|-----------|
+| Vocabulary (40 records) | vocab | 0% | 0% | 100% |
+| Patterns (20 records) | differentiator | 0% | 0% | 100% |
+| Exclusions (30 records) | differentiator | 0% | ≤20% | ≥80% |
+
+**Rationale:** High-quality records (tier 1-2) often have explicit unit identifiers (e.g., "3rd PIR" instead of just "3rd"), making disambiguation trivial. Filtering toward lower-quality records forces the LLM to find vocabulary signals rather than relying on explicit identifiers.
+
+Implemented in `llm_phases.py:_filter_records_by_quality()`
 
 ### Data Requirements
 
@@ -457,14 +479,14 @@ See `docs/data-structures/CURRENT.md` for full schema.
 |-----------|--------|----------|
 | Threshold Calculator | ✓ Complete | `src/strategies/resolver/generator/thresholds.py` |
 | Phase 1-2 (Structure) | ✓ Complete | `src/strategies/resolver/generator/structure.py` |
-| Phase 3 (Sampling) | ✓ Complete | `src/strategies/resolver/generator/sampling.py` |
-| Phase 4-8 (LLM Phases) | Needs update | `src/strategies/resolver/generator/llm_phases.py` |
+| Phase 3 (Sampling) | ✓ Complete | `src/strategies/resolver/generator/sampling.py` (+ collision-scoped filtering) |
+| Phase 4-8 (LLM Phases) | ✓ Complete | `src/strategies/resolver/generator/llm_phases.py` (+ quality tier filtering) |
 | Dual-Run Orchestrator | ✓ Complete | `src/strategies/resolver/generator/dual_run.py` |
 | Reconciliation | ✓ Complete | `src/strategies/resolver/generator/reconciliation.py` |
 | Registry Manager | ✓ Complete | `src/strategies/resolver/generator/registry.py` |
 | Prompts | ✓ Complete | `src/strategies/resolver/generator/prompts.py` |
 | Assembler | ✓ Complete | `src/strategies/resolver/generator/assembler.py` |
-| Main Orchestrator | Needs update | `src/strategies/resolver/generator/generate.py` |
+| Main Orchestrator | ✓ Complete | `src/strategies/resolver/generator/generate.py` |
 | Resolver Executor | ✓ Complete | `src/strategies/resolver/executor/strategy.py` |
 
 **Infrastructure (Global Utilities):**

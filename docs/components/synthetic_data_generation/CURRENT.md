@@ -1,7 +1,7 @@
 # Synthetic Data Generation
 
-**Version:** 3.0.2
-**Last Updated:** 2026-01-14
+**Version:** 3.0.3
+**Last Updated:** 2026-01-17
 
 ---
 
@@ -103,8 +103,21 @@ Clerks are defined as persistent characters with fixed behavioral patterns:
 | `aaf_operations` | Group ops, mission tracking | `Kowalski, S.J.  91BG-322  SSGT  B-17` |
 | `marine_fmf` | Fleet Marine Force | `Kowalski, Stanley J.  Co E, 2nd Bn, 1st Mar, 1st MarDiv` |
 | `marine_shipboard` | Marine transport | `KOWALSKI S    E/2/1  1MARDIV  SGT` |
+| `field_minimal` | Field under stress | `Schroeder Roy  Co 4, B Bn, 3rd` |
 
 A clerk's style is **LOCKED** for all entries they produce. No per-entry sampling.
+
+### Unit Type Omission (v3.0.3)
+
+The `field_minimal` archetype uses `omit_unit_type: true` which renders regiment numbers without type indicators:
+
+| With unit type | Without unit type |
+|----------------|-------------------|
+| `3rd PIR` | `3rd` |
+| `5th Inf` | `5th` |
+| `7th Mar` | `7th` |
+
+This forces disambiguation to rely on vocabulary signals rather than explicit identifiers.
 
 ---
 
@@ -348,6 +361,16 @@ This is exactly what makes the real data hard.
 ---
 
 ## Changelog
+
+### v3.0.3 (2026-01-17)
+- **Feature:** Added `omit_unit_type` flag to `UnitFormat` dataclass for rendering regiments without type indicators
+- **Feature:** Added `field_minimal` clerk archetype for degraded records without explicit unit identifiers
+- **Feature:** Added `COMPONENT_WEIGHTS_82ND_FOCUSED` for targeted resolver validation (82nd + 8 rivals)
+- **Change:** Rebalanced quality tier weights — tier 4-5 now 35% of output (was 20%)
+- **Change:** Wired `field_minimal` archetype to tier 4-5 sources via `ARCHETYPE_BIAS`
+- **Tooling:** Added CLI argument `--focused-82nd` to pipeline for focused generation
+- **Tooling:** Added `synthetic_generation.ipynb` notebook for interactive generation
+- **Reference:** `instructions/active/003_synthetic-degradation-phase2.md`
 
 ### v3.0.2 (2026-01-14)
 - **Bug fix:** Transferred soldiers now appear with both original and new assignments across sources
