@@ -140,6 +140,7 @@ def generate_all_resolvers(
     components_filter: Optional[List[str]] = None,
     rebuild_existing: bool = False,
     config: Optional[GenerationConfig] = None,
+    progress_callback: Optional[callable] = None,
 ) -> GenerationSummary:
     """
     Generate resolvers for all components.
@@ -156,6 +157,7 @@ def generate_all_resolvers(
         components_filter: Optional list of component IDs to process
         rebuild_existing: If True, regenerate all resolvers
         config: Generation configuration (uses defaults if None)
+        progress_callback: Optional callback(phase_name: str) to report progress
 
     Returns:
         GenerationSummary with results
@@ -234,8 +236,26 @@ def generate_all_resolvers(
 
     # Step 6: Initialize LLM
     logger.info("\nStep 6: Initializing LLM...")
-    llm = create_provider(model_name, temperature=0.0)
+    from src.utils.llm.base import RetryConfig
+
+    # Configure aggressive timeouts and reduced retries
+    # 5 minute timeout for individual calls, only 1 retry attempt
+    retry_config = RetryConfig(
+        max_retries=1,  # Reduced from 3 to avoid wasting time
+        initial_delay=2.0,
+        max_delay=10.0,
+        retry_on_timeout=True,
+        retry_on_rate_limit=True,
+    )
+
+    llm = create_provider(
+        model_name,
+        temperature=0.0,
+        timeout=300,  # 5 minute timeout (vs old 120s which wasn't enforced)
+        retry_config=retry_config,
+    )
     logger.info(f"  Model: {model_name}")
+    logger.info(f"  Timeout: 300s (5 min), Max retries: 1")
 
     # Step 7: Initialize registry
     logger.info("\nStep 7: Initializing registry...")
@@ -273,6 +293,7 @@ def generate_all_resolvers(
                 output_dir=output_dir,
                 rebuild_existing=rebuild_existing,
                 config=config,
+                progress_callback=progress_callback,
             )
 
             if result["status"] == "success":
@@ -341,9 +362,13 @@ def _generate_single_resolver(
     output_dir: Path,
     rebuild_existing: bool,
     config: GenerationConfig,
+    progress_callback: Optional[callable] = None,
 ) -> Dict[str, Any]:
     """
     Generate resolver for a single component.
+
+    Args:
+        progress_callback: Optional callback(phase_name: str) to report progress
 
     Returns:
         Dict with "status" ("success" or "skipped"), token counts, and dual-run metrics
@@ -386,6 +411,7 @@ def _generate_single_resolver(
             llm=llm,
             tier=tier,
             config=config,
+            progress_callback=progress_callback,
         )
         result["dual_run"] = dual_run_metrics
     else:
@@ -398,6 +424,7 @@ def _generate_single_resolver(
             llm=llm,
             tier=tier,
             thresholds_result=thresholds,
+            progress_callback=progress_callback,
         )
 
     # Assemble resolver
@@ -454,9 +481,13 @@ def _run_dual_mode(
     llm: BaseLLMProvider,
     tier: TierName,
     config: GenerationConfig,
+    progress_callback: Optional[callable] = None,
 ) -> tuple:
     """
     Run dual-run extraction with reconciliation for pattern discovery.
+
+    Args:
+        progress_callback: Optional callback(phase_name: str) to report progress
 
     Returns:
         Tuple of (PhaseResults, dual_run_metrics dict)
@@ -570,6 +601,7 @@ def _run_dual_mode(
         llm=llm,
         tier=tier,
         thresholds_result=thresholds,
+        progress_callback=progress_callback,
     )
 
     # Merge reconciled patterns into phase results
@@ -592,6 +624,7 @@ def generate_single_component(
     hierarchy_path: Path,
     output_dir: Path,
     model_name: str = "gemini-2.5-pro",
+    progress_callback: Optional[callable] = None,
 ) -> Dict[str, Any]:
     """
     Generate resolver for a single component.
@@ -605,6 +638,7 @@ def generate_single_component(
         hierarchy_path: Path to hierarchy_reference.json
         output_dir: Output directory
         model_name: LLM model to use
+        progress_callback: Optional callback(phase_name: str) to report progress
 
     Returns:
         Generated resolver dictionary
@@ -617,6 +651,7 @@ def generate_single_component(
         model_name=model_name,
         components_filter=[component_id],
         rebuild_existing=True,
+        progress_callback=progress_callback,
     )
 
     if summary.failed > 0:

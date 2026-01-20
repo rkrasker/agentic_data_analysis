@@ -2,8 +2,13 @@
 Resolver Generator Module
 
 Generates resolver heuristics from validation data.
+
+Uses lazy imports to avoid loading heavy dependencies (LangChain, LLMs)
+until actually needed. Lightweight modules (thresholds, structure, etc.)
+are imported eagerly for fast access.
 """
 
+# Lightweight modules - imported eagerly (no LLM dependencies)
 from .thresholds import (
     ThresholdResult,
     TierName,
@@ -34,18 +39,6 @@ from .registry import (
     get_recommendations_for_tier,
     get_warnings_for_tier,
 )
-from .llm_phases import (
-    PatternResult,
-    ExclusionResult,
-    VocabularyResult,
-    DifferentiatorResult,
-    PhaseResults,
-    run_all_phases,
-    discover_patterns,
-    mine_exclusions,
-    discover_vocabulary,
-    generate_differentiators,
-)
 from .assembler import (
     assemble_resolver,
     save_resolver,
@@ -53,11 +46,25 @@ from .assembler import (
     get_resolver_path,
     validate_resolver,
 )
-from .generate import (
-    GenerationSummary,
-    generate_all_resolvers,
-    generate_single_component,
-)
+
+# Lazy imports for heavy modules (import LangChain/LLMs)
+# These are only loaded when accessed
+def __getattr__(name):
+    """Lazy import for LLM-dependent modules to speed up basic imports."""
+    # LLM phases
+    if name in ("PatternResult", "ExclusionResult", "VocabularyResult",
+                "DifferentiatorResult", "PhaseResults", "run_all_phases",
+                "discover_patterns", "mine_exclusions", "discover_vocabulary",
+                "generate_differentiators"):
+        from . import llm_phases
+        return getattr(llm_phases, name)
+
+    # Main generation functions
+    if name in ("GenerationSummary", "generate_all_resolvers", "generate_single_component"):
+        from . import generate
+        return getattr(generate, name)
+
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 __all__ = [
     # Thresholds

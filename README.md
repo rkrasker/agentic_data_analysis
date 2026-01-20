@@ -96,6 +96,7 @@ Example usage in `examples/sandbox_usage.py`.
 | ↳ Evaluation Framework | ✓ Complete | Metrics + cost tracking |
 
 **Recent:**
+- Performance optimizations: timeout fixes, lazy imports, progress tracking (2026-01-17)
 - Collision sampling fix + quality tier filtering for resolver generation (2026-01-17)
 - Dual-run stateful extraction with hard case reconciliation (2026-01-16)
 - Harness foundation complete - strategy-agnostic framework (2026-01-15)

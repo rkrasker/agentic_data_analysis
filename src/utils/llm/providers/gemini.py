@@ -41,13 +41,17 @@ class GeminiProvider(BaseLLMProvider):
                 "Set it in your .env file or pass api_key parameter."
             )
 
+        # Configure timeout (default 300s = 5 minutes)
+        # This is passed to the underlying LangChain/Google GenAI client
+        timeout_seconds = kwargs.pop("timeout", 300)
+
         # Build model kwargs
         model_kwargs = {
             "model": self.config.model_id,
             "temperature": self.temperature,
             "max_output_tokens": self.max_tokens,
             "google_api_key": api_key,
-            "timeout": kwargs.pop("timeout", 120),  # 120 second timeout to prevent indefinite hangs
+            "timeout": timeout_seconds,  # Timeout in seconds
         }
 
         # LangChain 0.2.x vs 1.0+ compatibility
