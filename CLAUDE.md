@@ -18,7 +18,7 @@ One major strategy uses **resolvers**: pre-built heuristics tailored to parsing 
 
 ## The Core Problem: State Resolution (Post Assignment)
 
-**Identity resolution is NOT the problem.** We always know which records belong to which soldier.  
+**Identity resolution is NOT the problem.** We always know which records belong to which soldier.
 **State resolution is the problem.** Given all records for a soldier, infer:
 
 1. **How many states exist** (number of posts),
@@ -44,59 +44,6 @@ A **state** is the latent segment of a soldier's service that should resolve to 
 5. **Collisions**: Multiple divisions share the same regiment numbers (82nd Airborne has 3rd Regiment; so does 101st Airborne).
 6. **Clerk variation**: Different clerks use different formats, abbreviations, and levels of detail.
 
-## The Three-Layer Disambiguation Model
-
-This is the analytical framework for resolving posts within inferred states. Difficulty operates at three layers, but now the system must also discover the states themselves.
-
-### Layer 1: Per-Record Extraction
-Can we parse **some or all** of the post pathway from a single document?
-
-- "Co E, 2nd Bn, 116th Inf, 29th Div" → full path extracted
-- "E2-116" → partial path (company, battalion, regiment)
-- "3rd" → minimal (just a number, no unit type)
-
-**Quality tiers (1-5)** measure this layer. Tier 1 = explicit/complete. Tier 5 = fragmentary.
-
-### Interdependence: Extraction ↔ Grouping
-Per-record extraction is not a one-way prerequisite for grouping. We must extract a **set of candidate meanings** from each record to propose groupings, but those groupings provide the **context** needed to refine or expand the candidates. State resolution therefore operates as a **bootstrapping loop**: propose candidates → cluster records into states → re-interpret records in-state → resolve posts.
-
-### Layer 2: Cross-Record Aggregation (Within a State)
-Do the records that belong to a single inferred state **jointly** provide a unique post?
-
-Two individually ambiguous records can be complementary:
-
-| Record | Provides | Alone |
-|--------|----------|-------|
-| Record 1 | "Co E, 3rd Bn" | Ambiguous (which regiment?) |
-| Record 2 | "116th Infantry" | Ambiguous (which battalion?) |
-| **Together** | Co E, 3rd Bn, 116th | Unique path |
-
-**Key insight**: Complementary records can resolve a post even when each record is degraded. This only works if the records are grouped into the correct state.
-
-### Layer 3: Structural Inference
-Do hierarchy constraints disambiguate even when unit types are omitted?
-
-| Record | Text | Inference |
-|--------|------|-----------|
-| "516" | No unit type | Must be regiment (companies are letters, battalions are 1st/2nd/3rd) |
-| "3rd" | No unit type | Could be battalion or regiment (requires other context) |
-
-The hierarchy structure itself is a disambiguation signal. Numbers constrain valid hierarchy levels:
-- "516" can only be a regiment (number too high for battalion/company)
-- "A" or "E" can only be a company (letters)
-- "1st", "2nd", "3rd" could be battalion or regiment (requires other context)
-
-## The Critical Distinction
-
-**Record quality ≠ state resolution difficulty**
-
-| Scenario | Record Quality | State Resolution Difficulty |
-|----------|---------------|-----------------------------|
-| Pristine record saying "3rd Regiment" in collision zone | High (Tier 1) | High (ambiguous post, may induce false state split) |
-| Degraded records saying "516" + "3rd" + "Co E" | Low (Tier 4-5) | Low (structurally unique, easy to group) |
-
-Filtering toward degraded records does NOT guarantee hard cases. Hard cases are often those where records are high-quality but collide, or where grouping into states is ambiguous.
-
 ## Key Terminology
 
 | Term | Meaning |
@@ -112,6 +59,25 @@ Filtering toward degraded records does NOT guarantee hard cases. Hard cases are 
 | **State resolution difficulty** | Per-soldier measure of whether records can be partitioned into correct states and each state resolved to a unique post |
 | **Partial path** | Incomplete hierarchy (e.g., regiment + battalion but no division) |
 | **Structural inference** | Using hierarchy constraints to infer unit types when text omits them |
+
+## Code Style Preferences
+
+See [docs/CODE_STYLE.md](docs/CODE_STYLE.md) for detailed guidance. Key principles:
+- Prefer functions over classes for stateless operations
+- No premature abstraction — build for current requirements
+- Flat is better than nested; simple is better than clever
+
+## Documentation Map
+
+| I need... | Go to... |
+|-----------|----------|
+| Disambiguation model deep-dive | [docs/DISAMBIGUATION_MODEL.md](docs/DISAMBIGUATION_MODEL.md) |
+| Strategy pitfalls/warnings | [docs/components/strategies/CLAUDE.md](docs/components/strategies/CLAUDE.md) |
+| Resolver-specific warnings | [docs/components/strategies/resolver/CLAUDE.md](docs/components/strategies/resolver/CLAUDE.md) |
+| Component design docs | `docs/components/[name]/CURRENT.md` |
+| Architecture overview | [docs/architecture/CURRENT.md](docs/architecture/CURRENT.md) |
+| ADR quick reference | [docs/ADR_INDEX.md](docs/ADR_INDEX.md) |
+| Context packets | [docs/context-packets/](docs/context-packets/) |
 
 ## Architecture Overview
 
@@ -132,15 +98,9 @@ Extracts structured signals from raw text using deterministic regex patterns. Ou
 ### Strategy Execution (`src/strategies/`)
 Runs LLM workflows to discover states and resolve posts. Strategies vary by injections, batching, and prompting. Resolvers are one strategy among several and require a pre-build pipeline.
 
-#### Cross-Strategy LLM Pitfalls
-
-- **Training prior leakage**: the model uses innate training data or general military knowledge instead of only provided data.
-- **State over-splitting**: the model invents multiple states when a single post should explain the records.
-- **State under-splitting**: distinct posts are merged into one state because the model over-generalizes.
-- **Order anchoring**: early records or early batches lock the model into a wrong state count or grouping.
-- **Drift across batches**: successive batches shift interpretation even when evidence is similar.
-- **Premature convergence**: the model stops revising candidate meanings once a grouping seems plausible.
-- **Scaffolded hallucination**: overly explicit prompting induces invented steps or unjustified inferences.
+For strategy-specific warnings and pitfalls, see:
+- [docs/components/strategies/CLAUDE.md](docs/components/strategies/CLAUDE.md) — Cross-strategy LLM pitfalls
+- [docs/components/strategies/resolver/CLAUDE.md](docs/components/strategies/resolver/CLAUDE.md) — Resolver-specific pitfalls
 
 #### Other Strategies (Stub)
 
@@ -160,14 +120,6 @@ Builds disambiguation artifacts (resolvers) from training data using per-compone
 
 #### Strategy Execution: Inference (`src/strategies/`)
 Applies the selected strategy during inference to group records into states and resolve posts. The resolver strategy implements this via `src/strategies/resolver/executor/`, which applies pre-built resolvers to parse records and resolve posts within inferred states.
-
-#### Resolver Pitfalls
-
-- **Spurious pattern induction**: heuristics reflect quirks of the sampled training records rather than stable evidence.
-- **Over-generalization**: patterns match across collision zones and fire on adjacent components.
-- **Overfitting to injections**: heuristics mirror injected reference data instead of record evidence.
-- **Coverage gaps**: resolver rules handle canonical formats but miss clerk variation and partial paths.
-- **Internal inconsistency**: generated patterns conflict or encode incompatible assumptions.
 
 ### Evaluation (`src/evaluation/`)
 Measures state resolution accuracy: state count, grouping quality, and post resolution per state.
@@ -190,22 +142,12 @@ Measures state resolution accuracy: state count, grouping quality, and post reso
 - **Resolver strategy (execution runs)**: the resolver build pipeline exists, but the full data processing runs over datasets are not built.
 - **Zero-shot, few-shot, multi-pass strategies**: stubs only under `src/strategies/`.
 
-## ADR Pointers
-
-| ADR | Topic | Key Insight |
-|-----|-------|-------------|
-| ADR-001 | Validation leakage policy | Train/test splits are soldier-level disjoint |
-| ADR-002 | Dual-run stateful extraction | Hard cases detected via forward/reverse batch comparison |
-| ADR-004 | Few-shot corpus from resolver | Hard cases become training examples |
-| ADR-005 | Grounded inference | Patterns must be observed or marked inferred; no absence-based rules |
-| ADR-006 | Assignment difficulty model | The three-layer disambiguation framework (this document's foundation) |
-
 ## Current State
 
-**Branch**: `feature/assignment-difficulty-model`
+**Branch**: `main`
 
-**Active work**: Refactoring the conceptual model to distinguish per-record quality from per-soldier assignment difficulty. This affects synthetic generation, resolver training, and evaluation stratification.
+**Active work**: Documentation restructure complete. Ready for multi-agent workflow optimization.
 
-**What's stable**: Core pipeline structure, LLM phase interfaces, evaluation metrics framework.
+**What's stable**: Core pipeline structure, LLM phase interfaces, evaluation metrics framework, documentation organization.
 
 **What's in flux**: How difficulty is modeled, how sampling selects training examples, how routing decisions are made.

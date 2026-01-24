@@ -1,0 +1,142 @@
+A Day in the Life: Workflow Walkthrough
+Let me walk through a realistic day, stage by stage.
+
+Stage 1: Starting the Day (10 minutes)
+Goal: Orient yourself, decide what to work on.
+Model: None yet—this is you reading, not prompting.
+Load (yourself, not an agent):
+
+SESSION_STATE.md — where did I leave off?
+instructions/active/ — what's queued?
+README.md status section — what's blocked, what's next?
+
+Decision point:
+
+Do I have execution-ready tasks? → Sonnet/Codex day
+Do I need to design/plan something? → Need Opus (check rate limit)
+Am I stuck on a conceptual problem? → Need Opus
+
+Output: Mental clarity on today's mode. No documentation yet.
+
+Stage 2a: Execution Mode (Sonnet/Codex available, Opus not needed)
+Goal: Implement against an existing instruction file.
+Model: Sonnet (thinking off if spec is tight, thinking on if judgment needed) or Codex if Claude rate-limited.
+Context to load in Claude Code:
+
+Root CLAUDE.md (always)
+The specific instruction file from instructions/active/
+Relevant component CURRENT.md if the instruction references it
+Relevant code files (agent will find these, but you can front-load)
+
+What you tell the agent:
+"Implement instruction [NNN]. Read the instruction file first, then proceed."
+During execution:
+
+Agent works, you review
+If agent asks questions the spec should have answered → note this for later (spec was incomplete)
+If agent makes architectural decisions → pause, these might need Opus review
+
+Output at end of task:
+
+Working code (committed)
+Update instruction file status or move to instructions/completed/
+Note any spec gaps or surprises in SESSION_STATE.md
+
+Documentation timing: Brief notes as you go. No major documentation effort—this is execution, not discovery.
+
+Stage 2b: Planning Mode (Opus available, conceptual work needed)
+Goal: Design an approach, resolve ambiguity, make architectural decisions.
+Model: Opus (here in GUI, not Claude Code).
+Pre-session preparation (before engaging Opus):
+Load and read yourself:
+
+Root CLAUDE.md
+Relevant context packet (once built)
+Any specific docs the problem touches
+Formulate specific questions—not "help me with X" but "I'm deciding between A and B, here are the tradeoffs I see..."
+
+What you bring to Opus:
+
+The specific problem or decision
+What you've already considered
+What constraints exist
+What output you need (instruction file? architecture decision? clarification?)
+
+During the session:
+
+Dense, focused exchange
+When you reach a decision, explicitly ask: "Can you summarize this as an instruction file for Sonnet execution?" or "What should I capture from this session?"
+Don't let the session drift—Opus time is expensive
+
+Context window management:
+
+At ~50% context: Check if you have what you need. If the core problem is solved, start extracting.
+At ~70% context: Actively shift toward output generation. Ask for instruction files, decision summaries, documentation updates.
+At ~85% context: Wrap up. Get final artifacts. Don't start new threads of discussion.
+
+Output:
+
+Instruction file(s) for instructions/active/
+Decision documentation for relevant CURRENT.md updates
+Extract for .project_history/extracts/raw/
+
+
+Stage 3: The Handoff (Critical Moment)
+Goal: Convert Opus reasoning into Sonnet-executable artifacts.
+Still in Opus session (before context runs out):
+Ask explicitly:
+
+"Before we end, I need to capture this for execution. Can you draft:
+
+An instruction file for implementing [specific task]
+A summary of the decisions made for my docs
+Any pitfalls or warnings Sonnet should know about"
+
+
+What makes a good instruction file:
+
+States the decision (not "figure out" but "implement X using Y")
+Includes the reasoning (so Sonnet doesn't second-guess)
+Specifies boundaries (in scope, out of scope)
+Lists acceptance criteria (how to know it's done)
+Notes any warnings or pitfalls specific to this task
+
+Immediately after Opus session:
+
+Save instruction file to instructions/active/
+Save extract to .project_history/extracts/raw/
+Update SESSION_STATE.md with current state
+Update any CURRENT.md files if architectural decisions were made
+
+Documentation timing: Do this immediately, while context is fresh. 15-20 minutes of documentation now saves an hour of reconstruction later.
+
+Stage 4: Returning to Execution
+Goal: Execute the instruction you just created.
+Model: Sonnet or Codex.
+Context to load:
+
+Root CLAUDE.md
+The new instruction file
+Component docs referenced by the instruction
+
+The test: If Sonnet asks questions the instruction should answer, the instruction wasn't complete enough. Note this—next Opus session, you'll write better instructions.
+
+Stage 5: End of Day
+Goal: Leave state recoverable for tomorrow.
+Model: None (this is your documentation time).
+Update:
+
+SESSION_STATE.md — where are you now, what's next?
+Move completed instructions to archive
+Reconcile any raw extracts into daily reconciliation if needed
+Update README status section if milestones changed
+
+Time investment: 15-20 minutes. Non-negotiable if you want smooth restarts.
+
+Context Window Checkpoints (For Opus Sessions)
+Context UsedAction0-30%Explore the problem, ask questions, consider options30-50%Converge on decisions, confirm approach50-70%Generate artifacts: instruction files, documentation70-85%Finalize outputs, ask for summaries, wrap up85%+Stop new topics. Get final artifacts. End gracefully.
+Right now we're at approximately 60-65% of this context window. We should start generating artifacts soon—the instruction file, context packet drafts—rather than opening new topics.
+
+What This Tells Us About Context Packets
+Based on this workflow, the packets need to support:
+PacketSupports StageKey Contentsplanning-general.md2bRoot docs, architecture, ADRsplanning-resolver.md2bResolver-specific design docs + pitfallsplanning-synthetic.md2bSynthetic data design docsexecution-resolver.md2a, 4Leaner: just enough to implementexecution-general.md2a, 4Minimal context for well-specified tasks
