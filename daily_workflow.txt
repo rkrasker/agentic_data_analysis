@@ -86,29 +86,27 @@ Goal: Convert Opus reasoning into Sonnet-executable artifacts.
 Still in Opus session (before context runs out):
 Ask explicitly:
 
-"Before we end, I need to capture this for execution. Can you draft:
-
-An instruction file for implementing [specific task]
-A summary of the decisions made for my docs
-Any pitfalls or warnings Sonnet should know about"
 
 
-What makes a good instruction file:
+I need to wrap up this session. Please generate the following artifacts:
 
-States the decision (not "figure out" but "implement X using Y")
-Includes the reasoning (so Sonnet doesn't second-guess)
-Specifies boundaries (in scope, out of scope)
-Lists acceptance criteria (how to know it's done)
-Notes any warnings or pitfalls specific to this task
+1. **SESSION_STATE.md update** — formatted as a complete replacement for the file:
+   - Active task (one sentence)
+   - Current approach and key decisions made
+   - Where I left off (specific next step)
+   - Open questions remaining
 
-Immediately after Opus session:
+2. **Extract for `.project_history/extracts/raw/`** — filename format YYYY-MM-DD_opus_[topic].md:
+   - Key decisions made and rationale
+   - Alternatives considered and why rejected
+   - Implications for implementation
+   - Any warnings or pitfalls identified
 
-Save instruction file to instructions/active/
-Save extract to .project_history/extracts/raw/
-Update SESSION_STATE.md with current state
-Update any CURRENT.md files if architectural decisions were made
+3. **Instruction file(s)** if we defined executable tasks — for `instructions/active/`:
+   - Full spec per our discussion
+   - Ready for Sonnet execution
 
-Documentation timing: Do this immediately, while context is fresh. 15-20 minutes of documentation now saves an hour of reconstruction later.
+Generate all three as copyable text blocks I can save directly.
 
 Stage 4: Returning to Execution
 Goal: Execute the instruction you just created.
