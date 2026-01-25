@@ -1,6 +1,6 @@
 # Synthetic Data Generation
 
-**Version:** 4.0.0  
+**Version:** 4.1.0  
 **Last Updated:** 2026-01-25  
 **Status:** Design specification (not yet implemented)
 
@@ -16,12 +16,41 @@ Generate synthetic personnel records for a fictional interstellar organization t
 5. Are reproducible and comparable across experiments
 6. **Feel organic** — written by humans, not sampled from probability distributions
 7. **Are methodologically clean** — zero LLM pretraining contamination
+8. **Have measurable difficulty** — distinguish record quality from resolution difficulty
+
+---
+
+## v4.1 Philosophy: Three-Layer Difficulty Model
+
+The v4.1 spec addresses a critical insight from ADR-006:
+
+> **Record quality ≠ State resolution difficulty**
+
+A pristine Tier-1 record saying "3rd Squadron" in a collision zone is **hard** to resolve.  
+Three degraded Tier-5 records that are complementary may be **easy** to resolve.
+
+### The Three Layers
+
+| Layer | Question | Measured By | Example |
+|-------|----------|-------------|---------|
+| **1. Extraction** | Can we parse this record? | Quality tier (1-5) | Tier-1 = clear; Tier-5 = fragmentary |
+| **2. Aggregation** | Do records jointly resolve? | Complementarity score | Records covering different levels = complementary |
+| **3. Structural** | Do constraints disambiguate? | Structural resolvability | "Squadron" term → must be Defense Command |
+
+### Why This Matters
+
+**Previous assumption:** Filter toward degraded records to find "hard cases."
+
+**Reality:** Hard cases are those where:
+- Records are in collision zones (designators shared across units)
+- Records are redundant (all provide the same partial path)
+- No structural signals disambiguate
+
+This can happen with **pristine** records. And easy cases can have **degraded** records if they're complementary.
 
 ---
 
 ## v4 Philosophy: Decontaminated Domain with Explicit States
-
-The v4 spec makes two fundamental changes from v3:
 
 ### Change 1: Domain Decontamination
 
@@ -57,18 +86,9 @@ A fictional interstellar colonization and governance authority. Personnel serve 
 
 **Key structural features:**
 - **Depth variation:** 3, 4, or 5 levels depending on branch
-- **Shared top level:** All branches use "Sector" as Level 1 (shared organizational geography)
+- **Shared top level:** All branches use "Sector" as Level 1
 - **Unique level names:** "Squadron" only in Defense; "Colony" only in Colonial; "Expedition" only in Expeditionary
 - **Mixed designator types:** Names, numbers, letters, and ordinals depending on level and branch
-
-### Designator Conventions by Branch
-
-| Branch | Level 2 | Level 3 | Level 4 | Level 5 |
-|--------|---------|---------|---------|---------|
-| Colonial | Colony names (Verdant, Kestrel, Thornmark) | District numbers/names (District 7, North District) | Settlement letters/names (Settlement C, Outpost Amber) | — |
-| Defense | Fleet numbers (Fleet 7, Fleet 12) | Squadron letters (Squadron Alpha, Squadron C) | Wing numbers (Wing 3, Wing 7) | Element letters (Element A, Element Delta) |
-| Expeditionary | Expedition names (Horizon, Far Reach, Pioneer) | Team designators (Team 4, Survey Alpha) | — | — |
-| Resource | Operation names (Deepcore, Icevein, Yield-7) | Facility numbers (Facility 12, Platform 7) | Crew letters (Crew A, Crew Delta) | — |
 
 ### Collision Zones
 
@@ -78,12 +98,104 @@ Designators are deliberately shared across branches to create ambiguity:
 |------------|-------------------|
 | "7" | Fleet 7 (Defense), District 7 (Colonial), Facility 7 (Resource), Team 7 (Expeditionary) |
 | "Alpha" | Squadron Alpha (Defense), Team Alpha (Expeditionary), Crew Alpha (Resource), Element Alpha (Defense) |
-| "Kestrel" | Colony Kestrel (Colonial), Expedition Kestrel (Expeditionary) |
+| "Kestrel" | Colony Kestrel (Colonial), Fleet Kestrel (Defense), Expedition Kestrel (Expeditionary) |
 | "3" | Wing 3, Settlement 3, Crew 3, Team 3... |
 | "A" | Element A, Crew A, Settlement A, Team A... |
-| "12" | Fleet 12, District 12, Facility 12... |
 
 A record saying "MARTINEZ CPL 7 ALPHA 3" is deeply ambiguous without additional signals.
+
+---
+
+## Three-Layer Difficulty Model (v4.1)
+
+### Layer 1: Per-Record Extraction
+
+**Question:** Can we extract unit information from this single document?
+
+**Factors:**
+- OCR quality / legibility
+- Field completeness
+- Explicit vs. abbreviated unit identifiers
+- Clerk format consistency
+
+**Measured by:** Quality tier (1-5)
+
+**Where it matters:**
+- Signal extraction from individual documents
+- Deciding if a record is worth processing
+- Training extraction models
+
+### Layer 2: Cross-Record Aggregation
+
+**Question:** Do this soldier's records jointly provide a globally unique component path?
+
+**Key insight:** Two individually ambiguous records can be complementary:
+
+| Record | Provides | Alone |
+|--------|----------|-------|
+| "Martinez  Kestrel 3" | Fleet + Squadron | Ambiguous (which wing/element?) |
+| "MARTINEZ SPEC A" | Wing (letter) | Ambiguous (which fleet/squadron?) |
+| "Martinez  Elem 7" | Element | Ambiguous (which unit?) |
+| **Together** | Fleet/Squadron/Wing/Element | **UNIQUE PATH** |
+
+Conversely, multiple records can be individually complete but jointly ambiguous:
+
+| Record | Provides | Together |
+|--------|----------|----------|
+| "Martinez 3rd Sq, Wing A" | Squadron + Wing | Redundant |
+| "Martinez 3rd Sq, Wing A" | Squadron + Wing | Still missing Fleet |
+| **Together** | Same partial path | **COLLISION** (3rd Squadron exists in multiple fleets) |
+
+**Measured by:** Complementarity score (0.0-1.0)
+
+**Factors:**
+- **Complementarity:** Do records provide different path segments?
+- **Redundancy:** Do all records provide the same partial information?
+- **Collision position:** Is the soldier's unit in a collision zone?
+- **Signal density:** Do any records contain discriminating vocabulary?
+
+**Where it matters:**
+- Sampling for collision training (sample hard *soldiers*, not degraded *records*)
+- Routing decisions (hard soldiers need strong differentiators)
+- Evaluation stratification (accuracy by difficulty tier)
+
+### Layer 3: Structural Inference
+
+**Question:** Do hierarchy constraints disambiguate even when unit types are omitted?
+
+**Structural signals:**
+
+| Signal | Example | Inference |
+|--------|---------|-----------|
+| Depth constraint | 5-level path | Must be Defense Command |
+| Level name uniqueness | "Squadron" | Only appears in Defense Command |
+| Designator pattern | Greek letter | Sector level (all branches) |
+| Designator pattern | 3-digit number | Can't be Element/Crew/Team |
+
+**Example resolution:**
+
+| Record | Analysis |
+|--------|----------|
+| "Martinez Squadron 7" | "Squadron" only in DC → Defense Command |
+| **Structural inference** | Branch resolved without explicit branch label |
+
+**Measured by:** Structural resolvability (boolean)
+
+**Where it matters:**
+- Resolver pattern generation (encode structural constraints)
+- Disambiguation logic (apply constraints before declaring ambiguity)
+- Synthetic generation (model which omissions are resolvable)
+
+### Difficulty Tier Computation
+
+Computed per-soldier after all records are generated:
+
+| Tier | Description | Conditions | Expected Accuracy |
+|------|-------------|------------|-------------------|
+| **Easy** | At least one layer provides definitive resolution | Complete path in any record, OR complementary coverage, OR structural resolution | >95% |
+| **Moderate** | Resolution requires combining signals but achievable | Partial coverage outside collision zone, OR collision zone with complementary records | 85-95% |
+| **Hard** | Resolution requires subtle signals or inference | Collision zone + redundant records, OR cross-branch transfer with ambiguous designators | 70-85% |
+| **Extreme** | Resolution may be impossible | Multiple states with cross-branch collision + redundant records + no structural resolution | <70% |
 
 ---
 
@@ -118,198 +230,53 @@ A **state** is a latent segment of a soldier's service. States are sequential (t
 
 Cross-branch transfers create the hardest cases: records where the hierarchy structure itself differs between states.
 
-### Schema: States in Output Files
-
-**validation.parquet** (or states.parquet):
-
-| Column | Type | Description |
-|--------|------|-------------|
-| `soldier_id` | string | Soldier identifier |
-| `state_id` | string | Unique state identifier (e.g., S001-1, S001-2) |
-| `state_order` | int | Temporal position (1, 2, or 3) |
-| `branch` | string | Branch identifier |
-| `component_path` | string | Full hierarchy path |
-| Level-specific columns | string | Vary by branch (sector, fleet/colony/expedition/operation, etc.) |
-
-**raw.parquet**:
-
-| Column | Type | Description |
-|--------|------|-------------|
-| `source_id` | string | Document/manifest identifier |
-| `soldier_id` | string | Ground truth soldier identifier |
-| `state_id` | string | Ground truth state this record captures |
-| `raw_text` | string | Rendered manifest line |
-| `clerk_id` | string | Clerk instance identifier |
-| `situation_id` | string | Situation assigned to source |
-| `quality_tier` | int | 1-5 quality level |
-
 ---
 
-## Source-Anchored State Assignment
+## Collision Zone Tracking (v4.1)
 
 ### Concept
 
-Each source document has a **temporal anchor** — it captures soldiers at a specific point in their service. For multi-state soldiers:
-- Source created during State 1 → records show State 1 assignment
-- Source created during State 2 → records show State 2 assignment
+At post selection time, tag whether the post falls into a collision zone. A post is in a collision zone if its partial path (missing some levels) matches another post's partial path.
 
-**Key constraint:** A given source contains each soldier **at most once**. No soldier appears twice in the same manifest.
+### Severity Levels
 
-### Source Properties
-
-| Property | Description |
-|----------|-------------|
-| `source_id` | Unique identifier |
-| `clerk_id` | Which clerk produced this source (determines formatting) |
-| `situation_id` | Operational context (determines vocabulary) |
-| `home_unit` | Writer's organizational context (determines familiarity gradient) |
-| `temporal_anchor` | Which state-period this source captures |
-
-### Implementation
-
-When generating records for a multi-state soldier:
-1. Determine which sources will include this soldier
-2. For each source, use its temporal_anchor to select which state to render
-3. Render the record using that state's assignment
+| Severity | Description | Example |
+|----------|-------------|---------|
+| **None** | Path is globally unique at all partial specifications | Colony Waystation (Waystation is CA-only) |
+| **Low** | Collision only if 2+ levels omitted | Fleet Talon, 3rd Squadron (Talon is DC-only) |
+| **Medium** | Collision if 1+ levels omitted | Fleet Kestrel, 3rd Squadron (Kestrel shared with CA) |
+| **High** | Collision exists at most partial specifications | Fleet 7, Squadron A (7 and A both appear across branches) |
+| **Cross-branch** | Designator collides across branches at same apparent level | Kestrel as Fleet vs Colony vs Expedition |
 
 ---
 
-## Familiarity Gradient
+## Record Completeness Tracking (v4.1)
 
 ### Concept
 
-Clerks abbreviate aggressively for their "home unit" because context is shared with the reader. Foreign units get spelled out fully.
+After rendering each record, analyze which hierarchy levels are explicitly or implicitly present. This enables complementarity analysis.
 
-**Home unit granularity:** Level 3 of hierarchy (Squadron, District, Expedition, Facility)
+### Fields Tracked
 
-### Familiarity Levels
+| Field | Type | Description |
+|-------|------|-------------|
+| `path_completeness` | float | Fraction of full path this record provides (0.0-1.0) |
+| `levels_provided` | list[str] | Which hierarchy levels appear in record |
+| `extraction_signals` | list[str] | Structural signals present (branch terms, depth clues) |
 
-| Relationship to Writer's Home Unit | Detail Level | Example (Defense Command clerk from Squadron Alpha, Fleet 7) |
-|------------------------------------|--------------|--------------------------------------------------------------|
-| Same Level-3 unit | Minimal | "Martinez Cpl A-3" (Element A, Wing 3 implied) |
-| Same Level-2, different Level-3 | Low | "Martinez Cpl A-3 Sq-B" (specify squadron) |
-| Same branch, different Level-2 | Medium | "Martinez Cpl A-3/Sq-B/Flt-12" (specify fleet) |
-| Different branch | Maximum | "Martinez Cpl Crew-A, Facility-7, Op-Deepcore, Resource Directorate" |
+### Example
 
-### Interaction with Clerk Archetypes
-
-Archetypes define the **template** and **style**. Familiarity modifies the **content** rendered into that template.
-
-A `formal` archetype always uses full labels and commas:
 ```
-{RANK} {LAST}, {FIRST} {MI}.  {UNIT_STRING}
-```
-
-But `{UNIT_STRING}` expands based on familiarity:
-- Home unit: "Element A, Wing 3"
-- Same branch, foreign Level-2: "Element A, Wing 3, Squadron Beta, Fleet 12"
-- Different branch: "Crew A, Facility 7, Operation Deepcore, Resource Directorate"
-
-### Source Home Unit Assignment
-
-Sources are assigned home units based on:
-1. **Clerk archetype context** — Some archetypes are "local" (battalion-level), others are "transient" (depot, hospital, transport)
-2. **Situation correlation** — Certain situations associate with certain units
-
-| Source Type | Home Unit Soldiers | Foreign Soldiers |
-|-------------|-------------------|------------------|
-| Local administrative | 90% | 10% (attachments, liaisons) |
-| Sector HQ | 70% | 30% (cross-unit coordination) |
-| Transit hub | 30% | 70% (mixed manifests) |
-| Medical facility | 25% | 75% (casualties from across sector) |
-| Processing depot | 10% | 90% (inbound transfers) |
-
----
-
-## Clerk Archetypes (v4)
-
-Archetypes from v3 transfer with context renaming. Examples:
-
-| Archetype | Context | Example Output |
-|-----------|---------|----------------|
-| `hq_formal` | Sector HQ, trained on forms | `Spc Martinez, Carlos J.  Element A, Wing 3, Squadron Alpha, Fleet 7, Defense Command` |
-| `hq_efficient` | Experienced HQ, efficient | `Martinez, C.J.  A/3/Alpha/7/DEF` |
-| `local_rushed` | Unit clerk under pressure | `MARTINEZ SPC A3-ALPHA` |
-| `local_methodical` | Careful unit clerk | `Martinez, Carlos  Elem A Wg3 SqAlpha` |
-| `field_exhausted` | Aid station, stressed | `Martinez Carlos  Spc Alpha 7  WND` |
-| `transit_manifest` | Transport hub | `MARTINEZ C    A/3/ALPHA  FLT7  SPC` |
-| `depot_intake` | Processing depot | `Martinez, C.J., Spc, Element A, Wing 3, Squadron Alpha, Fleet 7, Defense Command` |
-| `expeditionary_field` | Survey team, minimal | `Martinez  Team 4` |
-
----
-
-## Vocabulary Layers (v4)
-
-### 1. Situational Vocabulary (Signal-bearing)
-
-Tied to operations and contexts within the Terraform Combine:
-
-| Branch | Situations | Vocabulary |
-|--------|------------|------------|
-| Defense | Patrol ops, incursions, alerts | REDLINE, CONDITION-3, INTERCEPT, PERIMETER |
-| Colonial | Founding, census, emergencies | FOUNDING, CENSUS-7, EVAC-NOTICE, HARVEST |
-| Expeditionary | Surveys, contacts, discoveries | SURVEY-7, BEACON, CONTACT, UNCHARTED |
-| Resource | Extraction, incidents, quotas | DEEPCORE, YIELD-12, INCIDENT, SHIFT-3 |
-
-"DEEPCORE" in a record is a strong signal for Resource Directorate.
-
-### 2. Contextual Clutter (Non-signal noise)
-
-Tied to clerk's working environment:
-
-| Clerk Context | Clutter Terms |
-|---------------|---------------|
-| Transit hub | Dk2, Bay-C, Berth-7, Hold3 |
-| Medical | Ward3, Bed17, Intake-442 |
-| Depot | Grp7, Ln23, Proc-2 |
-| Local admin | Ref-447, File-C, Seq-12 |
-
-### 3. Confounders (Deliberately ambiguous)
-
-Terms that look like unit data but aren't:
-
-| Confounder | Appears As | Could Be | Actually Is |
-|------------|------------|----------|-------------|
-| `A` | `...SPC A` | Element A | Berth A |
-| `C-4` | `...Alpha C-4` | Squadron C, Wing 4 | Compartment C-4 |
-| `7` | `...Martinez 7` | Fleet 7 | Processing group 7 |
-| `??` | `...Team 4 ??` | Unknown unit | Clerk uncertainty mark |
-
----
-
-## Within-Source Consistency
-
-Unchanged from v3:
-
-```yaml
-within_source_behavior:
-  format_consistency:
-    identical_format_rate: 0.85
-    minor_variation_rate: 0.12
-    format_switch_rate: 0.03
-  vocabulary_consistency:
-    term_persistence: 0.95
-  fatigue_modeling:
-    enabled: true
+Branch: defense_command (depth 5)
+Record: "Martinez Kestrel-3"
+levels_provided: ["fleet", "squadron"]
+path_completeness: 0.4  (2/5 levels)
+extraction_signals: ["fleet_name_kestrel"]
 ```
 
 ---
 
-## Quality Tiers
-
-Unchanged from v3. Quality tier is assigned at source level:
-
-| Tier | Description | Characteristics |
-|------|-------------|-----------------|
-| 1 | Pristine | Full hierarchy, clear formatting, no ambiguity |
-| 2 | Good | Minor abbreviation, still parseable |
-| 3 | Moderate | Significant abbreviation, some inference needed |
-| 4 | Degraded | Heavy compression, structural inference required |
-| 5 | Fragmentary | Minimal info, high ambiguity |
-
----
-
-## Output Schema
+## Output Schema (v4.1)
 
 ### raw.parquet
 
@@ -321,7 +288,10 @@ Unchanged from v3. Quality tier is assigned at source level:
 | `raw_text` | string | Rendered manifest line |
 | `clerk_id` | string | Clerk instance identifier |
 | `situation_id` | string | Situation assigned to source |
-| `quality_tier` | int | 1-5 quality level (source-level) |
+| `quality_tier` | int | 1-5 quality level (Layer 1) |
+| `path_completeness` | float | Fraction of full path provided (v4.1) |
+| `levels_provided` | list[str] | Hierarchy levels in this record (v4.1) |
+| `extraction_signals` | list[str] | Structural signals present (v4.1) |
 
 ### validation.parquet
 
@@ -333,8 +303,13 @@ Unchanged from v3. Quality tier is assigned at source level:
 | `branch` | string | Branch (Colonial, Defense, Expeditionary, Resource) |
 | `component_path` | string | Full path as string |
 | Branch-specific columns | string | Level values for this branch |
+| `collision_zone_flag` | bool | Is this post in a collision zone? (v4.1) |
+| `collision_severity` | string | none/low/medium/high/cross_branch (v4.1) |
+| `soldier_difficulty_tier` | string | easy/moderate/hard/extreme (v4.1) |
+| `complementarity_score` | float | 0.0-1.0 record complementarity (v4.1) |
+| `structural_resolvability` | bool | Can Layer 3 resolve? (v4.1) |
 
-### sources.parquet (NEW)
+### sources.parquet
 
 | Column | Type | Description |
 |--------|------|-------------|
@@ -343,15 +318,48 @@ Unchanged from v3. Quality tier is assigned at source level:
 | `situation_id` | string | Operational situation |
 | `home_unit` | string | Writer's organizational context (Level-3 path) |
 | `quality_tier` | int | Quality tier for all records in source |
+| `temporal_anchor` | int | Which state-period this source captures |
 
 ---
 
-## Generator Responsibilities (v4)
+## Difficulty-Aware Generation (v4.1)
+
+### Target Distribution
+
+| Tier | Target | Controls |
+|------|--------|----------|
+| Easy | 50% | Force complementary records, use non-collision posts |
+| Moderate | 30% | Allow some collision, ensure some structural signals |
+| Hard | 15% | Force collision zone + redundant records |
+| Extreme | 5% | Cross-branch collision + minimal signals |
+
+### Generation Controls
+
+| Control | Description | Rate |
+|---------|-------------|------|
+| `force_collision_zone` | Place soldier in post with shared designators | 25% |
+| `force_redundant_records` | Generate records with same partial path | 15% |
+| `force_complementary_records` | Ensure records cover different levels | 40% |
+| `force_cross_branch_collision` | Create hardest cross-branch cases | 5% |
+
+### Rebalancing
+
+After initial generation, if difficulty distribution doesn't match targets:
+1. Regenerate records for some soldiers
+2. Adjust which sources capture which soldiers
+3. Modify clerk assignments
+
+Tolerance: ±5% from targets.
+
+---
+
+## Generator Responsibilities (v4.1)
 
 ### SoldierFactory
 - Create soldiers with identity
 - Determine state count (1, 2, or 3)
 - Generate state_ids and assign posts to each state
+- **Tag collision zone membership at post assignment**
 - Apply transfer logic for multi-state soldiers
 
 ### SourceGenerator
@@ -359,12 +367,12 @@ Unchanged from v3. Quality tier is assigned at source level:
 - Assign quality tier at source level
 - Enforce within-source consistency
 
-### StateAssigner (NEW)
+### StateAssigner
 - For each (soldier, source) pair, determine which state to render
 - Use source's temporal_anchor to select state
 - Ensure soldier appears at most once per source
 
-### FamiliarityCalculator (NEW)
+### FamiliarityCalculator
 - Compare soldier's state assignment to source's home_unit
 - Return familiarity level (same-L3, same-L2, same-branch, different-branch)
 - Feed to renderer for detail level selection
@@ -373,56 +381,123 @@ Unchanged from v3. Quality tier is assigned at source level:
 - Apply clerk's template
 - Expand unit string based on familiarity level
 - Apply imperfections based on position in batch
+- **Track levels_provided and path_completeness** (v4.1)
 
-### VocabularyInjector
-- Layer 1: Situational vocabulary from situation pool
-- Layer 2: Contextual clutter from clerk context
-- Layer 3: Confounders based on clerk context and rate
+### CompletenessAnalyzer (v4.1 NEW)
+- After rendering, analyze which levels are present
+- Detect extraction_signals (branch-unique terms, structural clues)
+- Compute path_completeness
+
+### DifficultyComputer (v4.1 NEW)
+- After all records generated, compute per-soldier difficulty
+- Analyze collision_zone_flag across states
+- Compute complementarity_score from levels_provided
+- Determine structural_resolvability
+- Assign soldier_difficulty_tier
+
+### DifficultyRebalancer (v4.1 NEW)
+- Compare actual difficulty distribution to targets
+- Identify soldiers to regenerate
+- Adjust source/clerk assignments
+- Re-run generation for affected soldiers
 
 ---
 
-## Migration from v3
+## Evaluation Stratification (v4.1)
 
-### Files Requiring Full Rewrite
+### Required Breakdowns
 
-| File | Reason |
-|------|--------|
-| `hierarchy_reference.json` | New domain (Terraform Combine branches) |
-| `synthetic_vocabulary.json` | New situational terms, clutter, confounders |
-| `synthetic_themes.json` | Branch-based themes replacing military themes |
-| `seed_set.json` | New hand-crafted examples for calibration |
+Accuracy should be reported by:
+- Difficulty tier: easy / moderate / hard / extreme
+- Collision zone: true / false
+- State count: 1 / 2 / 3
+- Branch: CA / DC / EC / RD
 
-### Files Requiring Significant Update
+### Example Output
 
-| File | Changes |
-|------|---------|
-| `synthetic_style_spec.yaml` | Rename archetypes, update contexts, add familiarity spec |
-| `soldier_factory.py` | Add state generation logic |
-| `source_generator.py` | Add home_unit, temporal_anchor |
-| `pipeline.py` | Wire state assignment, familiarity calculation |
-| `renderer.py` | Familiarity-aware unit string expansion |
+```
+Component: defense_command
+  Overall accuracy: 94.2%
+  By difficulty:
+    Easy soldiers:     98.1% (n=450)
+    Moderate soldiers: 91.3% (n=120)
+    Hard soldiers:     76.4% (n=55)
+    Extreme soldiers:  42.9% (n=14)
+```
 
-### Files Unchanged in Logic
+### Alerts
 
-| File | Notes |
-|------|-------|
-| Quality tier mechanics | Same system, new context |
-| Within-source consistency | Identical logic |
-| Fatigue modeling | Identical logic |
-| Confounder injection rate | Same rates, new terms |
+- `hard_accuracy < 0.70`: Review resolver differentiators
+- `extreme_accuracy < 0.40`: May require manual review or additional signals
+
+---
+
+## Quality Tiers (Layer 1 Only)
+
+Quality tier measures **extraction difficulty**, not resolution difficulty.
+
+| Tier | Name | Description | Clerk Bias |
+|------|------|-------------|------------|
+| 1 | archival_clean | Well-preserved, sector-level | sector_formal, processing_intake |
+| 2 | standard | Typical operational, some wear | fleet_methodical, transport_shuttle |
+| 3 | field_worn | Field conditions, rushed | fleet_rushed, field_medevac |
+| 4 | degraded | Poor conditions, handwritten | field_exhausted, expeditionary_field |
+| 5 | fragmentary | Heavily damaged, partial | field_exhausted, field_minimal |
+
+**Important:** A Tier-1 record in a collision zone may be **harder** to resolve than a Tier-5 record with complementary partners.
+
+---
+
+## Migration from v4
+
+### New Schema Columns
+
+**validation.parquet:**
+- `collision_zone_flag` (bool)
+- `collision_severity` (string)
+- `soldier_difficulty_tier` (string)
+- `complementarity_score` (float)
+- `structural_resolvability` (bool)
+
+**raw.parquet:**
+- `path_completeness` (float)
+- `levels_provided` (list[str])
+- `extraction_signals` (list[str])
+
+### New Generator Components
+
+- `CompletenessAnalyzer`: Analyze record coverage
+- `DifficultyComputer`: Compute soldier-level difficulty
+- `DifficultyRebalancer`: Hit target difficulty distribution
+
+### Updated Generator Components
+
+- `SoldierFactory`: Add collision zone tagging at post assignment
+- `Renderer`: Track levels_provided during rendering
 
 ---
 
 ## Related Documents
 
-- [ADR-004: Synthetic Data Redesign](../../../docs/adr/ADR-004-synthetic-data-redesign.md) — Decision record
+- [ADR-006: Per-Record vs Per-Soldier Difficulty](../../../docs/adr/ADR-006_per-record-vs-per-soldier-difficulty.md) — Three-layer model origin
+- [ADR-007: Synthetic Data Redesign](../../../docs/adr/ADR-007-synthetic-data-redesign.md) — Domain decontamination decision
 - [DISAMBIGUATION_MODEL.md](../../../docs/DISAMBIGUATION_MODEL.md) — Core problem framing
-- `hierarchy_reference.json` — Branch hierarchy definitions (to be created)
-- `synthetic_vocabulary.json` — Vocabulary with layers (to be rewritten)
+- `synthetic_style_spec_v4.1.yaml` — Full specification
 
 ---
 
 ## Changelog
+
+### v4.1.0 (2026-01-25)
+- **Feature:** Three-layer difficulty model (extraction, aggregation, structural)
+- **Feature:** Collision zone tracking at post selection
+- **Feature:** Record completeness tracking (path_completeness, levels_provided)
+- **Feature:** Soldier-level difficulty computation
+- **Feature:** Difficulty-aware generation controls and rebalancing
+- **Feature:** Evaluation stratification by difficulty tier
+- **Schema:** Added difficulty columns to validation.parquet
+- **Schema:** Added completeness columns to raw.parquet
+- **Reference:** ADR-006
 
 ### v4.0.0 (2026-01-25)
 - **Breaking:** Full domain change from WWII military to Terraform Combine
@@ -432,4 +507,4 @@ Unchanged from v3. Quality tier is assigned at source level:
 - **Feature:** Source-anchored state assignment
 - **Feature:** 1-3 states per soldier (was 1-2)
 - **Feature:** Cross-branch transfers
-- **Reference:** ADR-004
+- **Reference:** ADR-007

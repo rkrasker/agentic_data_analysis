@@ -1,0 +1,1295 @@
+# Synthetic Manifest Shorthand Style Spec (v4.1)
+# Philosophy: Clerks are characters, not sampling functions.
+#
+# Key principles:
+#   1. Each clerk has fixed habits that persist across all their entries
+#   2. Vocabulary emerges from situations, not component-affinity sampling
+#   3. Within-source repetition is the norm; variation happens between sources
+#   4. No "signal injection" - vocabulary appears because the clerk would naturally use it
+#   5. Imperfections are behavioral, not random noise
+#   6. Familiarity drives notation detail - clerks abbreviate their own unit
+#   7. States are explicit, first-class objects
+#   8. Difficulty is multi-layered (record vs soldier vs structural)
+#
+# v4.1 Changes (from ADR-006 integration):
+#   - Three-layer difficulty model (extraction, aggregation, structural)
+#   - Collision zone tracking at post selection
+#   - Record completeness tracking
+#   - Soldier-level difficulty computation
+#   - Difficulty-aware generation controls
+#
+# v4 Changes (from ADR-007):
+#   - Fictional interstellar setting (Terraform Combine) for domain decontamination
+#   - Explicit state tracking with state_id in schemas
+#   - Three-state maximum (1, 2, or 3 states per person)
+#   - Source-anchored state assignment
+#   - Familiarity gradient at Level-3 granularity
+#   - Heterogeneous branch structures (4 branches, depths 3-5)
+#   - Cross-branch transfers (rare but possible)
+
+meta:
+  spec_name: "manifest_shorthand_v4.1"
+  spec_version: "4.1.0"
+  created_utc: "2026-01-25T00:00:00Z"
+  setting: "terraform_combine"
+  philosophy: |
+    Real clerks don't sample from probability distributions. They develop habits,
+    stick with what works, and write the same way for dozens of entries in a row.
+    Variation exists between clerks and between sources, not within them.
+
+    This spec defines clerks as persistent characters whose styles explain themselves.
+    The parser's challenge is recognizing that "Elem-7/Wing-A/Sq-3" and
+    "Element 7, Wing Alpha, 3rd Squadron, Fleet Kestrel" both mean the same thing.
+
+    v4.1 adds explicit difficulty modeling. Record quality (Layer 1) is NOT the same
+    as state resolution difficulty. A pristine record in a collision zone is harder
+    than a degraded record with complementary partners.
+
+# =============================================================================
+# SETTING: TERRAFORM COMBINE
+# =============================================================================
+#
+# The Terraform Combine is a fictional interstellar organization responsible
+# for colonization, resource extraction, exploration, and defense across
+# multiple star systems. It has ZERO presence in LLM pretraining data.
+
+setting:
+  name: "Terraform Combine"
+  abbreviation: "TFC"
+  description: |
+    A multi-system interstellar organization coordinating human expansion
+    across colonized worlds. Operates through four specialized branches
+    with distinct organizational structures.
+
+  branches:
+    colonial_administration:
+      name: "Colonial Administration"
+      abbreviation: "CA"
+      purpose: "Governance of established colonies"
+      depth: 4
+      levels:
+        - name: "Sector"
+          designator_style: "greek_letter"  # Alpha, Beta, Gamma, etc.
+        - name: "Colony"
+          designator_style: "name"  # Verdant, Amber, Kestrel, etc.
+        - name: "District"
+          designator_style: "number"  # 1st, 2nd, 3rd, etc.
+        - name: "Settlement"
+          designator_style: "name"  # Haven, Prospect, Landfall, etc.
+
+    defense_command:
+      name: "Defense Command"
+      abbreviation: "DC"
+      purpose: "System security and patrol"
+      depth: 5
+      levels:
+        - name: "Sector"
+          designator_style: "greek_letter"
+        - name: "Fleet"
+          designator_style: "name"  # Kestrel, Talon, Vanguard, etc.
+        - name: "Squadron"
+          designator_style: "number"  # 1st, 2nd, 3rd, etc.
+        - name: "Wing"
+          designator_style: "letter"  # A, B, C (or Alpha, Bravo, Charlie)
+        - name: "Element"
+          designator_style: "number"  # 1, 2, 3, etc.
+
+    expeditionary_corps:
+      name: "Expeditionary Corps"
+      abbreviation: "EC"
+      purpose: "Exploration and survey of new systems"
+      depth: 3
+      levels:
+        - name: "Sector"
+          designator_style: "greek_letter"
+        - name: "Expedition"
+          designator_style: "name"  # Horizon, Pathfinder, Pioneer, etc.
+        - name: "Team"
+          designator_style: "letter"  # A, B, C, etc.
+
+    resource_directorate:
+      name: "Resource Directorate"
+      abbreviation: "RD"
+      purpose: "Mining and material extraction"
+      depth: 4
+      levels:
+        - name: "Sector"
+          designator_style: "greek_letter"
+        - name: "Operation"
+          designator_style: "name"  # Deepcore, Rimward, Sunside, etc.
+        - name: "Facility"
+          designator_style: "number"  # Facility-7, Facility-12, etc.
+        - name: "Crew"
+          designator_style: "letter"  # A, B, C, etc.
+
+  # Shared designators that create collisions across branches
+  collision_designators:
+    numbers: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+    letters: ["A", "B", "C", "D", "E", "F"]
+    names:
+      # These names appear as colony names, fleet names, expedition names, and operation names
+      shared: ["Kestrel", "Amber", "Verdant", "Horizon", "Vanguard", "Resolute"]
+      # Branch-specific names
+      colonial_only: ["Haven", "Prospect", "Landfall", "Waystation"]
+      defense_only: ["Talon", "Sentinel", "Warden", "Bulwark"]
+      expeditionary_only: ["Pathfinder", "Pioneer", "Trailblazer", "Seeker"]
+      resource_only: ["Deepcore", "Rimward", "Sunside", "Darkside"]
+
+# =============================================================================
+# SCHEMA
+# =============================================================================
+
+schema:
+  truth_input_columns:
+    - primary_id
+    - name_first
+    - name_middle
+    - name_last
+    - rank
+    - branch_id
+    # Unit fields vary by branch:
+    # Colonial Administration: sector, colony, district, settlement
+    # Defense Command: sector, fleet, squadron, wing, element
+    # Expeditionary Corps: sector, expedition, team
+    # Resource Directorate: sector, operation, facility, crew
+
+  # v4 addition: explicit state tracking
+  # v4.1 addition: difficulty columns
+  validation_output_columns:
+    - soldier_id
+    - state_id        # unique identifier for this state
+    - state_order     # ordinal position (1, 2, or 3) - temporal order unknown
+    - branch_id
+    - post_path       # full hierarchy path for this state
+    # Per-level columns vary by branch
+    # v4.1 difficulty columns (computed post-generation)
+    - collision_zone_flag       # bool: is this post in a collision zone?
+    - collision_severity        # none/low/medium/high/cross_branch
+    - soldier_difficulty_tier   # easy/moderate/hard/extreme
+    - complementarity_score     # 0.0-1.0: how complementary are this soldier's records?
+    - structural_resolvability  # bool: can Layer 3 resolve remaining ambiguity?
+
+  raw_output_columns:
+    - source_id
+    - soldier_id
+    - state_id        # links record to ground-truth state
+    - raw_text
+    - clerk_id
+    - situation_id
+    - quality_tier
+    # v4.1 additions for difficulty analysis
+    - path_completeness   # float 0.0-1.0: fraction of full path provided
+    - levels_provided     # list[str]: which hierarchy levels appear in record
+    - extraction_signals  # list[str]: structural signals present (branch terms, depth clues)
+
+  # v4.1 addition: sources schema
+  sources_output_columns:
+    - source_id
+    - clerk_id
+    - situation_id
+    - home_unit         # Level-3 path for familiarity gradient
+    - quality_tier
+    - temporal_anchor   # which state-period this source captures
+
+# =============================================================================
+# THREE-LAYER DIFFICULTY MODEL (v4.1)
+# =============================================================================
+#
+# ADR-006 establishes that difficulty operates at three distinct layers.
+# Quality tier (1-5) measures only Layer 1. State resolution requires all three.
+
+difficulty_model:
+
+  description: |
+    State resolution difficulty is NOT the same as record quality.
+    
+    A pristine Tier-1 record saying "3rd Squadron" in a collision zone is HARD.
+    Three degraded Tier-5 records that are complementary may be EASY.
+    
+    Difficulty emerges from the interaction of three layers:
+    - Layer 1: Can we extract unit info from each record?
+    - Layer 2: Do records jointly provide a unique path?
+    - Layer 3: Do structural constraints resolve remaining ambiguity?
+
+  # ---------------------------------------------------------------------------
+  # LAYER 1: Per-Record Extraction
+  # ---------------------------------------------------------------------------
+  
+  layer1_extraction:
+    description: |
+      Can we parse unit information from this single document?
+      Measured by quality tier (1-5). Affected by clerk archetype,
+      imperfections, and source conditions.
+    
+    measured_by: "quality_tier"
+    
+    factors:
+      - "OCR quality / legibility"
+      - "Field completeness"
+      - "Explicit vs abbreviated unit identifiers"
+      - "Clerk format consistency"
+    
+    where_it_matters:
+      - "Signal extraction from individual documents"
+      - "Deciding if a record is worth processing"
+      - "Training extraction models"
+
+  # ---------------------------------------------------------------------------
+  # LAYER 2: Cross-Record Aggregation (Within Soldier)
+  # ---------------------------------------------------------------------------
+  
+  layer2_aggregation:
+    description: |
+      Do this soldier's records jointly provide a globally unique component path?
+      This is the key insight: two individually ambiguous records can be
+      complementary and together resolve uniquely.
+    
+    measured_by: "complementarity_score"
+    
+    factors:
+      complementarity:
+        description: "Do records provide different path segments?"
+        good_example:
+          record_1: "Martinez  Kestrel 3"   # Fleet + Squadron
+          record_2: "MARTINEZ SPEC A"        # Wing (letter)
+          record_3: "Martinez  Elem 7"       # Element
+          together: "Jointly cover Fleet/Squadron/Wing/Element → UNIQUE"
+        bad_example:
+          record_1: "Martinez 3rd Sq, Wing A"
+          record_2: "Martinez 3rd Sq, Wing A"
+          together: "Redundant, still missing Fleet → COLLISION"
+      
+      redundancy:
+        description: "Do all records provide the same partial information?"
+        impact: "High redundancy + collision zone = HARD"
+      
+      collision_position:
+        description: "Is the soldier's unit in a collision zone?"
+        impact: "Collision + non-complementary = HARD"
+      
+      signal_density:
+        description: "Do any records contain discriminating vocabulary?"
+        impact: "Situational vocab can break ties"
+    
+    where_it_matters:
+      - "Sampling for collision training (sample hard soldiers, not degraded records)"
+      - "Routing decisions (hard soldiers need strong differentiators)"
+      - "Evaluation stratification (accuracy by difficulty tier)"
+
+  # ---------------------------------------------------------------------------
+  # LAYER 3: Structural Inference
+  # ---------------------------------------------------------------------------
+  
+  layer3_structural:
+    description: |
+      Do hierarchy constraints disambiguate even when unit types are omitted?
+      The hierarchy structure itself is a disambiguation signal.
+    
+    measured_by: "structural_resolvability"
+    
+    signals:
+      depth_constraint:
+        description: "Number of levels constrains branch"
+        example: "5-level path → must be Defense Command (only branch with depth 5)"
+      
+      level_name_uniqueness:
+        description: "Certain level names only appear in one branch"
+        examples:
+          - "Squadron → Defense Command"
+          - "Colony → Colonial Administration"
+          - "Expedition → Expeditionary Corps"
+          - "Facility → Resource Directorate"
+      
+      designator_patterns:
+        description: "Designator format constrains level"
+        examples:
+          - "Greek letter → Sector level (all branches)"
+          - "3-digit number → cannot be Element/Crew/Team (those are single digits)"
+          - "Named unit at Level 2 → distinguishes branch by name pool"
+      
+      structural_uniqueness:
+        description: "Some partial paths are unique due to structure"
+        example: |
+          "7" alone is ambiguous (Fleet 7? District 7? Facility 7?)
+          "Squadron 7" is unambiguous (Squadron only in Defense Command)
+    
+    where_it_matters:
+      - "Resolver pattern generation (encode structural constraints)"
+      - "Disambiguation logic (apply constraints before declaring ambiguity)"
+      - "Synthetic generation (model which omissions are resolvable)"
+
+  # ---------------------------------------------------------------------------
+  # Difficulty Tier Computation
+  # ---------------------------------------------------------------------------
+  
+  difficulty_tiers:
+    description: |
+      Computed per-soldier after all records are generated.
+      Based on interaction of all three layers.
+    
+    tiers:
+      easy:
+        description: "At least one layer provides definitive resolution"
+        conditions:
+          - "Any record provides complete explicit path (Layer 1 sufficient)"
+          - "Records are complementary and cover all segments (Layer 2 sufficient)"
+          - "Structural constraints resolve remaining ambiguity (Layer 3 sufficient)"
+        expected_accuracy: ">95%"
+      
+      moderate:
+        description: "Resolution requires combining signals but achievable"
+        conditions:
+          - "Partial coverage but outside collision zone"
+          - "In collision zone but complementary records narrow it"
+          - "Vocabulary signals disambiguate"
+        expected_accuracy: "85-95%"
+      
+      hard:
+        description: "Resolution requires subtle signals or inference"
+        conditions:
+          - "In collision zone AND records are redundant"
+          - "Cross-branch transfer with similar designators"
+          - "Multiple states with overlapping partial paths"
+        expected_accuracy: "70-85%"
+      
+      extreme:
+        description: "Resolution may be impossible or require external knowledge"
+        conditions:
+          - "Multiple states with cross-branch collision"
+          - "All records redundant AND in high-collision zone"
+          - "No structural resolution possible"
+        expected_accuracy: "<70%"
+
+# =============================================================================
+# COLLISION ZONE TRACKING (v4.1)
+# =============================================================================
+#
+# At post selection time, tag whether the post falls into a collision zone.
+
+collision_tracking:
+
+  description: |
+    When assigning posts to soldiers, track whether the post's designators
+    create collision with other posts. A post is in a collision zone if its
+    partial path (missing some levels) matches another post's partial path.
+
+  # Collision severity levels
+  severity_levels:
+    none:
+      description: "Path is globally unique at all partial specifications"
+      example: "Colony Waystation, District 1, Settlement Haven (Waystation is CA-only)"
+    
+    low:
+      description: "Collision only if 2+ levels omitted"
+      example: "Fleet Talon, 3rd Squadron (Talon is DC-only, 3rd alone would collide)"
+    
+    medium:
+      description: "Collision if 1+ levels omitted"
+      example: "Fleet Kestrel, 3rd Squadron (Kestrel shared with CA colony)"
+    
+    high:
+      description: "Collision exists at most partial specifications"
+      example: "Fleet 7, Squadron A (7 and A both appear across branches)"
+    
+    cross_branch:
+      description: "Designator collides across branches at same apparent level"
+      example: "Kestrel as Fleet (DC) vs Kestrel as Colony (CA) vs Kestrel as Expedition (EC)"
+
+  # When to compute collision tags
+  computation_timing: "at_post_assignment"
+  
+  # What to store
+  stored_fields:
+    - collision_zone_flag      # bool
+    - collision_severity       # none/low/medium/high/cross_branch
+    - colliding_paths          # list of other posts this could be confused with
+
+# =============================================================================
+# RECORD COMPLETENESS TRACKING (v4.1)
+# =============================================================================
+#
+# Each record tracks what path segments it actually provides.
+
+record_completeness:
+
+  description: |
+    After rendering each record, analyze which hierarchy levels are
+    explicitly or implicitly present. This enables complementarity analysis.
+
+  path_completeness_calculation:
+    description: "Fraction of full path this record provides"
+    formula: "len(levels_provided) / branch_depth"
+    example:
+      branch: "defense_command"
+      branch_depth: 5
+      record_text: "Martinez Kestrel-3"
+      levels_provided: ["fleet", "squadron"]
+      path_completeness: 0.4  # 2/5
+
+  levels_provided_detection:
+    description: "Which hierarchy levels appear in this record"
+    detection_rules:
+      - "Greek letter → sector"
+      - "Named unit matching fleet pool → fleet"
+      - "Named unit matching colony pool → colony"
+      - "Ordinal number in DC context → squadron"
+      - "Letter in DC context → wing"
+      - "Small number in DC lowest position → element"
+      # ... branch-specific rules
+
+  extraction_signals_detection:
+    description: "Structural signals that aid disambiguation"
+    signal_types:
+      - branch_unique_term: "Level names unique to branch (Squadron, Colony, etc.)"
+      - depth_indicator: "Number of levels mentioned constrains branch"
+      - designator_pattern: "Format of designator constrains level"
+      - vocabulary_signal: "Situational vocabulary suggests branch"
+
+# =============================================================================
+# SOLDIER-LEVEL DIFFICULTY COMPUTATION (v4.1)
+# =============================================================================
+#
+# Computed after all records for a soldier are generated.
+
+soldier_difficulty_computation:
+
+  description: |
+    After generation, analyze each soldier's record set to compute
+    overall state resolution difficulty.
+
+  computation_steps:
+    1_collision_check:
+      description: "Check if any state's post is in a collision zone"
+      output: "collision_zone_flag, collision_severity"
+    
+    2_complementarity_analysis:
+      description: "Analyze how records cover the path space"
+      inputs:
+        - "All records for this soldier"
+        - "levels_provided for each record"
+      computation: |
+        For each state:
+          - Collect levels_provided across all records for that state
+          - Compute union coverage (how much of path is covered)
+          - Compute redundancy (how many records provide same levels)
+        Complementarity score = coverage_breadth / (1 + redundancy_penalty)
+      output: "complementarity_score (0.0-1.0)"
+    
+    3_structural_resolution:
+      description: "Check if structural constraints can resolve ambiguity"
+      inputs:
+        - "extraction_signals from all records"
+        - "hierarchy constraints"
+      computation: |
+        If any record contains branch-unique term → structurally_resolvable = true
+        If depth constraint eliminates all but one branch → structurally_resolvable = true
+        If designator patterns force interpretation → structurally_resolvable = true
+      output: "structural_resolvability (bool)"
+    
+    4_tier_assignment:
+      description: "Assign difficulty tier based on three layers"
+      logic: |
+        IF any_record_complete OR (complementarity > 0.8 AND NOT collision_zone):
+          tier = "easy"
+        ELIF structural_resolvability OR (complementarity > 0.5):
+          tier = "moderate"
+        ELIF collision_zone AND complementarity < 0.3:
+          tier = "extreme"
+        ELSE:
+          tier = "hard"
+      output: "soldier_difficulty_tier"
+
+  # Store results in validation.parquet
+  output_columns:
+    - collision_zone_flag
+    - collision_severity
+    - complementarity_score
+    - structural_resolvability
+    - soldier_difficulty_tier
+
+# =============================================================================
+# DIFFICULTY-AWARE GENERATION CONTROLS (v4.1)
+# =============================================================================
+#
+# Controls to target specific difficulty distributions.
+
+difficulty_generation:
+
+  # Target distribution of difficulty tiers
+  target_distribution:
+    easy: 0.50
+    moderate: 0.30
+    hard: 0.15
+    extreme: 0.05
+
+  # Controls to create specific difficulty levels
+  generation_controls:
+
+    force_collision_zone:
+      description: "Place soldier in post with shared designators"
+      implementation: |
+        At post assignment, prefer posts where:
+        - Level-2 name is in shared pool (Kestrel, Amber, etc.)
+        - Squadron/District/Team numbers are common (1-5)
+      rate: 0.25  # 25% of soldiers placed in collision zones
+
+    force_redundant_records:
+      description: "Generate records that provide same partial path"
+      implementation: |
+        For targeted soldiers, configure sources to:
+        - Use same clerk archetype (consistent omissions)
+        - Capture same hierarchy levels
+      rate: 0.15  # 15% of collision-zone soldiers get redundant records
+
+    force_complementary_records:
+      description: "Ensure records provide different path segments"
+      implementation: |
+        For targeted soldiers, configure sources to:
+        - Use different clerk archetypes
+        - Different familiarity levels
+        - Ensures coverage across hierarchy
+      rate: 0.40  # 40% of soldiers get forced complementarity
+
+    force_cross_branch_collision:
+      description: "Create hardest cases with cross-branch ambiguity"
+      implementation: |
+        For soldiers with cross-branch transfers:
+        - Use shared designator names
+        - Minimize structural signals
+      rate: 0.05  # 5% of multi-state soldiers
+
+  # Difficulty rebalancing pass
+  rebalancing:
+    description: |
+      After initial generation, if difficulty distribution doesn't match
+      targets, adjust by:
+      1. Regenerating records for some soldiers
+      2. Adjusting which sources capture which soldiers
+      3. Modifying clerk assignments
+    enabled: true
+    tolerance: 0.05  # Accept if within 5% of targets
+
+# =============================================================================
+# STATE MODEL
+# =============================================================================
+#
+# v4 introduces explicit state tracking. Each soldier has 1-3 states,
+# each corresponding to a distinct post assignment.
+
+state_model:
+
+  # Distribution of state counts per soldier
+  state_count_distribution:
+    1: 0.65  # 65% have single post (no transfers)
+    2: 0.28  # 28% have one transfer (two posts)
+    3: 0.07  # 7% have two transfers (three posts)
+
+  # State assignment is source-anchored: all records from a single source
+  # for a given soldier reflect the same state
+  source_anchoring:
+    description: |
+      Each source document captures personnel at a specific point in their service.
+      A soldier appearing in source S will have all their records in S reflect
+      the same state. Conflicts arise across sources, not within them.
+    soldier_appears_once_per_source: true
+
+  # Transfer distribution (for soldiers with 2+ states)
+  transfer_distribution:
+    within_same_level2: 0.50   # Same fleet/colony/expedition/operation
+    within_same_branch: 0.35   # Same branch, different level-2
+    cross_branch: 0.15         # Different branch entirely
+
+  # Cross-branch transfer notes
+  cross_branch_transfers:
+    enabled: true
+    description: |
+      Rare cases where personnel move between branches. Creates hardest
+      disambiguation cases since hierarchy structure differs between states.
+    examples:
+      - "Defense Command pilot reassigned to Expeditionary Corps survey team"
+      - "Colonial Administration official transferred to Resource Directorate oversight"
+
+# =============================================================================
+# FAMILIARITY GRADIENT
+# =============================================================================
+#
+# Clerks abbreviate aggressively for their own unit because context is shared.
+# Foreign units get spelled out. This creates exploitable asymmetry.
+
+familiarity_gradient:
+
+  description: |
+    Each source has a "home unit" - the organizational context of the clerk
+    writing the records. Familiarity is measured at Level-3 granularity
+    (Squadron/District/Team/Facility equivalent).
+
+  # Home unit is assigned per source, not per clerk
+  # A clerk may work on multiple sources with different home units
+  home_unit_assignment: "per_source"
+  home_unit_level: 3  # Level-3 in hierarchy (e.g., Squadron, District, Team, Facility)
+
+  # Detail levels based on relationship to writer's unit
+  detail_levels:
+    same_level3:
+      description: "Same Level-3 unit as writer"
+      detail: "minimal"
+      example: "Martinez A"  # Just name and element
+      abbreviation_rate: 0.95
+      omit_higher_levels: true
+      # v4.1: This creates LOW path_completeness but may be EASY if complementary
+
+    same_level2_different_level3:
+      description: "Same Level-2 (Fleet/Colony/etc), different Level-3"
+      detail: "low"
+      example: "Martinez A/Sq-3"  # Name, element, squadron
+      abbreviation_rate: 0.80
+      omit_levels_above: 2
+
+    same_branch_different_level2:
+      description: "Same branch, different Level-2 unit"
+      detail: "medium"
+      example: "Martinez A/Sq-3/Fleet-Kestrel"
+      abbreviation_rate: 0.60
+      include_level2: true
+
+    different_branch:
+      description: "Different branch entirely"
+      detail: "maximum"
+      example: "Martinez, J. Element 7, Wing A, 3rd Squadron, Fleet Kestrel, Defense Command"
+      abbreviation_rate: 0.30
+      include_branch: true
+      include_full_path: true
+      # v4.1: This creates HIGH path_completeness, likely EASY resolution
+
+# =============================================================================
+# QUALITY TIERS (Layer 1 Difficulty)
+# =============================================================================
+#
+# Quality tier measures Layer 1 (per-record extraction difficulty).
+# NOTE: Quality tier ≠ state resolution difficulty. See difficulty_model.
+
+quality_tiers:
+
+  description: |
+    Quality tier is assigned at source level and measures how easy it is
+    to EXTRACT information from individual records (Layer 1).
+    
+    IMPORTANT: A Tier-1 record can still be HARD to resolve if it's in a
+    collision zone. A Tier-5 record can be EASY if its partners are complementary.
+
+  1:
+    name: "archival_clean"
+    description: "Well-preserved, clearly typed, sector-level document"
+    distribution_weight: 0.20
+    clerk_archetype_bias: ["sector_formal", "sector_efficient", "processing_intake"]
+    imperfection_multiplier: 0.5
+    # v4.1: High extraction quality, but resolution difficulty depends on L2/L3
+
+  2:
+    name: "standard"
+    description: "Typical operational document, some wear but legible"
+    distribution_weight: 0.35
+    clerk_archetype_bias: ["fleet_methodical", "transport_shuttle", "colonial_district"]
+    imperfection_multiplier: 1.0
+
+  3:
+    name: "field_worn"
+    description: "Field conditions, rushed typing, some damage"
+    distribution_weight: 0.25
+    clerk_archetype_bias: ["fleet_rushed", "field_medevac", "defense_operations"]
+    imperfection_multiplier: 1.5
+
+  4:
+    name: "degraded"
+    description: "Poor conditions, handwritten or damaged"
+    distribution_weight: 0.15
+    clerk_archetype_bias: ["field_exhausted", "expeditionary_field"]
+    imperfection_multiplier: 2.0
+
+  5:
+    name: "fragmentary"
+    description: "Heavily damaged, partial entries, difficult to read"
+    distribution_weight: 0.05
+    clerk_archetype_bias: ["field_exhausted", "field_minimal"]
+    imperfection_multiplier: 3.0
+    incomplete_entry_rate: 0.25
+    # v4.1: Low extraction quality, but may still be EASY if complementary
+
+# =============================================================================
+# CLERK ARCHETYPES
+# =============================================================================
+#
+# Clerks are defined as archetypes with fixed behavioral patterns.
+# At generation time, concrete clerks are instantiated from archetypes
+# with minor individual variation (but habits remain fixed per clerk).
+#
+# A clerk's style is LOCKED for all entries they produce. No per-entry sampling.
+#
+# v4: Context names updated for Terraform Combine setting.
+# v4.1: Added path_completeness_tendency to each archetype.
+
+clerk_archetypes:
+
+  # ---------------------------------------------------------------------------
+  # SECTOR ADMINISTRATION CLERKS - Formal, complete, sector-aware
+  # ---------------------------------------------------------------------------
+
+  sector_formal:
+    description: |
+      Sector Administration clerk. Trained on proper TFC forms.
+      Always includes full hierarchy. Neat, consistent, by-the-book.
+    context_level: "sector_hq"
+    applicable_branches: ["all"]
+
+    name_format:
+      template: "{LAST}, {FIRST} {MI}."
+
+    rank_format:
+      style: "prefix"
+      form: "proper_abbrev"  # Spec-3, Tech-2, Cmdr
+
+    unit_format:
+      style: "labeled_hierarchical"
+      separator: ", "
+      include_sector: true
+      include_branch: true
+      label_style: "abbreviated"
+
+    vocabulary_density: "low"
+    familiarity_override: "ignore"  # Formal clerks always use full notation
+
+    # v4.1: Path completeness tendency
+    path_completeness_tendency: "high"  # Usually provides 80-100% of path
+    structural_signals_tendency: "high"  # Usually includes branch-identifying terms
+
+    consistency:
+      format_lock: 0.98
+      minor_drift: 0.02
+
+    imperfections:
+      typo_rate: 0.01
+      abbreviation_inconsistency: 0.02
+
+  # ---------------------------------------------------------------------------
+
+  sector_efficient:
+    description: |
+      Experienced Sector clerk who's processed thousands of records.
+      Developed efficient shorthand but still systematic.
+    context_level: "sector_hq"
+    applicable_branches: ["all"]
+
+    name_format:
+      template: "{LAST}, {FI}.{MI}."
+
+    rank_format:
+      style: "prefix"
+      form: "caps_abbrev"  # SPEC3, TECH2, CMDR
+
+    unit_format:
+      style: "slash_positional"
+      orientation: "child_over_parent"
+      separator: "/"
+      include_sector: true
+      branch_suffix: true
+
+    vocabulary_density: "low"
+    familiarity_override: "ignore"
+
+    path_completeness_tendency: "high"
+    structural_signals_tendency: "medium"  # Branch suffix provides signal
+
+    consistency:
+      format_lock: 0.95
+      minor_drift: 0.05
+
+    imperfections:
+      typo_rate: 0.02
+      abbreviation_inconsistency: 0.05
+
+  # ---------------------------------------------------------------------------
+  # FLEET/OPERATION CLERKS - Assume context, drop higher echelons
+  # ---------------------------------------------------------------------------
+
+  fleet_rushed:
+    description: |
+      Fleet or Operation-level clerk processing personnel lists under pressure.
+      Everyone knows what fleet this is - drops sector, often fleet name.
+    context_level: "level2"
+    applicable_branches: ["defense_command", "resource_directorate"]
+
+    name_format:
+      template: "{LAST}"
+
+    rank_format:
+      style: "suffix"
+      form: "caps_abbrev"
+
+    unit_format:
+      style: "runon_compact"
+      orientation: "child_over_parent"
+      separator: "-"
+      include_sector: false
+      include_level2: false
+
+    vocabulary_density: "medium"
+    familiarity_applies: true
+
+    path_completeness_tendency: "low"  # Usually provides 30-50% of path
+    structural_signals_tendency: "low"  # Drops level names
+
+    consistency:
+      format_lock: 0.85
+      minor_drift: 0.12
+      major_variation: 0.03
+
+    imperfections:
+      typo_rate: 0.04
+      abbreviation_inconsistency: 0.10
+      trailing_off: 0.05
+
+  # ---------------------------------------------------------------------------
+
+  fleet_methodical:
+    description: |
+      Careful fleet/operation clerk. Takes time, makes fewer mistakes.
+      Still drops sector but keeps everything else.
+    context_level: "level2"
+    applicable_branches: ["defense_command", "resource_directorate"]
+
+    name_format:
+      template: "{LAST}, {FIRST}"
+
+    rank_format:
+      style: "prefix"
+      form: "mixed_abbrev"
+
+    unit_format:
+      style: "labeled_micro"
+      separator: " "
+      include_sector: false
+      label_style: "micro"
+
+    vocabulary_density: "low"
+    familiarity_applies: true
+
+    path_completeness_tendency: "medium"
+    structural_signals_tendency: "medium"
+
+    consistency:
+      format_lock: 0.92
+      minor_drift: 0.08
+
+    imperfections:
+      typo_rate: 0.02
+      abbreviation_inconsistency: 0.04
+
+  # ---------------------------------------------------------------------------
+  # FIELD CLERKS - Exhausted, situational, informal
+  # ---------------------------------------------------------------------------
+
+  field_exhausted:
+    description: |
+      Field station or outpost clerk. Handwritten intake under stress.
+      Writes what they hear. Inconsistent. Situational vocabulary bleeds in.
+    context_level: "field"
+    applicable_branches: ["all"]
+
+    name_format:
+      template: "{LAST} {FIRST}"
+      drop_middle_rate: 0.60
+
+    rank_format:
+      style: "mixed"
+      form: "phonetic"
+      omit_rate: 0.15
+
+    unit_format:
+      style: "phonetic_informal"
+      separator: " "
+      include_sector: false
+      phonetic_letters: true
+
+    vocabulary_density: "high"
+    familiarity_applies: true
+
+    path_completeness_tendency: "low"
+    structural_signals_tendency: "medium"  # Phonetic letters can help
+
+    consistency:
+      format_lock: 0.65
+      minor_drift: 0.25
+      major_variation: 0.10
+
+    imperfections:
+      typo_rate: 0.08
+      abbreviation_inconsistency: 0.20
+      trailing_off: 0.12
+      mid_entry_corrections: 0.05
+
+  # ---------------------------------------------------------------------------
+
+  field_medevac:
+    description: |
+      Medical evacuation clerk tracking injured. Focus on status, less on unit.
+      Unit info often incomplete.
+    context_level: "field"
+    applicable_branches: ["all"]
+
+    name_format:
+      template: "{LAST}, {FI}."
+
+    rank_format:
+      style: "prefix"
+      form: "caps_abbrev"
+      omit_rate: 0.10
+
+    unit_format:
+      style: "minimal"
+      include_sector: false
+      include_lowest_levels: false
+
+    vocabulary_density: "high"
+    vocabulary_bias: ["status_code"]
+    familiarity_applies: true
+
+    path_completeness_tendency: "very_low"  # Often just Level-2
+    structural_signals_tendency: "low"
+
+    consistency:
+      format_lock: 0.75
+      minor_drift: 0.20
+      major_variation: 0.05
+
+    imperfections:
+      typo_rate: 0.05
+      incomplete_unit: 0.25
+
+  # ---------------------------------------------------------------------------
+
+  field_minimal:
+    description: |
+      Field clerk under extreme stress. Writes bare minimum identifiers.
+      No unit type indicators - just designators. Forces structural inference.
+    context_level: "field"
+    applicable_branches: ["all"]
+
+    name_format:
+      template: "{LAST} {FIRST}"
+      drop_middle_rate: 0.70
+
+    rank_format:
+      style: "mixed"
+      form: "phonetic"
+      omit_rate: 0.20
+
+    unit_format:
+      style: "minimal"
+      include_sector: false
+      omit_level_names: true  # KEY: renders "3rd" instead of "3rd Squadron"
+
+    vocabulary_density: "low"
+    familiarity_applies: true
+
+    path_completeness_tendency: "very_low"
+    structural_signals_tendency: "very_low"  # No level names = no structural signal
+
+    consistency:
+      format_lock: 0.60
+      minor_drift: 0.30
+      major_variation: 0.10
+
+    imperfections:
+      typo_rate: 0.10
+      abbreviation_inconsistency: 0.25
+      trailing_off: 0.15
+      mid_entry_corrections: 0.08
+
+  # ---------------------------------------------------------------------------
+  # TRANSPORT/MANIFEST CLERKS - Systematic but context-specific
+  # ---------------------------------------------------------------------------
+
+  transport_shuttle:
+    description: |
+      Shuttle manifest clerk processing boarding lists.
+      Has a column system. Very systematic but uses own notation.
+    context_level: "transport"
+    applicable_branches: ["all"]
+
+    name_format:
+      template: "{LAST} {FI}"
+
+    rank_format:
+      style: "separate_column"
+      form: "caps_abbrev"
+
+    unit_format:
+      style: "slash_positional"
+      orientation: "parent_over_child"
+      separator: "/"
+      include_sector: true
+      branch_suffix: true
+
+    vocabulary_density: "medium"
+    vocabulary_bias: ["transport_code", "manifest_code"]
+    familiarity_override: "ignore"
+
+    path_completeness_tendency: "high"
+    structural_signals_tendency: "high"  # Branch suffix
+
+    consistency:
+      format_lock: 0.95
+      minor_drift: 0.05
+
+    imperfections:
+      typo_rate: 0.02
+      column_bleed: 0.08
+
+  # ---------------------------------------------------------------------------
+
+  processing_intake:
+    description: |
+      Personnel processing center clerk handling arrivals and transfers.
+      Sees all branches, always includes full hierarchy.
+    context_level: "processing_center"
+    applicable_branches: ["all"]
+
+    name_format:
+      template: "{LAST}, {FI}.{MI}."
+
+    rank_format:
+      style: "prefix"
+      form: "proper_abbrev"
+
+    unit_format:
+      style: "labeled_full"
+      separator: ", "
+      include_sector: true
+      include_branch: true
+      label_style: "full"
+
+    vocabulary_density: "low"
+    vocabulary_bias: ["process_code"]
+    familiarity_override: "ignore"
+
+    path_completeness_tendency: "very_high"  # Always full path
+    structural_signals_tendency: "very_high"  # Full labels + branch
+
+    consistency:
+      format_lock: 0.97
+      minor_drift: 0.03
+
+    imperfections:
+      typo_rate: 0.01
+
+  # ---------------------------------------------------------------------------
+  # BRANCH-SPECIFIC CLERKS (abbreviated for spec length)
+  # ---------------------------------------------------------------------------
+
+  defense_squadron:
+    description: "Squadron-level clerk in Defense Command"
+    context_level: "level3"
+    applicable_branches: ["defense_command"]
+    path_completeness_tendency: "medium"
+    structural_signals_tendency: "high"  # DC-specific terms
+    # ... (other fields as in original)
+
+  expeditionary_field:
+    description: "Field survey clerk on active expedition"
+    context_level: "field"
+    applicable_branches: ["expeditionary_corps"]
+    path_completeness_tendency: "very_low"
+    structural_signals_tendency: "medium"  # EC-specific terms sometimes
+    # ... (other fields as in original)
+
+  resource_facility:
+    description: "Facility clerk in Resource Directorate"
+    context_level: "level3"
+    applicable_branches: ["resource_directorate"]
+    path_completeness_tendency: "medium"
+    structural_signals_tendency: "high"  # RD-specific terms
+    # ... (other fields as in original)
+
+# =============================================================================
+# GENERATION PARAMETERS
+# =============================================================================
+
+generation:
+
+  target_records: 10000
+
+  records_per_soldier:
+    distribution: "geometric"
+    p: 0.45
+    min: 1
+    max: 8
+
+  sources_per_soldier:
+    distribution: "categorical"
+    weights:
+      1: 0.80
+      2: 0.18
+      3: 0.02
+
+  states_per_soldier:
+    distribution: "categorical"
+    weights:
+      1: 0.65
+      2: 0.28
+      3: 0.07
+
+  branch_distribution:
+    model: "weighted_with_variance"
+    target_weights:
+      defense_command: 0.35
+      colonial_administration: 0.30
+      resource_directorate: 0.25
+      expeditionary_corps: 0.10
+
+  # v4.1: Difficulty distribution targets
+  difficulty_distribution:
+    targets:
+      easy: 0.50
+      moderate: 0.30
+      hard: 0.15
+      extreme: 0.05
+    rebalancing_enabled: true
+    rebalancing_tolerance: 0.05
+
+  random_seed: null
+
+# =============================================================================
+# SOURCE GENERATION
+# =============================================================================
+
+source_generation:
+
+  entries_per_source:
+    distribution: "normal_truncated"
+    mean: 35
+    std: 15
+    min: 8
+    max: 80
+
+  clerk_distribution:
+    model: "power_law"
+    alpha: 1.8
+
+  situation_assignment:
+    cross_situation_bleed: 0.02
+
+  unit_concentration:
+    same_level3_rate: 0.70
+    same_level2_rate: 0.25
+    mixed_rate: 0.05
+
+  home_unit_assignment:
+    description: "Each source has a home unit at Level-3"
+    assignment_method: "majority_unit"
+    override_for_processing: true
+
+  state_anchoring:
+    description: |
+      Sources are implicitly anchored to a point in time. For soldiers with
+      multiple states, the source's anchor determines which state is captured.
+
+# =============================================================================
+# WITHIN-SOURCE CONSISTENCY
+# =============================================================================
+
+within_source_behavior:
+
+  format_consistency:
+    identical_format_rate: 0.85
+    minor_variation_rate: 0.12
+    format_switch_rate: 0.03
+
+  vocabulary_consistency:
+    term_persistence: 0.95
+
+  familiarity_consistency:
+    consistency_rate: 0.95
+
+  fatigue_modeling:
+    enabled: true
+    early_batch_formality: 0.90
+    late_batch_formality: 0.70
+    effects:
+      - increase_abbreviation
+      - increase_typo_rate
+      - drop_optional_fields
+
+# =============================================================================
+# VOCABULARY LAYERS
+# =============================================================================
+
+vocabulary_layers:
+
+  situational:
+    description: "Terms from the source's assigned situation"
+    source: "situations[].vocabulary_pool"
+    selection_logic: |
+      1. Source is assigned a situation
+      2. Situation has vocabulary_pool with primary/secondary/rare terms
+      3. Clerk's vocabulary_density determines how many terms appear
+      4. Terms persist within source
+    density_by_archetype:
+      low: 0.15
+      medium: 0.35
+      high: 0.55
+
+  contextual_clutter:
+    description: "Non-signal noise from clerk's physical environment"
+    source: "synthetic_vocabulary.json where term_type = clutter_code"
+    examples:
+      transport_shuttle: ["Deck-2", "Bay-C", "Berth-17", "Hold-3"]
+      field_medevac: ["Ward-3", "Bed-17", "Triage-2"]
+      defense_operations: ["Station-42", "Post-7", "Watch-3"]
+      processing_intake: ["Queue-7", "Line-23", "Proc-2"]
+
+  confounders:
+    description: "Deliberately ambiguous terms that resemble unit designators"
+    source: "synthetic_vocabulary.json where term_type = confounder"
+    examples:
+      - term: "A"
+        ambiguity: "Is 'A' a wing designator or a berth letter?"
+      - term: "C-4"
+        ambiguity: "Is 'C-4' Crew C Facility 4, or Compartment C-4?"
+      - term: "7"
+        ambiguity: "Is '7' a team designator or a bunk number?"
+    confounder_rate: 0.08
+
+# =============================================================================
+# EVALUATION STRATIFICATION (v4.1)
+# =============================================================================
+#
+# Evaluation should be stratified by difficulty tier to reveal where
+# improvements are needed.
+
+evaluation_stratification:
+
+  description: |
+    Accuracy should be reported by difficulty tier, not just aggregate.
+    This reveals whether improvements are needed at Layer 1 (extraction),
+    Layer 2 (aggregation), or Layer 3 (structural inference).
+
+  required_breakdowns:
+    - by_difficulty_tier: ["easy", "moderate", "hard", "extreme"]
+    - by_collision_zone: [true, false]
+    - by_state_count: [1, 2, 3]
+    - by_branch: ["CA", "DC", "EC", "RD"]
+
+  example_output: |
+    Component: defense_command
+      Overall accuracy: 94.2%
+      By difficulty:
+        Easy soldiers:     98.1% (n=450)
+        Moderate soldiers: 91.3% (n=120)
+        Hard soldiers:     76.4% (n=55)
+        Extreme soldiers:  42.9% (n=14)
+
+  alerts:
+    - condition: "hard_accuracy < 0.70"
+      message: "Hard case accuracy below threshold - review resolver differentiators"
+    - condition: "extreme_accuracy < 0.40"
+      message: "Extreme cases may require manual review or additional signals"
