@@ -1,320 +1,323 @@
 # Synthetic Data Generation
 
-**Version:** 3.0.3
-**Last Updated:** 2026-01-17
+**Version:** 4.0.0  
+**Last Updated:** 2026-01-25  
+**Status:** Design specification (not yet implemented)
 
 ---
 
 ## Purpose
 
-Generate synthetic military manifest records that:
+Generate synthetic personnel records for a fictional interstellar organization that:
 1. Resemble archival capture artifacts (compressed shorthand, inconsistent formatting)
 2. Contain realistic ambiguity and confounders
-3. Have learnable signals linking language to component categories
+3. Have learnable signals linking language to organizational categories
 4. Force multi-signal disambiguation (no single-feature classification)
 5. Are reproducible and comparable across experiments
-6. **Feel organic** - written by humans, not sampled from probability distributions
+6. **Feel organic** — written by humans, not sampled from probability distributions
+7. **Are methodologically clean** — zero LLM pretraining contamination
 
 ---
 
-## v3 Philosophy: Clerks as Characters
+## v4 Philosophy: Decontaminated Domain with Explicit States
 
-The v3 spec fundamentally changes how synthetic data is generated:
+The v4 spec makes two fundamental changes from v3:
 
-| v2 Approach | v3 Approach |
+### Change 1: Domain Decontamination
+
+| v3 Approach | v4 Approach |
 |-------------|-------------|
-| Sample template per-entry with weights | Clerk has ONE template, uses it every time |
-| `component_affinities` with flavor tokens | Situations drive vocabulary naturally |
-| `source_profiles` as config objects | Clerk archetypes as **characters** with habits |
-| Random noise profiles | Behavioral imperfections (fatigue, self-correction) |
-| Random separator sampling | Clerk always uses their separator |
-| Quality tier affects per-entry probabilities | Quality tier assigned to **source**, affects whole batch |
-| Uniform variation within sources | 85% of entries in a source use **identical format** |
+| WWII military units (29th ID, 116th Inf, etc.) | Fictional interstellar organization (Terraform Combine) |
+| Real operations (Normandy, Bastogne) | Invented operations (Operation Deepcore, Survey Horizon) |
+| Historical vocabulary (OMAHA, DZ-O) | Fictional vocabulary (SECTOR-7, BEACON-ALPHA) |
+| LLM has strong priors from pretraining | LLM has zero priors; must use in-context signals only |
 
-**Key insight:** Real clerks don't sample from probability distributions. They develop habits, stick with what works, and write the same way for dozens of entries in a row.
+### Change 2: Explicit State Tracking
 
----
-
-## Architecture: Truth vs Rendering
-
-### Truth Layer
-Represents "what the soldier is":
-- Identity (primary_id, canonical name parts)
-- Canonical assignment (division/regiment/battalion/company)
-- Component classification (component_id)
-
-Truth is stable and not required to look like a document.
-
-### Rendering Layer
-Represents "how it got written down":
-- **Clerk character** (archetype with fixed habits)
-- **Situation** (operational context driving vocabulary)
-- **Within-source consistency** (same format repeated)
-- **Vocabulary layers** (situational, clutter, confounders)
-- **Behavioral imperfections** (fatigue drift, self-correction)
-
-Multiple raw lines can correspond to the same truth record, rendered by different clerks.
+| v3 Approach | v4 Approach |
+|-------------|-------------|
+| States implicit (inferred from assignment field) | States are first-class objects with `state_id` |
+| Binary: soldier has transfer or doesn't | 1-3 states per soldier with distribution weights |
+| Can evaluate state count and resolution | Can evaluate state count, **grouping**, and resolution |
 
 ---
 
-## File Structure
+## The Terraform Combine
 
-### LLM-Facing Files (may be provided to parsing LLM)
+A fictional interstellar colonization and governance authority. Personnel serve in one of four operational branches, each with distinct hierarchy structure.
 
-| File | Location | Purpose |
-|------|----------|---------|
-| `hierarchy_reference.json` | `config/hierarchies/` | Canonical component hierarchy with collisions |
+### Branch Structures
 
-### Generation-Only Files (never provided to parsing LLM)
+| Branch | Purpose | Depth | Level 1 | Level 2 | Level 3 | Level 4 | Level 5 |
+|--------|---------|-------|---------|---------|---------|---------|---------|
+| Colonial Administration | Governance of settlements | 4 | Sector | Colony | District | Settlement | — |
+| Defense Command | Security, patrol, enforcement | 5 | Sector | Fleet | Squadron | Wing | Element |
+| Expeditionary Corps | Exploration, survey, first contact | 3 | Sector | Expedition | Team | — | — |
+| Resource Directorate | Mining, extraction, processing | 4 | Sector | Operation | Facility | Crew | — |
 
-| File | Location | Purpose |
-|------|----------|---------|
-| `synthetic_themes.json` | `config/synthetic/` | Theme definitions (31 themes) |
-| `synthetic_vocabulary.json` | `config/synthetic/` | Terms with layers: situational, clutter, confounders |
-| `synthetic_style_spec_v3.yaml` | `docs/components/synthetic_data_generation/` | v3 clerk-as-character rendering spec |
-| `seed_set_v3.json` | `config/synthetic/` | Hand-crafted calibration examples (38 entries) |
+**Key structural features:**
+- **Depth variation:** 3, 4, or 5 levels depending on branch
+- **Shared top level:** All branches use "Sector" as Level 1 (shared organizational geography)
+- **Unique level names:** "Squadron" only in Defense; "Colony" only in Colonial; "Expedition" only in Expeditionary
+- **Mixed designator types:** Names, numbers, letters, and ordinals depending on level and branch
 
-### Deprecated Files
+### Designator Conventions by Branch
 
-| File | Location | Notes |
-|------|----------|-------|
-| `synthetic_style_spec_v2.yaml` | `deprecated/` | v2 sampling-based approach |
-| `README_synthetic_workflow.md` | `deprecated/` | Superseded by this document |
-| `AGENT_BUILD_INSTRUCTIONS.md` | `deprecated/` | Superseded by instruction 001 |
+| Branch | Level 2 | Level 3 | Level 4 | Level 5 |
+|--------|---------|---------|---------|---------|
+| Colonial | Colony names (Verdant, Kestrel, Thornmark) | District numbers/names (District 7, North District) | Settlement letters/names (Settlement C, Outpost Amber) | — |
+| Defense | Fleet numbers (Fleet 7, Fleet 12) | Squadron letters (Squadron Alpha, Squadron C) | Wing numbers (Wing 3, Wing 7) | Element letters (Element A, Element Delta) |
+| Expeditionary | Expedition names (Horizon, Far Reach, Pioneer) | Team designators (Team 4, Survey Alpha) | — | — |
+| Resource | Operation names (Deepcore, Icevein, Yield-7) | Facility numbers (Facility 12, Platform 7) | Crew letters (Crew A, Crew Delta) | — |
+
+### Collision Zones
+
+Designators are deliberately shared across branches to create ambiguity:
+
+| Designator | Possible Meanings |
+|------------|-------------------|
+| "7" | Fleet 7 (Defense), District 7 (Colonial), Facility 7 (Resource), Team 7 (Expeditionary) |
+| "Alpha" | Squadron Alpha (Defense), Team Alpha (Expeditionary), Crew Alpha (Resource), Element Alpha (Defense) |
+| "Kestrel" | Colony Kestrel (Colonial), Expedition Kestrel (Expeditionary) |
+| "3" | Wing 3, Settlement 3, Crew 3, Team 3... |
+| "A" | Element A, Crew A, Settlement A, Team A... |
+| "12" | Fleet 12, District 12, Facility 12... |
+
+A record saying "MARTINEZ CPL 7 ALPHA 3" is deeply ambiguous without additional signals.
 
 ---
 
-## Clerk Archetypes
+## States as First-Class Objects
 
-Clerks are defined as persistent characters with fixed behavioral patterns:
+### Conceptual Model
+
+```
+Soldier
+  └── has 1-3 States (ordered temporally)
+        └── each State resolves to exactly one Post
+              └── Post = full path through branch hierarchy
+```
+
+A **state** is a latent segment of a soldier's service. States are sequential (temporal ordering) but records have no dates—the challenge is discovering state boundaries from record content alone.
+
+### State Distribution
+
+| State Count | Frequency | Scenario |
+|-------------|-----------|----------|
+| 1 state | ~65% | Soldier served in one post throughout |
+| 2 states | ~28% | One transfer during service |
+| 3 states | ~7% | Two transfers during service |
+
+### Transfer Types (State Transitions)
+
+| Type | Frequency | Example |
+|------|-----------|---------|
+| Within same Level-3 unit | 50% | Element A → Element B within Wing 3 |
+| Within same branch, different Level-2 | 35% | Squadron Alpha → Squadron Beta within Fleet 7 |
+| Different branch | 15% | Defense Command → Colonial Administration |
+
+Cross-branch transfers create the hardest cases: records where the hierarchy structure itself differs between states.
+
+### Schema: States in Output Files
+
+**validation.parquet** (or states.parquet):
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `soldier_id` | string | Soldier identifier |
+| `state_id` | string | Unique state identifier (e.g., S001-1, S001-2) |
+| `state_order` | int | Temporal position (1, 2, or 3) |
+| `branch` | string | Branch identifier |
+| `component_path` | string | Full hierarchy path |
+| Level-specific columns | string | Vary by branch (sector, fleet/colony/expedition/operation, etc.) |
+
+**raw.parquet**:
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `source_id` | string | Document/manifest identifier |
+| `soldier_id` | string | Ground truth soldier identifier |
+| `state_id` | string | Ground truth state this record captures |
+| `raw_text` | string | Rendered manifest line |
+| `clerk_id` | string | Clerk instance identifier |
+| `situation_id` | string | Situation assigned to source |
+| `quality_tier` | int | 1-5 quality level |
+
+---
+
+## Source-Anchored State Assignment
+
+### Concept
+
+Each source document has a **temporal anchor** — it captures soldiers at a specific point in their service. For multi-state soldiers:
+- Source created during State 1 → records show State 1 assignment
+- Source created during State 2 → records show State 2 assignment
+
+**Key constraint:** A given source contains each soldier **at most once**. No soldier appears twice in the same manifest.
+
+### Source Properties
+
+| Property | Description |
+|----------|-------------|
+| `source_id` | Unique identifier |
+| `clerk_id` | Which clerk produced this source (determines formatting) |
+| `situation_id` | Operational context (determines vocabulary) |
+| `home_unit` | Writer's organizational context (determines familiarity gradient) |
+| `temporal_anchor` | Which state-period this source captures |
+
+### Implementation
+
+When generating records for a multi-state soldier:
+1. Determine which sources will include this soldier
+2. For each source, use its temporal_anchor to select which state to render
+3. Render the record using that state's assignment
+
+---
+
+## Familiarity Gradient
+
+### Concept
+
+Clerks abbreviate aggressively for their "home unit" because context is shared with the reader. Foreign units get spelled out fully.
+
+**Home unit granularity:** Level 3 of hierarchy (Squadron, District, Expedition, Facility)
+
+### Familiarity Levels
+
+| Relationship to Writer's Home Unit | Detail Level | Example (Defense Command clerk from Squadron Alpha, Fleet 7) |
+|------------------------------------|--------------|--------------------------------------------------------------|
+| Same Level-3 unit | Minimal | "Martinez Cpl A-3" (Element A, Wing 3 implied) |
+| Same Level-2, different Level-3 | Low | "Martinez Cpl A-3 Sq-B" (specify squadron) |
+| Same branch, different Level-2 | Medium | "Martinez Cpl A-3/Sq-B/Flt-12" (specify fleet) |
+| Different branch | Maximum | "Martinez Cpl Crew-A, Facility-7, Op-Deepcore, Resource Directorate" |
+
+### Interaction with Clerk Archetypes
+
+Archetypes define the **template** and **style**. Familiarity modifies the **content** rendered into that template.
+
+A `formal` archetype always uses full labels and commas:
+```
+{RANK} {LAST}, {FIRST} {MI}.  {UNIT_STRING}
+```
+
+But `{UNIT_STRING}` expands based on familiarity:
+- Home unit: "Element A, Wing 3"
+- Same branch, foreign Level-2: "Element A, Wing 3, Squadron Beta, Fleet 12"
+- Different branch: "Crew A, Facility 7, Operation Deepcore, Resource Directorate"
+
+### Source Home Unit Assignment
+
+Sources are assigned home units based on:
+1. **Clerk archetype context** — Some archetypes are "local" (battalion-level), others are "transient" (depot, hospital, transport)
+2. **Situation correlation** — Certain situations associate with certain units
+
+| Source Type | Home Unit Soldiers | Foreign Soldiers |
+|-------------|-------------------|------------------|
+| Local administrative | 90% | 10% (attachments, liaisons) |
+| Sector HQ | 70% | 30% (cross-unit coordination) |
+| Transit hub | 30% | 70% (mixed manifests) |
+| Medical facility | 25% | 75% (casualties from across sector) |
+| Processing depot | 10% | 90% (inbound transfers) |
+
+---
+
+## Clerk Archetypes (v4)
+
+Archetypes from v3 transfer with context renaming. Examples:
 
 | Archetype | Context | Example Output |
 |-----------|---------|----------------|
-| `hq_formal` | Division HQ, trained on forms | `S/Sgt Kowalski, Stanley J.  Co E, 2nd Bn, 16th Inf, 1st Div` |
-| `hq_efficient` | Experienced HQ, efficient | `Kowalski, S.J.  E/2/116/29ID` |
-| `battalion_rushed` | S-1 under pressure | `KOWALSKI SSGT E2-16` |
-| `battalion_methodical` | Careful battalion clerk | `Kowalski, Stanley  E Co 2Bn 116Inf` |
-| `field_exhausted` | Field hospital, stressed | `Kowalski Stanley  SSgt Easy Co 16  WIA` |
-| `field_medevac` | Medical evacuation | `KOWALSKI, S.  116th  WIA` |
-| `transport_ship` | Ship manifest | `KOWALSKI S    116/2/E  29ID  SSG` |
-| `transport_air` | Troop carrier manifest | `S/Sgt Kowalski, Stanley J.  Co E, 2nd Bn, 505th PIR, 82nd AB  CHK-42` |
-| `repldep_intake` | Replacement depot | `Kowalski, S.J., SSgt, Co E, 2nd Bn, 116th Inf Regt, 29th Inf Div` |
-| `aaf_squadron` | Squadron-level AAF | `Kowalski, Stanley J.  3rd Sq, 91st BG, 8th AF` |
-| `aaf_operations` | Group ops, mission tracking | `Kowalski, S.J.  91BG-322  SSGT  B-17` |
-| `marine_fmf` | Fleet Marine Force | `Kowalski, Stanley J.  Co E, 2nd Bn, 1st Mar, 1st MarDiv` |
-| `marine_shipboard` | Marine transport | `KOWALSKI S    E/2/1  1MARDIV  SGT` |
-| `field_minimal` | Field under stress | `Schroeder Roy  Co 4, B Bn, 3rd` |
-
-A clerk's style is **LOCKED** for all entries they produce. No per-entry sampling.
-
-### Unit Type Omission (v3.0.3)
-
-The `field_minimal` archetype uses `omit_unit_type: true` which renders regiment numbers without type indicators:
-
-| With unit type | Without unit type |
-|----------------|-------------------|
-| `3rd PIR` | `3rd` |
-| `5th Inf` | `5th` |
-| `7th Mar` | `7th` |
-
-This forces disambiguation to rely on vocabulary signals rather than explicit identifiers.
+| `hq_formal` | Sector HQ, trained on forms | `Spc Martinez, Carlos J.  Element A, Wing 3, Squadron Alpha, Fleet 7, Defense Command` |
+| `hq_efficient` | Experienced HQ, efficient | `Martinez, C.J.  A/3/Alpha/7/DEF` |
+| `local_rushed` | Unit clerk under pressure | `MARTINEZ SPC A3-ALPHA` |
+| `local_methodical` | Careful unit clerk | `Martinez, Carlos  Elem A Wg3 SqAlpha` |
+| `field_exhausted` | Aid station, stressed | `Martinez Carlos  Spc Alpha 7  WND` |
+| `transit_manifest` | Transport hub | `MARTINEZ C    A/3/ALPHA  FLT7  SPC` |
+| `depot_intake` | Processing depot | `Martinez, C.J., Spc, Element A, Wing 3, Squadron Alpha, Fleet 7, Defense Command` |
+| `expeditionary_field` | Survey team, minimal | `Martinez  Team 4` |
 
 ---
 
-## Situations
-
-Situations define operational context that drives vocabulary selection:
-
-| Situation | Theater | Components | Key Vocabulary |
-|-----------|---------|------------|----------------|
-| `normandy_assault` | ETO | 1st ID, 29th ID | OMAHA, UTAH, LST, LCVP |
-| `normandy_airborne` | ETO | 82nd AB, 101st AB | DZ-O, DZ-N, CHK-42, C-47 |
-| `bulge_defensive` | ETO | 82nd AB, 101st AB | BASTOGNE, ABN |
-| `eto_breakout` | ETO | 2nd AD, 1st ID | COBRA, ARMD, TK |
-| `italy_anzio` | MTO | 36th ID, 1st AD | SALERNO, ANZIO, RAPIDO |
-| `italy_mountain` | MTO | 10th Mtn | RIVA, BELVEDERE, MTN, SKI |
-| `guadalcanal` | PTO | 1st MarDiv | LUNGA, RED-1, USMC, FMF |
-| `tarawa` | PTO | 2nd MarDiv | BETIO, RED-2, LVT |
-| `iwo_jima` | PTO | 3rd MarDiv | SURIBACHI, GREEN-1 |
-| `eighth_af_strategic` | ETO | 8th AF | B-17, B-24, STATION-121 |
-| `fifteenth_af_mediterranean` | MTO | 15th AF | FOGGIA, BARI |
-| `ninth_af_tactical` | ETO | 9th AF | A-26, STATION-416 |
-
-A source is assigned ONE situation. All entries share situational vocabulary.
-
----
-
-## Vocabulary Layers
-
-Vocabulary is NOT randomly sampled. It appears based on three distinct sources:
+## Vocabulary Layers (v4)
 
 ### 1. Situational Vocabulary (Signal-bearing)
-- Tied to the operation/situation assigned to the source
-- Provides disambiguation signals (OMAHA = 1st ID Normandy, DZ-O = 82nd AB)
-- **Helps the parser** identify component
+
+Tied to operations and contexts within the Terraform Combine:
+
+| Branch | Situations | Vocabulary |
+|--------|------------|------------|
+| Defense | Patrol ops, incursions, alerts | REDLINE, CONDITION-3, INTERCEPT, PERIMETER |
+| Colonial | Founding, census, emergencies | FOUNDING, CENSUS-7, EVAC-NOTICE, HARVEST |
+| Expeditionary | Surveys, contacts, discoveries | SURVEY-7, BEACON, CONTACT, UNCHARTED |
+| Resource | Extraction, incidents, quotas | DEEPCORE, YIELD-12, INCIDENT, SHIFT-3 |
+
+"DEEPCORE" in a record is a strong signal for Resource Directorate.
 
 ### 2. Contextual Clutter (Non-signal noise)
-- Tied to the clerk's working environment, not the soldier's unit
-- Ship clerks add deck/berth codes; hospital clerks add ward/bed numbers
-- **Does NOT help** disambiguation
+
+Tied to clerk's working environment:
 
 | Clerk Context | Clutter Terms |
 |---------------|---------------|
-| `transport_ship` | Dk2, Hold3, Bth-C, Bay4 |
-| `field_medevac` | Ward3, Bed17, Adm442 |
-| `aaf_operations` | AC847, Pos3, Msn142 |
-| `repldep_intake` | Grp7, Ln23, Sec-2 |
+| Transit hub | Dk2, Bay-C, Berth-7, Hold3 |
+| Medical | Ward3, Bed17, Intake-442 |
+| Depot | Grp7, Ln23, Proc-2 |
+| Local admin | Ref-447, File-C, Seq-12 |
 
 ### 3. Confounders (Deliberately ambiguous)
-- Terms that LOOK like unit data but aren't
-- Forces parser to use context, not pattern matching
-- **Actively misleads** if parsed naively
+
+Terms that look like unit data but aren't:
 
 | Confounder | Appears As | Could Be | Actually Is |
 |------------|------------|----------|-------------|
-| `A` | `...SGT A` | Company A | Berth A |
-| `C-4` | `...E2-16 C-4` | C Co, 4th Bn | Compartment C-4 |
-| `2A` | `...505th PIR 2A` | 2nd Co, A Bn | Boarding group |
-| `??` | `...Fox 16 ??` | Unknown | Clerk uncertainty |
+| `A` | `...SPC A` | Element A | Berth A |
+| `C-4` | `...Alpha C-4` | Squadron C, Wing 4 | Compartment C-4 |
+| `7` | `...Martinez 7` | Fleet 7 | Processing group 7 |
+| `??` | `...Team 4 ??` | Unknown unit | Clerk uncertainty mark |
 
 ---
 
 ## Within-Source Consistency
 
-This is the key differentiator from v2:
+Unchanged from v3:
 
 ```yaml
 within_source_behavior:
   format_consistency:
-    identical_format_rate: 0.85  # 85% exactly the same
-    minor_variation_rate: 0.12   # spacing, caps drift
-    format_switch_rate: 0.03     # rare: different approach
-
+    identical_format_rate: 0.85
+    minor_variation_rate: 0.12
+    format_switch_rate: 0.03
   vocabulary_consistency:
-    term_persistence: 0.95       # if OMAHA once, OMAHA throughout
-
+    term_persistence: 0.95
   fatigue_modeling:
     enabled: true
-    # Clerk gets sloppier over course of batch
 ```
 
-Variation happens **between sources**, not **within them**.
-
 ---
 
-## Seed Set
+## Quality Tiers
 
-Hand-crafted examples in `config/synthetic/seed_set_v3.json`:
+Unchanged from v3. Quality tier is assigned at source level:
 
-| Statistic | Count |
-|-----------|-------|
-| Soldiers | 13 |
-| Sources (clerks) | 6 |
-| Total entries | 41 |
-| Collision cases | 5 |
-| Clutter examples | 8 |
-| Confounder examples | 4 |
-| Transfer cases | 1 |
-
-Demonstrates:
-- Same soldier rendered by different clerks
-- Within-source consistency
-- Collision disambiguation
-- All three vocabulary layers
-- Transfer disambiguation challenge (same soldier, different valid units)
-
----
-
-## Collision Design
-
-Designators are deliberately shared across components to force disambiguation:
-
-| Collision Type | Example | Components |
-|----------------|---------|------------|
-| Cross-branch | Regiment 1 | 1st ID, 2nd ID, 101st AB, 1st MarDiv, 36th ID |
-| Within-branch | Regiment 5 | 1st ID, 3rd ID, 82nd AB, 1st MarDiv, 10th Mtn |
-| Battalion alpha | A | 82nd AB, 101st AB, 1st AD, 2nd AD |
-
-Parser must combine (designator, unit_type) with additional signals.
-
----
-
-## Soldier Transfers
-
-25% of soldiers have a unit transfer in their history. This creates the hardest disambiguation cases: the same soldier legitimately appears with different unit assignments across sources.
-
-### Transfer Type Distribution
-
-| Type | Frequency | Example |
-|------|-----------|---------|
-| company_level | 50% | E Co → F Co within 2nd Bn |
-| battalion_level | 30% | 2nd Bn → 3rd Bn within 16th Inf |
-| regiment_level | 15% | 16th Inf → 18th Inf within 1st ID |
-| division_level | 5% | 1st ID → 29th ID via replacement depot |
-
-### Key Constraints
-
-- **Undated documents**: No temporal consistency to rely on
-- **Both assignments valid**: Truth layer tracks both, parser must recognize both as correct
-- **No clerk awareness**: Clerks record what they see, don't note "formerly Co E"
-- **No cross-branch**: Army ↔ Marines transfers not modeled
-
-### Disambiguation Challenge
-
-For a transferred soldier:
-```
-Source A (HQ): "S/Sgt Kowalski, Stanley J.  Co E, 2nd Bn, 16th Inf, 1st Div"
-Source B (rushed): "KOWALSKI SSGT F3-16"
-```
-
-Without dates, parser cannot distinguish:
-- Parsing error (E vs F, 2nd vs 3rd)?
-- Valid transfer (both correct)?
-- Two different Kowalskis?
-
-This is exactly what makes the real data hard.
-
----
-
-## Generator Responsibilities (v3)
-
-### ClerkFactory
-- Instantiate clerks from archetypes
-- Lock habits for duration of clerk's batch
-- Apply minor individual variation within archetype constraints
-
-### SituationManager
-- Assign situations to sources based on component
-- Manage vocabulary pools (primary/secondary/rare)
-- Handle term persistence within source
-
-### SourceGenerator
-- Create source batches with assigned clerk and situation
-- Enforce within-source consistency
-- Apply fatigue modeling for late-batch entries
-
-### VocabularyInjector
-- Layer 1: Situational vocabulary from situation pool
-- Layer 2: Contextual clutter from clerk context
-- Layer 3: Confounders based on clerk context and rate
-
-### Renderer
-- Apply clerk's locked style to each entry
-- `render_name(truth, clerk)` - clerk's name template
-- `render_rank(truth, clerk)` - clerk's rank style
-- `render_unit(truth, clerk)` - clerk's unit format
-- `apply_imperfections(text, clerk, position_in_batch)` - behavioral drift
+| Tier | Description | Characteristics |
+|------|-------------|-----------------|
+| 1 | Pristine | Full hierarchy, clear formatting, no ambiguity |
+| 2 | Good | Minor abbreviation, still parseable |
+| 3 | Moderate | Significant abbreviation, some inference needed |
+| 4 | Degraded | Heavy compression, structural inference required |
+| 5 | Fragmentary | Minimal info, high ambiguity |
 
 ---
 
 ## Output Schema
 
-### raw.parquet / raw.csv
+### raw.parquet
 
 | Column | Type | Description |
 |--------|------|-------------|
 | `source_id` | string | Manifest/page identifier |
 | `soldier_id` | string | Ground truth soldier identifier |
+| `state_id` | string | Ground truth state identifier |
 | `raw_text` | string | Rendered manifest line |
 | `clerk_id` | string | Clerk instance identifier |
 | `situation_id` | string | Situation assigned to source |
@@ -324,83 +327,109 @@ This is exactly what makes the real data hard.
 
 | Column | Type | Description |
 |--------|------|-------------|
-| `primary_id` | string | Soldier identifier |
-| `component_id` | string | Ground truth component |
-| `name_first` | string | First name |
-| `name_middle` | string | Middle name/initial |
-| `name_last` | string | Last name |
-| `rank` | string | Canonical rank |
-| Unit fields vary by component type |
+| `soldier_id` | string | Soldier identifier |
+| `state_id` | string | State identifier |
+| `state_order` | int | Temporal position (1, 2, or 3) |
+| `branch` | string | Branch (Colonial, Defense, Expeditionary, Resource) |
+| `component_path` | string | Full path as string |
+| Branch-specific columns | string | Level values for this branch |
+
+### sources.parquet (NEW)
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `source_id` | string | Source identifier |
+| `clerk_id` | string | Clerk who produced this source |
+| `situation_id` | string | Operational situation |
+| `home_unit` | string | Writer's organizational context (Level-3 path) |
+| `quality_tier` | int | Quality tier for all records in source |
 
 ---
 
-## Current Scale
+## Generator Responsibilities (v4)
 
-**Implemented (v3.0.2):**
-- 10,000 records
-- 3,174 unique soldiers
-- Mean 3.2 records per soldier
+### SoldierFactory
+- Create soldiers with identity
+- Determine state count (1, 2, or 3)
+- Generate state_ids and assign posts to each state
+- Apply transfer logic for multi-state soldiers
 
-**Target (deferred):**
-- 250,000 records
-- ~4,000 unique soldiers
-- Mean ~62 records per soldier
+### SourceGenerator
+- Create sources with clerk, situation, home_unit, temporal_anchor
+- Assign quality tier at source level
+- Enforce within-source consistency
 
-**Rationale for deferral:** Validating the full pipeline (component routing → batching → LLM strategies → evaluation) on 10K records before investing in large-scale generation.
+### StateAssigner (NEW)
+- For each (soldier, source) pair, determine which state to render
+- Use source's temporal_anchor to select state
+- Ensure soldier appears at most once per source
+
+### FamiliarityCalculator (NEW)
+- Compare soldier's state assignment to source's home_unit
+- Return familiarity level (same-L3, same-L2, same-branch, different-branch)
+- Feed to renderer for detail level selection
+
+### Renderer
+- Apply clerk's template
+- Expand unit string based on familiarity level
+- Apply imperfections based on position in batch
+
+### VocabularyInjector
+- Layer 1: Situational vocabulary from situation pool
+- Layer 2: Contextual clutter from clerk context
+- Layer 3: Confounders based on clerk context and rate
+
+---
+
+## Migration from v3
+
+### Files Requiring Full Rewrite
+
+| File | Reason |
+|------|--------|
+| `hierarchy_reference.json` | New domain (Terraform Combine branches) |
+| `synthetic_vocabulary.json` | New situational terms, clutter, confounders |
+| `synthetic_themes.json` | Branch-based themes replacing military themes |
+| `seed_set.json` | New hand-crafted examples for calibration |
+
+### Files Requiring Significant Update
+
+| File | Changes |
+|------|---------|
+| `synthetic_style_spec.yaml` | Rename archetypes, update contexts, add familiarity spec |
+| `soldier_factory.py` | Add state generation logic |
+| `source_generator.py` | Add home_unit, temporal_anchor |
+| `pipeline.py` | Wire state assignment, familiarity calculation |
+| `renderer.py` | Familiarity-aware unit string expansion |
+
+### Files Unchanged in Logic
+
+| File | Notes |
+|------|-------|
+| Quality tier mechanics | Same system, new context |
+| Within-source consistency | Identical logic |
+| Fatigue modeling | Identical logic |
+| Confounder injection rate | Same rates, new terms |
 
 ---
 
 ## Related Documents
 
-- [synthetic_style_spec_v3.yaml](synthetic_style_spec_v3.yaml) - Full v3 rendering spec
-- [seed_set_v3.json](../../config/synthetic/seed_set_v3.json) - Hand-crafted examples
-- [synthetic_vocabulary.json](../../config/synthetic/synthetic_vocabulary.json) - Vocabulary with layers
-- [synthetic_themes.json](../../config/synthetic/synthetic_themes.json) - Theme definitions
-- [hierarchy_reference.json](../../config/hierarchies/hierarchy_reference.json) - Component hierarchy
+- [ADR-004: Synthetic Data Redesign](../../../docs/adr/ADR-004-synthetic-data-redesign.md) — Decision record
+- [DISAMBIGUATION_MODEL.md](../../../docs/DISAMBIGUATION_MODEL.md) — Core problem framing
+- `hierarchy_reference.json` — Branch hierarchy definitions (to be created)
+- `synthetic_vocabulary.json` — Vocabulary with layers (to be rewritten)
 
 ---
 
 ## Changelog
 
-### v3.0.3 (2026-01-17)
-- **Feature:** Added `omit_unit_type` flag to `UnitFormat` dataclass for rendering regiments without type indicators
-- **Feature:** Added `field_minimal` clerk archetype for degraded records without explicit unit identifiers
-- **Feature:** Added `COMPONENT_WEIGHTS_82ND_FOCUSED` for targeted resolver validation (82nd + 8 rivals)
-- **Change:** Rebalanced quality tier weights — tier 4-5 now 35% of output (was 20%)
-- **Change:** Wired `field_minimal` archetype to tier 4-5 sources via `ARCHETYPE_BIAS`
-- **Tooling:** Added CLI argument `--focused-82nd` to pipeline for focused generation
-- **Tooling:** Added `synthetic_generation.ipynb` notebook for interactive generation
-- **Reference:** `instructions/active/003_synthetic-degradation-phase2.md`
-
-### v3.0.2 (2026-01-14)
-- **Bug fix:** Transferred soldiers now appear with both original and new assignments across sources
-- Modified `renderer.py` to accept optional `assignment` parameter for transfer rendering
-- Modified `pipeline.py` to randomly select original vs new assignment (50/50) for each entry
-- Verified: 47% of transferred soldiers with 3+ entries show both assignments
-- Deferred `corr.parquet` (ID mapping) for future implementation
-
-### v3.0.1 (2026-01-13)
-- Added soldier transfers specification (25% of soldiers, 4 transfer types)
-- Updated seed_set_v3.json with transfer demonstration (S013 Brennan)
-- Updated data-structures/CURRENT.md with transfer type distribution
-
-### v3.0.0 (2026-01-13)
-- **Philosophy change:** Clerks as characters, not sampling functions
-- Added 13 clerk archetypes with fixed behavioral patterns
-- Added 16 situations driving vocabulary selection
-- Added vocabulary layers: situational, contextual clutter, confounders
-- Added within-source consistency (85% identical format)
-- Added behavioral imperfections (fatigue, self-correction, drift)
-- Created seed_set_v3.json with 41 hand-crafted entries
-- Updated synthetic_vocabulary.json with clutter and confounder terms
-
-### v2.0.1 (2026-01-13)
-- Unified component_type to `division`
-- Added `subtype` specificity level for themes
-
-### v2.0.0 (2026-01-13)
-- Redesigned hierarchy with deliberate designator collisions
-- Split into three files: hierarchy_reference, synthetic_themes, synthetic_vocabulary
-
-### v1.0.0 (2026-01-11)
-- Initial synthetic data generation system
+### v4.0.0 (2026-01-25)
+- **Breaking:** Full domain change from WWII military to Terraform Combine
+- **Breaking:** States explicit with `state_id` in all schemas
+- **Feature:** Heterogeneous branch structures (3-5 levels)
+- **Feature:** Familiarity gradient based on source home_unit
+- **Feature:** Source-anchored state assignment
+- **Feature:** 1-3 states per soldier (was 1-2)
+- **Feature:** Cross-branch transfers
+- **Reference:** ADR-004

@@ -1,0 +1,1847 @@
+# Synthetic Manifest Shorthand Style Spec (v4)
+# Philosophy: Clerks are characters, not sampling functions.
+#
+# Key principles:
+#   1. Each clerk has fixed habits that persist across all their entries
+#   2. Vocabulary emerges from situations, not component-affinity sampling
+#   3. Within-source repetition is the norm; variation happens between sources
+#   4. No "signal injection" - vocabulary appears because the clerk would naturally use it
+#   5. Imperfections are behavioral, not random noise
+#   6. Familiarity drives notation detail - clerks abbreviate their own unit
+#   7. States are explicit, first-class objects
+#
+# v4 Changes (from ADR-007):
+#   - Fictional interstellar setting (Terraform Combine) for domain decontamination
+#   - Explicit state tracking with state_id in schemas
+#   - Three-state maximum (1, 2, or 3 states per person)
+#   - Source-anchored state assignment
+#   - Familiarity gradient at Level-3 granularity
+#   - Heterogeneous branch structures (4 branches, depths 3-5)
+#   - Cross-branch transfers (rare but possible)
+
+meta:
+  spec_name: "manifest_shorthand_v4"
+  spec_version: "4.0.0"
+  created_utc: "2026-01-25T00:00:00Z"
+  setting: "terraform_combine"
+  philosophy: |
+    Real clerks don't sample from probability distributions. They develop habits,
+    stick with what works, and write the same way for dozens of entries in a row.
+    Variation exists between clerks and between sources, not within them.
+
+    This spec defines clerks as persistent characters whose styles explain themselves.
+    The parser's challenge is recognizing that "Elem-7/Wing-A/Sq-3" and
+    "Element 7, Wing Alpha, 3rd Squadron, Fleet Kestrel" both mean the same thing.
+
+    v4 uses a fictional interstellar setting (Terraform Combine) to eliminate
+    LLM pretraining contamination. Methods validated on this clean domain can
+    be confidently deployed on real historical data.
+
+# =============================================================================
+# SETTING: TERRAFORM COMBINE
+# =============================================================================
+#
+# The Terraform Combine is a fictional interstellar organization responsible
+# for colonization, resource extraction, exploration, and defense across
+# multiple star systems. It has ZERO presence in LLM pretraining data.
+
+setting:
+  name: "Terraform Combine"
+  abbreviation: "TFC"
+  description: |
+    A multi-system interstellar organization coordinating human expansion
+    across colonized worlds. Operates through four specialized branches
+    with distinct organizational structures.
+
+  branches:
+    colonial_administration:
+      name: "Colonial Administration"
+      abbreviation: "CA"
+      purpose: "Governance of established colonies"
+      depth: 4
+      levels:
+        - name: "Sector"
+          designator_style: "greek_letter"  # Alpha, Beta, Gamma, etc.
+        - name: "Colony"
+          designator_style: "name"  # Verdant, Amber, Kestrel, etc.
+        - name: "District"
+          designator_style: "number"  # 1st, 2nd, 3rd, etc.
+        - name: "Settlement"
+          designator_style: "name"  # Haven, Prospect, Landfall, etc.
+
+    defense_command:
+      name: "Defense Command"
+      abbreviation: "DC"
+      purpose: "System security and patrol"
+      depth: 5
+      levels:
+        - name: "Sector"
+          designator_style: "greek_letter"
+        - name: "Fleet"
+          designator_style: "name"  # Kestrel, Talon, Vanguard, etc.
+        - name: "Squadron"
+          designator_style: "number"  # 1st, 2nd, 3rd, etc.
+        - name: "Wing"
+          designator_style: "letter"  # A, B, C (or Alpha, Bravo, Charlie)
+        - name: "Element"
+          designator_style: "number"  # 1, 2, 3, etc.
+
+    expeditionary_corps:
+      name: "Expeditionary Corps"
+      abbreviation: "EC"
+      purpose: "Exploration and survey of new systems"
+      depth: 3
+      levels:
+        - name: "Sector"
+          designator_style: "greek_letter"
+        - name: "Expedition"
+          designator_style: "name"  # Horizon, Pathfinder, Pioneer, etc.
+        - name: "Team"
+          designator_style: "letter"  # A, B, C, etc.
+
+    resource_directorate:
+      name: "Resource Directorate"
+      abbreviation: "RD"
+      purpose: "Mining and material extraction"
+      depth: 4
+      levels:
+        - name: "Sector"
+          designator_style: "greek_letter"
+        - name: "Operation"
+          designator_style: "name"  # Deepcore, Rimward, Sunside, etc.
+        - name: "Facility"
+          designator_style: "number"  # Facility-7, Facility-12, etc.
+        - name: "Crew"
+          designator_style: "letter"  # A, B, C, etc.
+
+  # Shared designators that create collisions across branches
+  collision_designators:
+    numbers: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+    letters: ["A", "B", "C", "D", "E", "F"]
+    names:
+      # These names appear as colony names, fleet names, expedition names, and operation names
+      shared: ["Kestrel", "Amber", "Verdant", "Horizon", "Vanguard", "Resolute"]
+      # Branch-specific names
+      colonial_only: ["Haven", "Prospect", "Landfall", "Waystation"]
+      defense_only: ["Talon", "Sentinel", "Warden", "Bulwark"]
+      expeditionary_only: ["Pathfinder", "Pioneer", "Trailblazer", "Seeker"]
+      resource_only: ["Deepcore", "Rimward", "Sunside", "Darkside"]
+
+# =============================================================================
+# SCHEMA
+# =============================================================================
+
+schema:
+  truth_input_columns:
+    - primary_id
+    - name_first
+    - name_middle
+    - name_last
+    - rank
+    - branch_id
+    # Unit fields vary by branch:
+    # Colonial Administration: sector, colony, district, settlement
+    # Defense Command: sector, fleet, squadron, wing, element
+    # Expeditionary Corps: sector, expedition, team
+    # Resource Directorate: sector, operation, facility, crew
+
+  # v4 addition: explicit state tracking
+  validation_output_columns:
+    - soldier_id
+    - state_id        # NEW: unique identifier for this state
+    - state_order     # NEW: ordinal position (1, 2, or 3) - temporal order unknown
+    - branch_id
+    - post_path       # full hierarchy path for this state
+    # Per-level columns vary by branch
+
+  raw_output_columns:
+    - source_id
+    - soldier_id
+    - state_id        # NEW: links record to ground-truth state
+    - raw_text
+    - clerk_id
+    - situation_id
+    - quality_tier
+
+# =============================================================================
+# STATE MODEL
+# =============================================================================
+#
+# v4 introduces explicit state tracking. Each soldier has 1-3 states,
+# each corresponding to a distinct post assignment.
+
+state_model:
+
+  # Distribution of state counts per soldier
+  state_count_distribution:
+    1: 0.65  # 65% have single post (no transfers)
+    2: 0.28  # 28% have one transfer (two posts)
+    3: 0.07  # 7% have two transfers (three posts)
+
+  # State assignment is source-anchored: all records from a single source
+  # for a given soldier reflect the same state
+  source_anchoring:
+    description: |
+      Each source document captures personnel at a specific point in their service.
+      A soldier appearing in source S will have all their records in S reflect
+      the same state. Conflicts arise across sources, not within them.
+    soldier_appears_once_per_source: true
+
+  # Transfer distribution (for soldiers with 2+ states)
+  transfer_distribution:
+    within_same_level2: 0.50   # Same fleet/colony/expedition/operation
+    within_same_branch: 0.35   # Same branch, different level-2
+    cross_branch: 0.15         # Different branch entirely
+
+  # Cross-branch transfer notes
+  cross_branch_transfers:
+    enabled: true
+    description: |
+      Rare cases where personnel move between branches. Creates hardest
+      disambiguation cases since hierarchy structure differs between states.
+    examples:
+      - "Defense Command pilot reassigned to Expeditionary Corps survey team"
+      - "Colonial Administration official transferred to Resource Directorate oversight"
+
+# =============================================================================
+# FAMILIARITY GRADIENT
+# =============================================================================
+#
+# Clerks abbreviate aggressively for their own unit because context is shared.
+# Foreign units get spelled out. This creates exploitable asymmetry.
+
+familiarity_gradient:
+
+  description: |
+    Each source has a "home unit" - the organizational context of the clerk
+    writing the records. Familiarity is measured at Level-3 granularity
+    (Squadron/District/Team/Facility equivalent).
+
+  # Home unit is assigned per source, not per clerk
+  # A clerk may work on multiple sources with different home units
+  home_unit_assignment: "per_source"
+  home_unit_level: 3  # Level-3 in hierarchy (e.g., Squadron, District, Team, Facility)
+
+  # Detail levels based on relationship to writer's unit
+  detail_levels:
+    same_level3:
+      description: "Same Level-3 unit as writer"
+      detail: "minimal"
+      example: "Martinez A"  # Just name and element
+      abbreviation_rate: 0.95
+      omit_higher_levels: true
+
+    same_level2_different_level3:
+      description: "Same Level-2 (Fleet/Colony/etc), different Level-3"
+      detail: "low"
+      example: "Martinez A/Sq-3"  # Name, element, squadron
+      abbreviation_rate: 0.80
+      omit_levels_above: 2
+
+    same_branch_different_level2:
+      description: "Same branch, different Level-2 unit"
+      detail: "medium"
+      example: "Martinez A/Sq-3/Fleet-Kestrel"
+      abbreviation_rate: 0.60
+      include_level2: true
+
+    different_branch:
+      description: "Different branch entirely"
+      detail: "maximum"
+      example: "Martinez, J. Element 7, Wing A, 3rd Squadron, Fleet Kestrel, Defense Command"
+      abbreviation_rate: 0.30
+      include_branch: true
+      include_full_path: true
+
+# =============================================================================
+# CLERK ARCHETYPES
+# =============================================================================
+#
+# Clerks are defined as archetypes with fixed behavioral patterns.
+# At generation time, concrete clerks are instantiated from archetypes
+# with minor individual variation (but habits remain fixed per clerk).
+#
+# A clerk's style is LOCKED for all entries they produce. No per-entry sampling.
+#
+# v4: Context names updated for Terraform Combine setting.
+
+clerk_archetypes:
+
+  # ---------------------------------------------------------------------------
+  # SECTOR ADMINISTRATION CLERKS - Formal, complete, sector-aware
+  # ---------------------------------------------------------------------------
+
+  sector_formal:
+    description: |
+      Sector Administration clerk. Trained on proper TFC forms.
+      Always includes full hierarchy. Neat, consistent, by-the-book.
+    context_level: "sector_hq"
+    applicable_branches: ["all"]
+
+    name_format:
+      template: "{LAST}, {FIRST} {MI}."
+      # Never varies - this is how they were trained
+
+    rank_format:
+      style: "prefix"
+      form: "proper_abbrev"  # Spec-3, Tech-2, Cmdr
+
+    unit_format:
+      style: "labeled_hierarchical"
+      # Always includes all levels with labels
+      # "Element 7, Wing A, 3rd Squadron, Fleet Kestrel, Sector Alpha"
+      separator: ", "
+      include_sector: true
+      include_branch: true
+      label_style: "abbreviated"
+
+    vocabulary_density: "low"
+    # Sector clerks stick to the facts, minimal extra notation
+
+    familiarity_override: "ignore"
+    # Formal clerks always use full notation regardless of familiarity
+
+    consistency:
+      format_lock: 0.98  # 98% of entries identical format
+      minor_drift: 0.02  # occasional spacing variation
+
+    imperfections:
+      typo_rate: 0.01
+      abbreviation_inconsistency: 0.02
+
+  # ---------------------------------------------------------------------------
+
+  sector_efficient:
+    description: |
+      Experienced Sector clerk who's processed thousands of records.
+      Developed efficient shorthand but still systematic.
+    context_level: "sector_hq"
+    applicable_branches: ["all"]
+
+    name_format:
+      template: "{LAST}, {FI}.{MI}."
+
+    rank_format:
+      style: "prefix"
+      form: "caps_abbrev"  # SPEC3, TECH2, CMDR
+
+    unit_format:
+      style: "slash_positional"
+      # "7/A/3/Kestrel/Alpha-DC"
+      orientation: "child_over_parent"
+      separator: "/"
+      include_sector: true
+      branch_suffix: true  # "-DC" at end
+
+    vocabulary_density: "low"
+
+    familiarity_override: "ignore"
+
+    consistency:
+      format_lock: 0.95
+      minor_drift: 0.05
+
+    imperfections:
+      typo_rate: 0.02
+      abbreviation_inconsistency: 0.05
+
+  # ---------------------------------------------------------------------------
+  # FLEET/OPERATION CLERKS - Assume context, drop higher echelons
+  # ---------------------------------------------------------------------------
+
+  fleet_rushed:
+    description: |
+      Fleet or Operation-level clerk processing personnel lists under pressure.
+      Everyone knows what fleet this is - drops sector, often fleet name.
+      Sloppy but functional.
+    context_level: "level2"
+    applicable_branches: ["defense_command", "resource_directorate"]
+
+    name_format:
+      template: "{LAST}"
+      # Last name only unless there's ambiguity
+
+    rank_format:
+      style: "suffix"
+      form: "caps_abbrev"
+
+    unit_format:
+      style: "runon_compact"
+      # "7-A-3" or "7/A/Sq3"
+      orientation: "child_over_parent"
+      separator: "-"
+      include_sector: false
+      include_level2: false  # everyone here knows
+
+    vocabulary_density: "medium"
+
+    familiarity_applies: true
+
+    consistency:
+      format_lock: 0.85
+      minor_drift: 0.12
+      major_variation: 0.03
+
+    imperfections:
+      typo_rate: 0.04
+      abbreviation_inconsistency: 0.10
+      trailing_off: 0.05
+
+  # ---------------------------------------------------------------------------
+
+  fleet_methodical:
+    description: |
+      Careful fleet/operation clerk. Takes time, makes fewer mistakes.
+      Still drops sector but keeps everything else.
+    context_level: "level2"
+    applicable_branches: ["defense_command", "resource_directorate"]
+
+    name_format:
+      template: "{LAST}, {FIRST}"
+
+    rank_format:
+      style: "prefix"
+      form: "mixed_abbrev"  # Spec, Tech, Cmdr
+
+    unit_format:
+      style: "labeled_micro"
+      # "Elem7 WingA Sq3"
+      separator: " "
+      include_sector: false
+      label_style: "micro"
+
+    vocabulary_density: "low"
+
+    familiarity_applies: true
+
+    consistency:
+      format_lock: 0.92
+      minor_drift: 0.08
+
+    imperfections:
+      typo_rate: 0.02
+      abbreviation_inconsistency: 0.04
+
+  # ---------------------------------------------------------------------------
+  # FIELD CLERKS - Exhausted, situational, informal
+  # ---------------------------------------------------------------------------
+
+  field_exhausted:
+    description: |
+      Field station or outpost clerk. Handwritten intake under stress.
+      Writes what they hear. Inconsistent. Situational vocabulary bleeds in.
+    context_level: "field"
+    applicable_branches: ["all"]
+
+    name_format:
+      template: "{LAST} {FIRST}"
+      # No comma, writes as spoken
+      drop_middle_rate: 0.60
+
+    rank_format:
+      style: "mixed"
+      form: "phonetic"  # Spec, Spc, Tech
+      omit_rate: 0.15
+
+    unit_format:
+      style: "phonetic_informal"
+      # "Alpha Wing Third" or "Sq 3 Kestrel"
+      separator: " "
+      include_sector: false
+      phonetic_letters: true  # "Alpha" not "A"
+
+    vocabulary_density: "high"
+
+    familiarity_applies: true
+
+    consistency:
+      format_lock: 0.65
+      minor_drift: 0.25
+      major_variation: 0.10
+
+    imperfections:
+      typo_rate: 0.08
+      abbreviation_inconsistency: 0.20
+      trailing_off: 0.12
+      mid_entry_corrections: 0.05
+
+  # ---------------------------------------------------------------------------
+
+  field_medevac:
+    description: |
+      Medical evacuation clerk tracking injured. Focus on status, less on unit.
+      Unit info often incomplete.
+    context_level: "field"
+    applicable_branches: ["all"]
+
+    name_format:
+      template: "{LAST}, {FI}."
+
+    rank_format:
+      style: "prefix"
+      form: "caps_abbrev"
+      omit_rate: 0.10
+
+    unit_format:
+      style: "minimal"
+      # Just "Kestrel" or "3/Kestrel" - level-2 + maybe level-3
+      include_sector: false
+      include_lowest_levels: false
+
+    vocabulary_density: "high"
+    vocabulary_bias: ["status_code"]  # EVAC, CRIT, STAB, RTD
+
+    familiarity_applies: true
+
+    consistency:
+      format_lock: 0.75
+      minor_drift: 0.20
+      major_variation: 0.05
+
+    imperfections:
+      typo_rate: 0.05
+      incomplete_unit: 0.25
+
+  # ---------------------------------------------------------------------------
+
+  field_minimal:
+    description: |
+      Field clerk under extreme stress. Writes bare minimum identifiers.
+      No unit type indicators (Squadron, Wing, Fleet) - just designators.
+      Forces resolver to use vocabulary signals for disambiguation.
+    context_level: "field"
+    applicable_branches: ["all"]
+
+    name_format:
+      template: "{LAST} {FIRST}"
+      drop_middle_rate: 0.70
+
+    rank_format:
+      style: "mixed"
+      form: "phonetic"
+      omit_rate: 0.20
+
+    unit_format:
+      style: "minimal"
+      include_sector: false
+      omit_level_names: true  # KEY: renders "3rd" instead of "3rd Squadron"
+
+    vocabulary_density: "low"
+
+    familiarity_applies: true
+
+    consistency:
+      format_lock: 0.60
+      minor_drift: 0.30
+      major_variation: 0.10
+
+    imperfections:
+      typo_rate: 0.10
+      abbreviation_inconsistency: 0.25
+      trailing_off: 0.15
+      mid_entry_corrections: 0.08
+
+  # ---------------------------------------------------------------------------
+  # TRANSPORT/MANIFEST CLERKS - Systematic but context-specific
+  # ---------------------------------------------------------------------------
+
+  transport_shuttle:
+    description: |
+      Shuttle manifest clerk processing boarding lists.
+      Has a column system. Name in one column, unit codes in another.
+      Very systematic but uses own notation.
+    context_level: "transport"
+    applicable_branches: ["all"]
+
+    name_format:
+      template: "{LAST} {FI}"
+      # No punctuation, columnar
+
+    rank_format:
+      style: "separate_column"
+      form: "caps_abbrev"
+
+    unit_format:
+      style: "slash_positional"
+      orientation: "parent_over_child"  # learned it backwards: "Kestrel/3/A/7"
+      separator: "/"
+      include_sector: true
+      branch_suffix: true
+
+    vocabulary_density: "medium"
+    vocabulary_bias: ["transport_code", "manifest_code"]
+
+    familiarity_override: "ignore"  # Transport sees all units equally
+
+    consistency:
+      format_lock: 0.95
+      minor_drift: 0.05
+
+    imperfections:
+      typo_rate: 0.02
+      column_bleed: 0.08
+
+  # ---------------------------------------------------------------------------
+
+  transport_interstellar:
+    description: |
+      Interstellar transport manifest clerk for long-haul transfers.
+      Tracks berth assignments, cargo manifests, transit routes.
+    context_level: "transport"
+    applicable_branches: ["all"]
+
+    name_format:
+      template: "{LAST}, {FIRST} {MI}."
+
+    rank_format:
+      style: "prefix"
+      form: "proper_abbrev"
+
+    unit_format:
+      style: "labeled_hierarchical"
+      separator: ", "
+      include_sector: true
+      include_branch: true
+
+    vocabulary_density: "high"
+    vocabulary_bias: ["manifest_code", "transport_code", "route_code"]
+
+    familiarity_override: "ignore"
+
+    consistency:
+      format_lock: 0.90
+      minor_drift: 0.10
+
+    imperfections:
+      typo_rate: 0.03
+
+  # ---------------------------------------------------------------------------
+  # PROCESSING CENTER CLERKS - See all units, always complete
+  # ---------------------------------------------------------------------------
+
+  processing_intake:
+    description: |
+      Personnel processing center clerk handling arrivals and transfers.
+      Sees personnel from all branches, so always includes full hierarchy.
+      Trained on standardized TFC forms.
+    context_level: "processing_center"
+    applicable_branches: ["all"]
+
+    name_format:
+      template: "{LAST}, {FI}.{MI}."
+
+    rank_format:
+      style: "prefix"
+      form: "proper_abbrev"
+
+    unit_format:
+      style: "labeled_full"
+      # "Element 7, Wing A, 3rd Squadron, Fleet Kestrel, Sector Alpha, Defense Command"
+      separator: ", "
+      include_sector: true
+      include_branch: true
+      label_style: "full"
+
+    vocabulary_density: "low"
+    vocabulary_bias: ["process_code"]  # PROC, XFER, ASGN
+
+    familiarity_override: "ignore"
+
+    consistency:
+      format_lock: 0.97
+      minor_drift: 0.03
+
+    imperfections:
+      typo_rate: 0.01
+
+  # ---------------------------------------------------------------------------
+  # BRANCH-SPECIFIC CLERKS
+  # ---------------------------------------------------------------------------
+
+  defense_squadron:
+    description: |
+      Squadron-level clerk in Defense Command tracking flight personnel.
+      Uses DC-specific notation. Fleet/Squadron structure.
+    context_level: "level3"
+    applicable_branches: ["defense_command"]
+
+    name_format:
+      template: "{LAST}, {FIRST} {MI}."
+
+    rank_format:
+      style: "prefix"
+      form: "proper_abbrev"
+
+    unit_format:
+      style: "dc_standard"
+      # "Elem 7, Wing A, 3rd Sq, Fleet Kestrel"
+      separator: ", "
+      include_fleet: true
+
+    vocabulary_density: "medium"
+    vocabulary_bias: ["patrol_code", "station_code"]
+
+    familiarity_applies: true
+
+    consistency:
+      format_lock: 0.90
+      minor_drift: 0.10
+
+    imperfections:
+      typo_rate: 0.02
+
+  # ---------------------------------------------------------------------------
+
+  defense_operations:
+    description: |
+      Fleet operations clerk tracking patrol assignments.
+      Focus on crew, vessel, mission data.
+    context_level: "level2_ops"
+    applicable_branches: ["defense_command"]
+
+    name_format:
+      template: "{LAST} {FI}{MI}"
+      # Compact, no punctuation
+
+    rank_format:
+      style: "suffix"
+      form: "caps_abbrev"
+
+    unit_format:
+      style: "compact_dc"
+      # "Kestrel-3-A" or "3/A/Kestrel"
+      separator: "-"
+      include_fleet: true
+
+    vocabulary_density: "high"
+    vocabulary_bias: ["patrol_code", "status_code", "station_code"]
+
+    familiarity_applies: true
+
+    consistency:
+      format_lock: 0.88
+      minor_drift: 0.10
+      major_variation: 0.02
+
+    imperfections:
+      typo_rate: 0.03
+
+  # ---------------------------------------------------------------------------
+
+  colonial_district:
+    description: |
+      District-level administrative clerk in Colonial Administration.
+      Uses CA-specific notation. Colony/District structure.
+    context_level: "level3"
+    applicable_branches: ["colonial_administration"]
+
+    name_format:
+      template: "{LAST}, {FIRST} {MI}."
+
+    rank_format:
+      style: "prefix"
+      form: "proper_abbrev"
+
+    unit_format:
+      style: "ca_standard"
+      # "Settlement Haven, 2nd District, Colony Verdant"
+      separator: ", "
+      include_colony: true
+
+    vocabulary_density: "medium"
+    vocabulary_bias: ["admin_code", "location_code"]
+
+    familiarity_applies: true
+
+    consistency:
+      format_lock: 0.92
+      minor_drift: 0.08
+
+    imperfections:
+      typo_rate: 0.02
+
+  # ---------------------------------------------------------------------------
+
+  colonial_transit:
+    description: |
+      Colonial Administration clerk on transport handling settler movements.
+      Tracks embarked personnel. Transport vocabulary heavy.
+    context_level: "transport"
+    applicable_branches: ["colonial_administration"]
+
+    name_format:
+      template: "{LAST} {FI}"
+
+    rank_format:
+      style: "suffix"
+      form: "caps_abbrev"
+
+    unit_format:
+      style: "slash_compact"
+      # "Haven/2/Verdant" or "Haven/2/Verdant-CA"
+      separator: "/"
+      include_colony: true
+      branch_suffix: true
+
+    vocabulary_density: "high"
+    vocabulary_bias: ["transport_code", "settler_code"]
+
+    familiarity_override: "ignore"
+
+    consistency:
+      format_lock: 0.90
+      minor_drift: 0.10
+
+    imperfections:
+      typo_rate: 0.03
+
+  # ---------------------------------------------------------------------------
+
+  expeditionary_team:
+    description: |
+      Expedition team clerk tracking survey personnel.
+      Uses EC-specific notation. Expedition/Team structure.
+    context_level: "level2"
+    applicable_branches: ["expeditionary_corps"]
+
+    name_format:
+      template: "{LAST}, {FIRST}"
+
+    rank_format:
+      style: "prefix"
+      form: "mixed_abbrev"
+
+    unit_format:
+      style: "ec_standard"
+      # "Team A, Expedition Horizon"
+      separator: ", "
+      include_expedition: true
+
+    vocabulary_density: "medium"
+    vocabulary_bias: ["survey_code", "discovery_code"]
+
+    familiarity_applies: true
+
+    consistency:
+      format_lock: 0.88
+      minor_drift: 0.10
+      major_variation: 0.02
+
+    imperfections:
+      typo_rate: 0.03
+
+  # ---------------------------------------------------------------------------
+
+  expeditionary_field:
+    description: |
+      Field survey clerk on active expedition. Minimal notation under
+      exploration conditions.
+    context_level: "field"
+    applicable_branches: ["expeditionary_corps"]
+
+    name_format:
+      template: "{LAST}"
+
+    rank_format:
+      style: "suffix"
+      form: "caps_abbrev"
+      omit_rate: 0.15
+
+    unit_format:
+      style: "minimal"
+      # "Horizon-A" or just "A"
+      separator: "-"
+      include_expedition: true
+
+    vocabulary_density: "high"
+    vocabulary_bias: ["survey_code", "status_code"]
+
+    familiarity_applies: true
+
+    consistency:
+      format_lock: 0.70
+      minor_drift: 0.25
+      major_variation: 0.05
+
+    imperfections:
+      typo_rate: 0.06
+      trailing_off: 0.10
+
+  # ---------------------------------------------------------------------------
+
+  resource_facility:
+    description: |
+      Facility-level clerk in Resource Directorate tracking extraction crews.
+      Uses RD-specific notation. Operation/Facility/Crew structure.
+    context_level: "level3"
+    applicable_branches: ["resource_directorate"]
+
+    name_format:
+      template: "{LAST}, {FIRST} {MI}."
+
+    rank_format:
+      style: "prefix"
+      form: "proper_abbrev"
+
+    unit_format:
+      style: "rd_standard"
+      # "Crew A, Facility 7, Operation Deepcore"
+      separator: ", "
+      include_operation: true
+
+    vocabulary_density: "medium"
+    vocabulary_bias: ["extraction_code", "safety_code"]
+
+    familiarity_applies: true
+
+    consistency:
+      format_lock: 0.90
+      minor_drift: 0.10
+
+    imperfections:
+      typo_rate: 0.02
+
+  # ---------------------------------------------------------------------------
+
+  resource_shift:
+    description: |
+      Shift supervisor clerk tracking crew rotations.
+      High situational vocabulary. Compact notation.
+    context_level: "level3"
+    applicable_branches: ["resource_directorate"]
+
+    name_format:
+      template: "{LAST} {FI}"
+
+    rank_format:
+      style: "suffix"
+      form: "caps_abbrev"
+
+    unit_format:
+      style: "compact_rd"
+      # "Deepcore-7-A" or "A/F7/Deepcore"
+      separator: "-"
+      include_operation: true
+
+    vocabulary_density: "high"
+    vocabulary_bias: ["extraction_code", "shift_code", "safety_code"]
+
+    familiarity_applies: true
+
+    consistency:
+      format_lock: 0.85
+      minor_drift: 0.12
+      major_variation: 0.03
+
+    imperfections:
+      typo_rate: 0.04
+      abbreviation_inconsistency: 0.08
+
+# =============================================================================
+# SITUATIONS
+# =============================================================================
+#
+# Situations define the operational context that drives vocabulary selection.
+# A source document is assigned a situation. All entries in that source share
+# situational vocabulary BECAUSE THEY'RE FROM THE SAME EVENT.
+
+situations:
+
+  # ---------------------------------------------------------------------------
+  # DEFENSE COMMAND SITUATIONS
+  # ---------------------------------------------------------------------------
+
+  patrol_incursion:
+    description: "Response to unidentified contact in patrol zone"
+    branch: "defense_command"
+    operation_type: "combat"
+    applies_to:
+      - fleet_kestrel
+      - fleet_talon
+    vocabulary_pool:
+      primary: ["CONTACT", "INTERCEPT", "PATROL", "ALERT"]
+      secondary: ["VECTOR", "TRACK", "ENGAGE", "RTB"]
+      rare: ["HOSTILE", "PRIORITY-1"]
+    urgency: "high"
+
+  patrol_routine:
+    description: "Standard patrol rotation and reporting"
+    branch: "defense_command"
+    operation_type: "patrol"
+    applies_to:
+      - fleet_kestrel
+      - fleet_talon
+      - fleet_sentinel
+    vocabulary_pool:
+      primary: ["PATROL", "SECTOR", "ROTATION"]
+      secondary: ["CHECK", "CLEAR", "POSITION"]
+      rare: ["ANOMALY"]
+    urgency: "low"
+
+  station_defense:
+    description: "Station security and garrison duty"
+    branch: "defense_command"
+    operation_type: "garrison"
+    applies_to:
+      - fleet_sentinel
+      - fleet_warden
+    vocabulary_pool:
+      primary: ["STATION", "GARRISON", "POST"]
+      secondary: ["WATCH", "RELIEF", "SECURE"]
+      rare: ["LOCKDOWN"]
+    urgency: "medium"
+
+  fleet_transit:
+    description: "Fleet repositioning between sectors"
+    branch: "defense_command"
+    operation_type: "transit"
+    applies_to: "any_dc"
+    vocabulary_pool:
+      primary: ["TRANSIT", "JUMP", "ARRIVAL"]
+      secondary: ["DEPARTURE", "ROUTE", "ETA"]
+      rare: ["EMERGENCY-JUMP"]
+    urgency: "low"
+
+  # ---------------------------------------------------------------------------
+  # COLONIAL ADMINISTRATION SITUATIONS
+  # ---------------------------------------------------------------------------
+
+  colony_founding:
+    description: "New settlement establishment"
+    branch: "colonial_administration"
+    operation_type: "establishment"
+    applies_to:
+      - colony_verdant
+      - colony_amber
+    vocabulary_pool:
+      primary: ["FOUNDING", "SETTLEMENT", "ESTABLISH"]
+      secondary: ["SURVEY", "ZONE", "ALLOCATION"]
+      rare: ["CHARTER"]
+    urgency: "medium"
+
+  colony_expansion:
+    description: "Expansion of existing settlement boundaries"
+    branch: "colonial_administration"
+    operation_type: "expansion"
+    applies_to:
+      - colony_verdant
+      - colony_kestrel
+    vocabulary_pool:
+      primary: ["EXPANSION", "SECTOR", "GROWTH"]
+      secondary: ["BOUNDARY", "CLAIM", "RESOURCE"]
+      rare: ["PRIORITY-ZONE"]
+    urgency: "low"
+
+  disaster_response:
+    description: "Emergency response to colony crisis"
+    branch: "colonial_administration"
+    operation_type: "emergency"
+    applies_to: "any_ca"
+    vocabulary_pool:
+      primary: ["EMERGENCY", "EVAC", "RESPONSE"]
+      secondary: ["SHELTER", "RELIEF", "TRIAGE"]
+      rare: ["CATASTROPHIC"]
+    urgency: "critical"
+
+  administrative_rotation:
+    description: "Standard personnel rotation between postings"
+    branch: "colonial_administration"
+    operation_type: "administrative"
+    applies_to: "any_ca"
+    vocabulary_pool:
+      primary: ["ROTATION", "POSTING", "TRANSFER"]
+      secondary: ["ASSIGNMENT", "RELIEF", "TERM"]
+      rare: []
+    urgency: "low"
+
+  # ---------------------------------------------------------------------------
+  # EXPEDITIONARY CORPS SITUATIONS
+  # ---------------------------------------------------------------------------
+
+  first_survey:
+    description: "Initial survey of uncharted system"
+    branch: "expeditionary_corps"
+    operation_type: "survey"
+    applies_to:
+      - expedition_horizon
+      - expedition_pathfinder
+    vocabulary_pool:
+      primary: ["SURVEY", "INITIAL", "CHARTING"]
+      secondary: ["SCAN", "PROBE", "CATALOG"]
+      rare: ["DISCOVERY", "ANOMALY"]
+    urgency: "medium"
+
+  resource_survey:
+    description: "Detailed resource assessment"
+    branch: "expeditionary_corps"
+    operation_type: "assessment"
+    applies_to:
+      - expedition_pioneer
+      - expedition_seeker
+    vocabulary_pool:
+      primary: ["RESOURCE", "ASSESSMENT", "VIABLE"]
+      secondary: ["DEPOSIT", "YIELD", "GRADE"]
+      rare: ["BONANZA"]
+    urgency: "low"
+
+  contact_protocol:
+    description: "First contact or anomaly investigation"
+    branch: "expeditionary_corps"
+    operation_type: "investigation"
+    applies_to: "any_ec"
+    vocabulary_pool:
+      primary: ["CONTACT", "PROTOCOL", "INVESTIGATE"]
+      secondary: ["ARTIFACT", "SIGNAL", "ORIGIN"]
+      rare: ["PRIORITY-CONTACT"]
+    urgency: "high"
+
+  expedition_return:
+    description: "Expedition completion and return"
+    branch: "expeditionary_corps"
+    operation_type: "return"
+    applies_to: "any_ec"
+    vocabulary_pool:
+      primary: ["RETURN", "COMPLETE", "DEBRIEF"]
+      secondary: ["REPORT", "DATA", "FINDINGS"]
+      rare: []
+    urgency: "low"
+
+  # ---------------------------------------------------------------------------
+  # RESOURCE DIRECTORATE SITUATIONS
+  # ---------------------------------------------------------------------------
+
+  extraction_active:
+    description: "Active mining or extraction operation"
+    branch: "resource_directorate"
+    operation_type: "extraction"
+    applies_to:
+      - operation_deepcore
+      - operation_rimward
+    vocabulary_pool:
+      primary: ["EXTRACTION", "YIELD", "SHIFT"]
+      secondary: ["DRILL", "HAUL", "PROCESS"]
+      rare: ["VEIN", "STRIKE"]
+    urgency: "medium"
+
+  facility_construction:
+    description: "New facility construction or expansion"
+    branch: "resource_directorate"
+    operation_type: "construction"
+    applies_to:
+      - operation_sunside
+      - operation_darkside
+    vocabulary_pool:
+      primary: ["CONSTRUCTION", "FACILITY", "BUILD"]
+      secondary: ["FOUNDATION", "ASSEMBLY", "INSTALL"]
+      rare: ["COMMISSION"]
+    urgency: "medium"
+
+  safety_incident:
+    description: "Safety incident or hazard response"
+    branch: "resource_directorate"
+    operation_type: "emergency"
+    applies_to: "any_rd"
+    vocabulary_pool:
+      primary: ["INCIDENT", "SAFETY", "HAZARD"]
+      secondary: ["EVAC", "CONTAIN", "ASSESS"]
+      rare: ["CRITICAL", "FATALITY"]
+    urgency: "critical"
+
+  crew_rotation:
+    description: "Standard crew rotation between shifts/facilities"
+    branch: "resource_directorate"
+    operation_type: "rotation"
+    applies_to: "any_rd"
+    vocabulary_pool:
+      primary: ["ROTATION", "SHIFT", "RELIEF"]
+      secondary: ["HANDOVER", "MANIFEST", "ASSIGN"]
+      rare: []
+    urgency: "low"
+
+  # ---------------------------------------------------------------------------
+  # CROSS-BRANCH / GENERIC SITUATIONS
+  # ---------------------------------------------------------------------------
+
+  processing_general:
+    description: "Personnel processing center intake, any branch"
+    branch: "any"
+    operation_type: "administrative"
+    applies_to: "any"
+    vocabulary_pool:
+      primary: ["PROC", "INTAKE", "ASSIGN"]
+      secondary: ["TRANSFER", "POSTING", "QUEUE"]
+      rare: []
+    urgency: "low"
+
+  transport_manifest:
+    description: "Inter-system transport manifest, mixed branches"
+    branch: "any"
+    operation_type: "transport"
+    applies_to: "any"
+    vocabulary_pool:
+      primary: ["MANIFEST", "EMBARK", "DEBARK"]
+      secondary: ["BERTH", "CARGO", "TRANSIT"]
+      rare: []
+    urgency: "low"
+
+  medical_evacuation:
+    description: "Medical evacuation, any branch"
+    branch: "any"
+    operation_type: "medical"
+    applies_to: "any"
+    vocabulary_pool:
+      primary: ["MEDEVAC", "EVAC", "CRIT"]
+      secondary: ["STAB", "RTD", "TRIAGE"]
+      rare: ["PRIORITY-MED"]
+    urgency: "high"
+
+  cross_branch_transfer:
+    description: "Inter-branch personnel transfer"
+    branch: "any"
+    operation_type: "transfer"
+    applies_to: "any"
+    vocabulary_pool:
+      primary: ["XFER", "REASSIGN", "BRANCH"]
+      secondary: ["PRIOR", "NEW-POST", "EFFECTIVE"]
+      rare: []
+    urgency: "low"
+
+# =============================================================================
+# SOURCE GENERATION
+# =============================================================================
+#
+# A source represents a single document (manifest page, personnel list, etc.)
+# produced by one clerk in one situation.
+
+source_generation:
+
+  # How many entries per source (represents a physical page or batch)
+  entries_per_source:
+    distribution: "normal_truncated"
+    mean: 35
+    std: 15
+    min: 8
+    max: 80
+
+  # Clerk assignment to sources
+  clerk_distribution:
+    # Some clerks process way more than others (realistic)
+    model: "power_law"
+    alpha: 1.8
+
+  # Situation assignment
+  situation_assignment:
+    # Each source gets ONE situation
+    cross_situation_bleed: 0.02
+
+  # Unit concentration within source
+  unit_concentration:
+    same_level3_rate: 0.70  # Same squadron/district/team/facility
+    same_level2_rate: 0.25  # Same fleet/colony/expedition/operation
+    mixed_rate: 0.05
+
+  # v4: Source has home_unit for familiarity gradient
+  home_unit_assignment:
+    description: |
+      Each source has a home unit at Level-3 (squadron/district/team/facility).
+      This determines the familiarity gradient for notation detail.
+    assignment_method: "majority_unit"  # Home unit = most common unit in source
+    override_for_processing: true  # Processing centers have no home unit bias
+
+  # v4: Source temporal anchoring for state assignment
+  state_anchoring:
+    description: |
+      Sources are implicitly anchored to a point in time. For soldiers with
+      multiple states, the source's anchor determines which state is captured.
+      All records for a soldier within a single source reflect the same state.
+    implementation: |
+      1. Sources are assigned a temporal slot during generation
+      2. For multi-state soldiers, source's slot determines visible state
+      3. Soldier appears at most once per source
+      4. Records within source are internally consistent
+
+# =============================================================================
+# WITHIN-SOURCE CONSISTENCY
+# =============================================================================
+
+within_source_behavior:
+
+  format_consistency:
+    identical_format_rate: 0.85
+    minor_variation_rate: 0.12
+    format_switch_rate: 0.03
+
+  vocabulary_consistency:
+    term_persistence: 0.95
+
+  # v4: Familiarity consistency within source
+  familiarity_consistency:
+    description: |
+      Within a source, familiarity-based abbreviation is consistent.
+      If clerk abbreviates "3rd Sq" for home unit once, they do it throughout.
+    consistency_rate: 0.95
+
+  fatigue_modeling:
+    enabled: true
+    early_batch_formality: 0.90
+    late_batch_formality: 0.70
+    effects:
+      - increase_abbreviation
+      - increase_typo_rate
+      - drop_optional_fields
+
+# =============================================================================
+# BEHAVIORAL IMPERFECTIONS
+# =============================================================================
+
+behavioral_imperfections:
+
+  abbreviation_drift:
+    enabled: true
+    rate_per_source: 0.08
+    affects: ["rank", "unit_labels"]
+
+  self_correction:
+    enabled: true
+    rate_per_entry: 0.02
+    patterns:
+      - style: "strikethrough"
+        example: "~~Sq-2~~ Sq-3"
+      - style: "bracketed"
+        example: "Wing A [Wing B]"
+      - style: "slash_correction"
+        example: "Spec/Tech"
+
+  trailing_off:
+    enabled: true
+    rate_per_entry: 0.04
+    affects: ["lowest_level", "middle_initial"]
+
+  mechanical_errors:
+    spacing_jitter:
+      enabled: true
+      rate: 0.15
+      max_extra_spaces: 2
+    punctuation_drop:
+      enabled: true
+      rate: 0.05
+    character_overtype:
+      enabled: true
+      rate: 0.02
+
+# =============================================================================
+# QUALITY TIERS
+# =============================================================================
+
+quality_tiers:
+
+  1:
+    name: "archival_clean"
+    description: "Well-preserved, clearly typed, sector-level document"
+    distribution_weight: 0.20
+    clerk_archetype_bias: ["sector_formal", "sector_efficient", "processing_intake"]
+    imperfection_multiplier: 0.5
+
+  2:
+    name: "standard"
+    description: "Typical operational document, some wear but legible"
+    distribution_weight: 0.35
+    clerk_archetype_bias: ["fleet_methodical", "transport_shuttle", "colonial_district"]
+    imperfection_multiplier: 1.0
+
+  3:
+    name: "field_worn"
+    description: "Field conditions, rushed typing, some damage"
+    distribution_weight: 0.25
+    clerk_archetype_bias: ["fleet_rushed", "field_medevac", "defense_operations"]
+    imperfection_multiplier: 1.5
+
+  4:
+    name: "degraded"
+    description: "Poor conditions, handwritten or damaged"
+    distribution_weight: 0.15
+    clerk_archetype_bias: ["field_exhausted", "expeditionary_field"]
+    imperfection_multiplier: 2.0
+
+  5:
+    name: "fragmentary"
+    description: "Heavily damaged, partial entries, difficult to read"
+    distribution_weight: 0.05
+    clerk_archetype_bias: ["field_exhausted", "field_minimal"]
+    imperfection_multiplier: 3.0
+    incomplete_entry_rate: 0.25
+
+# =============================================================================
+# NAME RENDERING
+# =============================================================================
+
+name_rendering:
+
+  templates:
+    LAST_FIRST_MI:
+      pattern: "{LAST}, {FIRST} {MI}."
+      example: "Kowalski, Stanley J."
+
+    LAST_FIRST:
+      pattern: "{LAST}, {FIRST}"
+      example: "Kowalski, Stanley"
+
+    LAST_FI_MI:
+      pattern: "{LAST}, {FI}.{MI}."
+      example: "Kowalski, S.J."
+
+    LAST_FI:
+      pattern: "{LAST}, {FI}."
+      example: "Kowalski, S."
+
+    LAST_ONLY:
+      pattern: "{LAST}"
+      example: "Kowalski"
+
+    FIRST_LAST:
+      pattern: "{FIRST} {LAST}"
+      example: "Stanley Kowalski"
+
+    LAST_SPACE_FIRST:
+      pattern: "{LAST} {FIRST}"
+      example: "Kowalski Stanley"
+
+    LAST_SPACE_FI:
+      pattern: "{LAST} {FI}"
+      example: "Kowalski S"
+
+# =============================================================================
+# RANK RENDERING
+# =============================================================================
+#
+# Terraform Combine uses a unified rank structure across branches.
+
+rank_rendering:
+
+  canonical_to_variants:
+    Specialist Third Class:
+      proper_abbrev: "Spec-3"
+      caps_abbrev: "SPEC3"
+      phonetic: "Spec"
+
+    Specialist Second Class:
+      proper_abbrev: "Spec-2"
+      caps_abbrev: "SPEC2"
+      phonetic: "Spec"
+
+    Specialist First Class:
+      proper_abbrev: "Spec-1"
+      caps_abbrev: "SPEC1"
+      phonetic: "Spec"
+
+    Technician Third Class:
+      proper_abbrev: "Tech-3"
+      caps_abbrev: "TECH3"
+      phonetic: "Tech"
+
+    Technician Second Class:
+      proper_abbrev: "Tech-2"
+      caps_abbrev: "TECH2"
+      phonetic: "Tech"
+
+    Technician First Class:
+      proper_abbrev: "Tech-1"
+      caps_abbrev: "TECH1"
+      phonetic: "Tech"
+
+    Senior Technician:
+      proper_abbrev: "Sr Tech"
+      caps_abbrev: "SRTECH"
+      phonetic: "Senior Tech"
+
+    Warrant Officer:
+      proper_abbrev: "WO"
+      caps_abbrev: "WO"
+      phonetic: "Warrant"
+
+    Junior Officer:
+      proper_abbrev: "Jr Off"
+      caps_abbrev: "JROFF"
+      phonetic: "Junior"
+
+    Officer:
+      proper_abbrev: "Off"
+      caps_abbrev: "OFF"
+      phonetic: "Officer"
+
+    Senior Officer:
+      proper_abbrev: "Sr Off"
+      caps_abbrev: "SROFF"
+      phonetic: "Senior"
+
+    Commander:
+      proper_abbrev: "Cmdr"
+      caps_abbrev: "CMDR"
+      phonetic: "Commander"
+
+    Director:
+      proper_abbrev: "Dir"
+      caps_abbrev: "DIR"
+      phonetic: "Director"
+
+  placement:
+    prefix: "Spec-3 Kowalski"
+    suffix: "Kowalski SPEC3"
+    infix: "Kowalski, S.J., Spec-3"
+    separate_column: "KOWALSKI S    Kestrel/3/A/7  SPEC2"
+
+# =============================================================================
+# UNIT RENDERING
+# =============================================================================
+
+unit_rendering:
+
+  # Letter designators can be alpha or phonetic
+  letter_styles:
+    alpha: ["A", "B", "C", "D", "E", "F"]
+    phonetic:
+      A: "Alpha"
+      B: "Bravo"
+      C: "Charlie"
+      D: "Delta"
+      E: "Echo"
+      F: "Foxtrot"
+
+  # Level name labels by branch
+  level_labels:
+    defense_command:
+      element:
+        full: "Element"
+        abbreviated: "Elem"
+        micro: "E"
+      wing:
+        full: "Wing"
+        abbreviated: "Wing"
+        micro: "W"
+      squadron:
+        full: "Squadron"
+        abbreviated: "Sq"
+        micro: "Sq"
+      fleet:
+        full: "Fleet"
+        abbreviated: "Flt"
+        micro: "F"
+      sector:
+        full: "Sector"
+        abbreviated: "Sec"
+        micro: "S"
+
+    colonial_administration:
+      settlement:
+        full: "Settlement"
+        abbreviated: "Sett"
+        micro: "St"
+      district:
+        full: "District"
+        abbreviated: "Dist"
+        micro: "D"
+      colony:
+        full: "Colony"
+        abbreviated: "Col"
+        micro: "C"
+      sector:
+        full: "Sector"
+        abbreviated: "Sec"
+        micro: "S"
+
+    expeditionary_corps:
+      team:
+        full: "Team"
+        abbreviated: "Tm"
+        micro: "T"
+      expedition:
+        full: "Expedition"
+        abbreviated: "Exp"
+        micro: "X"
+      sector:
+        full: "Sector"
+        abbreviated: "Sec"
+        micro: "S"
+
+    resource_directorate:
+      crew:
+        full: "Crew"
+        abbreviated: "Crew"
+        micro: "C"
+      facility:
+        full: "Facility"
+        abbreviated: "Fac"
+        micro: "F"
+      operation:
+        full: "Operation"
+        abbreviated: "Op"
+        micro: "O"
+      sector:
+        full: "Sector"
+        abbreviated: "Sec"
+        micro: "S"
+
+  # Branch abbreviations
+  branch_labels:
+    defense_command:
+      full: "Defense Command"
+      abbreviated: "DC"
+      micro: "DC"
+    colonial_administration:
+      full: "Colonial Administration"
+      abbreviated: "CA"
+      micro: "CA"
+    expeditionary_corps:
+      full: "Expeditionary Corps"
+      abbreviated: "EC"
+      micro: "EC"
+    resource_directorate:
+      full: "Resource Directorate"
+      abbreviated: "RD"
+      micro: "RD"
+
+  # Format families (assigned per-clerk)
+  format_families:
+
+    labeled_full:
+      description: "All labels, full hierarchy"
+      example_dc: "Element 7, Wing Alpha, 3rd Squadron, Fleet Kestrel, Sector Alpha, Defense Command"
+      example_ca: "Settlement Haven, 2nd District, Colony Verdant, Sector Beta, Colonial Administration"
+      separator: ", "
+
+    labeled_hierarchical:
+      description: "Abbreviated labels, full hierarchy"
+      example_dc: "Elem 7, Wing A, 3rd Sq, Fleet Kestrel, Sec Alpha"
+      example_ca: "Sett Haven, 2nd Dist, Col Verdant, Sec Beta"
+      separator: ", "
+
+    labeled_micro:
+      description: "Minimal labels, compressed"
+      example_dc: "E7 WA Sq3 Kestrel"
+      example_ca: "Haven D2 Verdant"
+      separator: " "
+
+    slash_positional:
+      description: "Slash-separated, positional"
+      example_dc: "7/A/3/Kestrel/Alpha-DC"
+      example_ca: "Haven/2/Verdant/Beta-CA"
+      separator: "/"
+      orientations: ["child_over_parent", "parent_over_child"]
+
+    runon_compact:
+      description: "Run-on with minimal separation"
+      example_dc: "7-A-3"
+      example_ca: "Haven-2"
+      separator: "-"
+
+    minimal:
+      description: "Only essential info"
+      example_dc: "Kestrel-3"
+      example_ca: "Verdant"
+
+    phonetic_informal:
+      description: "Phonetic letters, spoken style"
+      example_dc: "Alpha Wing Third Squadron"
+      example_ca: "Haven Second District"
+
+    dc_standard:
+      description: "Defense Command standard notation"
+      example: "Elem 7, Wing A, 3rd Sq, Fleet Kestrel"
+
+    compact_dc:
+      description: "Defense Command compact notation"
+      example: "Kestrel-3-A-7"
+
+    ca_standard:
+      description: "Colonial Administration standard notation"
+      example: "Settlement Haven, 2nd District, Colony Verdant"
+
+    slash_compact:
+      description: "Compact slash notation"
+      example: "Haven/2/Verdant"
+
+    ec_standard:
+      description: "Expeditionary Corps standard notation"
+      example: "Team A, Expedition Horizon"
+
+    rd_standard:
+      description: "Resource Directorate standard notation"
+      example: "Crew A, Facility 7, Operation Deepcore"
+
+    compact_rd:
+      description: "Resource Directorate compact notation"
+      example: "Deepcore-7-A"
+
+# =============================================================================
+# VOCABULARY LAYERS
+# =============================================================================
+
+vocabulary_layers:
+
+  situational:
+    description: "Terms from the source's assigned situation"
+    source: "situations[].vocabulary_pool"
+    selection_logic: |
+      1. Source is assigned a situation (e.g., patrol_incursion)
+      2. Situation has vocabulary_pool with primary/secondary/rare terms
+      3. Clerk's vocabulary_density determines how many terms appear
+      4. Terms persist within source (if clerk uses INTERCEPT once, they keep using it)
+    density_by_archetype:
+      low: 0.15
+      medium: 0.35
+      high: 0.55
+
+  contextual_clutter:
+    description: "Non-signal noise from clerk's physical environment"
+    source: "synthetic_vocabulary.json where term_type = clutter_code"
+    selection_logic: |
+      1. Clerk archetype has working context (transport, processing, field station)
+      2. Clutter terms have clerk_context field listing applicable archetypes
+      3. Only clutter matching clerk's context can appear
+      4. Clutter rate is separate from situational vocab rate
+    examples:
+      transport_shuttle: ["Deck-2", "Bay-C", "Berth-17", "Hold-3"]
+      field_medevac: ["Ward-3", "Bed-17", "Triage-2"]
+      defense_operations: ["Station-42", "Post-7", "Watch-3"]
+      processing_intake: ["Queue-7", "Line-23", "Proc-2"]
+    clutter_rate_by_archetype:
+      sector_formal: 0.05
+      sector_efficient: 0.08
+      fleet_rushed: 0.12
+      fleet_methodical: 0.08
+      field_exhausted: 0.20
+      field_medevac: 0.25
+      field_minimal: 0.15
+      transport_shuttle: 0.30
+      transport_interstellar: 0.20
+      processing_intake: 0.15
+      defense_squadron: 0.18
+      defense_operations: 0.22
+      colonial_district: 0.10
+      colonial_transit: 0.28
+      expeditionary_team: 0.12
+      expeditionary_field: 0.18
+      resource_facility: 0.15
+      resource_shift: 0.20
+
+  confounders:
+    description: "Deliberately ambiguous terms that resemble unit designators"
+    source: "synthetic_vocabulary.json where term_type = confounder"
+    selection_logic: |
+      1. Confounders are injected based on clerk context (same as clutter)
+      2. Rate is lower than clutter - these are the hard cases
+      3. Parser must use surrounding context to distinguish from real unit data
+    examples:
+      - term: "A"
+        appears_in: "MURPHY SPEC3 Kestrel-3 A"
+        ambiguity: "Is 'A' a wing designator or a berth letter?"
+      - term: "C-4"
+        appears_in: "KOWALSKI TECH2 Deepcore C-4"
+        ambiguity: "Is 'C-4' Crew C Facility 4, or Compartment C-4?"
+      - term: "7"
+        appears_in: "Thompson Spec Horizon 7"
+        ambiguity: "Is '7' a team designator or a bunk number?"
+    confounder_rate: 0.08
+
+# =============================================================================
+# GENERATION PARAMETERS
+# =============================================================================
+
+generation:
+
+  target_records: 10000
+
+  records_per_soldier:
+    distribution: "geometric"
+    p: 0.45
+    min: 1
+    max: 8
+
+  sources_per_soldier:
+    distribution: "categorical"
+    weights:
+      1: 0.80
+      2: 0.18
+      3: 0.02
+
+  # v4: State distribution
+  states_per_soldier:
+    distribution: "categorical"
+    weights:
+      1: 0.65  # No transfers
+      2: 0.28  # One transfer
+      3: 0.07  # Two transfers
+
+  branch_distribution:
+    model: "weighted_with_variance"
+    target_weights:
+      defense_command: 0.35
+      colonial_administration: 0.30
+      resource_directorate: 0.25
+      expeditionary_corps: 0.10
+
+  random_seed: null
+
+# =============================================================================
+# TRANSFERS (v4 Enhanced)
+# =============================================================================
+
+transfers:
+
+  # Overall transfer rate (soldiers with 2+ states)
+  soldier_transfer_rate: 0.35  # 35% have at least one transfer
+
+  # Transfer scope distribution
+  transfer_scope:
+    within_same_level3:
+      description: "Same squadron/district/team/facility, different lowest level"
+      frequency: 0.40
+      example_dc: "Element 5 -> Element 7 within Wing A, 3rd Squadron"
+      example_ca: "Settlement Haven -> Settlement Prospect within 2nd District"
+
+    within_same_level2:
+      description: "Same fleet/colony/expedition/operation, different level-3"
+      frequency: 0.30
+      example_dc: "3rd Squadron -> 5th Squadron within Fleet Kestrel"
+      example_ca: "2nd District -> 4th District within Colony Verdant"
+
+    within_same_branch:
+      description: "Same branch, different level-2"
+      frequency: 0.15
+      example_dc: "Fleet Kestrel -> Fleet Talon within Defense Command"
+      example_ca: "Colony Verdant -> Colony Amber within Colonial Administration"
+
+    cross_branch:
+      description: "Different branch entirely"
+      frequency: 0.15
+      examples:
+        - "Defense Command pilot -> Expeditionary Corps survey pilot"
+        - "Colonial Administration official -> Resource Directorate site manager"
+        - "Resource Directorate tech -> Defense Command maintenance crew"
+
+  # Cross-branch transfer creates hardest cases
+  cross_branch_notes: |
+    Cross-branch transfers create the most challenging disambiguation cases
+    because the hierarchy structure itself differs between states.
+
+    A soldier who transferred from Defense Command to Expeditionary Corps has:
+    - State 1: 5-level hierarchy (Sector/Fleet/Squadron/Wing/Element)
+    - State 2: 3-level hierarchy (Sector/Expedition/Team)
+
+    Records from different states may have:
+    - Different depth (more or fewer unit levels)
+    - Different level names (Squadron vs Team)
+    - Different designator styles (numbers vs letters)
+
+  # How transfers appear in data
+  disambiguation_challenge: |
+    Soldier S001 (Martinez) could have:
+    - Source A (sector formal): "Spec-2 Martinez, James R.  Element 7, Wing A, 3rd Squadron, Fleet Kestrel, Sector Alpha, Defense Command"
+    - Source B (expeditionary field): "MARTINEZ SPEC2 Horizon-B"
+
+    Without dates, parser cannot know:
+    - Is "Element 7, Wing A, 3rd Sq, Fleet Kestrel" vs "Team B, Expedition Horizon" a parsing error?
+    - Did Martinez transfer between branches (both correct)?
+    - Is this two different Martinez personnel?
+
+    This ambiguity is the core challenge.
