@@ -1,8 +1,8 @@
 # Synthetic Data Generation
 
 **Version:** 4.1.0  
-**Last Updated:** 2026-01-25  
-**Status:** Design specification (not yet implemented)
+**Last Updated:** 2026-01-26  
+**Status:** Implemented (artifacts not yet regenerated)
 
 ---
 

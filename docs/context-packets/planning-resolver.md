@@ -6,6 +6,7 @@ Designing resolver approach, modifying generation workflow, reviewing resolver s
 ## Always Load
 - CLAUDE.md (root)
 - docs/DISAMBIGUATION_MODEL.md
+- docs/GLOSSARY.md
 - docs/components/strategies/CLAUDE.md
 - docs/components/strategies/resolver/CLAUDE.md
 
