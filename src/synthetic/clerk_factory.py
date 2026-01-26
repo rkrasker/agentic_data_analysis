@@ -1,12 +1,8 @@
 """
 ClerkFactory: Instantiate clerks from archetypes with locked habits.
-
-Each clerk is a persistent character whose style never changes.
 """
 
-import json
 import random
-import uuid
 from pathlib import Path
 from typing import Dict, List, Optional, Any
 
@@ -27,44 +23,29 @@ from .models import (
 )
 
 
-# Clerk names for generating realistic clerk instances
 CLERK_FIRST_NAMES = [
-    "Helen", "Margaret", "Dorothy", "Ruth", "Virginia", "Mary", "Elizabeth",
-    "Robert", "James", "William", "John", "Richard", "Thomas", "Charles",
-    "Edward", "Frank", "George", "Harold", "Joseph", "Paul", "Walter",
+    "Ava", "Bryn", "Cass", "Dara", "Eli", "Finn", "Gale", "Hale",
+    "Iris", "Jude", "Kira", "Lane", "Mara", "Nova", "Orin", "Pax",
+    "Quinn", "Rey", "Sage", "Tess", "Uma", "Vale",
 ]
 
 CLERK_LAST_NAMES = [
-    "Marchetti", "Trane", "Hollis", "Delacroix", "Wojcik", "Calabrese",
-    "Smith", "Johnson", "Williams", "Brown", "Jones", "Miller", "Davis",
-    "Garcia", "Rodriguez", "Wilson", "Martinez", "Anderson", "Taylor",
-    "Thomas", "Moore", "Jackson", "Martin", "Lee", "Thompson", "White",
-    "Harris", "Clark", "Lewis", "Robinson", "Walker", "Young", "Allen",
+    "Arden", "Bex", "Cald", "Dane", "Evers", "Farrow", "Grim",
+    "Hale", "Iver", "Jax", "Kest", "Lux", "Morn", "Nyx", "Oris",
+    "Pryce", "Quill", "Roux", "Sable", "Tor", "Voss", "Wren",
 ]
 
-CLERK_RANKS = ["Pvt.", "Pfc.", "Cpl.", "T/5", "Sgt.", "S/Sgt.", "T/Sgt."]
+CLERK_RANKS = ["Spec-1", "Spec-2", "Tech-1", "Tech-2", "Cmdr", "Lt"]
 
 
 class ClerkFactory:
-    """
-    Factory for creating clerk instances from archetypes.
-
-    Clerks are instantiated with their habits locked - they never change
-    their formatting style within a session.
-    """
+    """Factory for creating clerk instances from archetypes."""
 
     def __init__(
         self,
         style_spec_path: Optional[Path] = None,
         random_seed: Optional[int] = None,
     ):
-        """
-        Initialize the factory.
-
-        Args:
-            style_spec_path: Path to synthetic_style_spec_v3.yaml
-            random_seed: Seed for reproducibility
-        """
         self.rng = random.Random(random_seed)
         self.archetypes: Dict[str, ClerkArchetype] = {}
         self.clerks: Dict[str, Clerk] = {}
@@ -86,14 +67,12 @@ class ClerkFactory:
 
     def _parse_archetype(self, archetype_id: str, data: Dict[str, Any]) -> ClerkArchetype:
         """Parse an archetype from YAML data."""
-        # Parse name format
         name_data = data.get("name_format", {})
         name_format = NameFormat(
             template=name_data.get("template", "{LAST}, {FIRST}"),
             drop_middle_rate=name_data.get("drop_middle_rate", 0.0),
         )
 
-        # Parse rank format
         rank_data = data.get("rank_format", {})
         rank_format = RankFormat(
             style=RankStyle(rank_data.get("style", "prefix")),
@@ -101,24 +80,21 @@ class ClerkFactory:
             omit_rate=rank_data.get("omit_rate", 0.0),
         )
 
-        # Parse unit format
         unit_data = data.get("unit_format", {})
         unit_format = UnitFormat(
             style=UnitFormatStyle(unit_data.get("style", "labeled_hierarchical")),
             separator=unit_data.get("separator", ", "),
             orientation=unit_data.get("orientation", "child_over_parent"),
-            include_division=unit_data.get("include_division", True),
-            include_regiment=unit_data.get("include_regiment", True),
-            include_company=unit_data.get("include_company", True),
-            division_suffix=unit_data.get("division_suffix", False),
+            include_sector=unit_data.get("include_sector", True),
+            include_branch=unit_data.get("include_branch", False),
+            include_level2=unit_data.get("include_level2", True),
+            include_lowest_levels=unit_data.get("include_lowest_levels", True),
+            omit_level_names=unit_data.get("omit_level_names", False),
             label_style=unit_data.get("label_style", "abbreviated"),
-            phonetic_companies=unit_data.get("phonetic_companies", False),
-            marine_regiment_style=unit_data.get("marine_regiment_style", "Mar"),
-            include_air_force=unit_data.get("include_air_force", True),
-            omit_unit_type=unit_data.get("omit_unit_type", False),
+            branch_suffix=unit_data.get("branch_suffix", False),
+            phonetic_letters=unit_data.get("phonetic_letters", False),
         )
 
-        # Parse consistency
         consistency_data = data.get("consistency", {})
         consistency = Consistency(
             format_lock=consistency_data.get("format_lock", 0.85),
@@ -126,7 +102,6 @@ class ClerkFactory:
             major_variation=consistency_data.get("major_variation", 0.03),
         )
 
-        # Parse imperfections
         imp_data = data.get("imperfections", {})
         imperfections = Imperfections(
             typo_rate=imp_data.get("typo_rate", 0.02),
@@ -137,7 +112,6 @@ class ClerkFactory:
             column_bleed=imp_data.get("column_bleed", 0.0),
         )
 
-        # Parse vocabulary
         vocab_density_str = data.get("vocabulary_density", "medium")
         vocabulary_density = VocabularyDensity(vocab_density_str)
         vocabulary_bias = data.get("vocabulary_bias", [])
@@ -151,6 +125,11 @@ class ClerkFactory:
             unit_format=unit_format,
             vocabulary_density=vocabulary_density,
             vocabulary_bias=vocabulary_bias,
+            applicable_branches=data.get("applicable_branches", []),
+            familiarity_override=data.get("familiarity_override"),
+            familiarity_applies=data.get("familiarity_applies", False),
+            path_completeness_tendency=data.get("path_completeness_tendency", "medium"),
+            structural_signals_tendency=data.get("structural_signals_tendency", "medium"),
             consistency=consistency,
             imperfections=imperfections,
         )
@@ -161,38 +140,24 @@ class ClerkFactory:
         clerk_name: Optional[str] = None,
         context: Optional[str] = None,
     ) -> Clerk:
-        """
-        Create a new clerk instance from an archetype.
-
-        Args:
-            archetype_id: The archetype to instantiate from
-            clerk_name: Optional name for the clerk (auto-generated if None)
-            context: Optional context description
-
-        Returns:
-            A new Clerk instance with locked habits
-        """
+        """Create a new clerk instance from an archetype."""
         if archetype_id not in self.archetypes:
             raise ValueError(f"Unknown archetype: {archetype_id}")
 
         archetype = self.archetypes[archetype_id]
         self._clerk_counter += 1
 
-        # Generate clerk ID
         clerk_id = f"CLK{self._clerk_counter:04d}"
 
-        # Generate clerk name if not provided
         if clerk_name is None:
             rank = self.rng.choice(CLERK_RANKS)
             first = self.rng.choice(CLERK_FIRST_NAMES)
             last = self.rng.choice(CLERK_LAST_NAMES)
             clerk_name = f"{rank} {first} {last}"
 
-        # Generate context if not provided
         if context is None:
             context = f"{archetype.description.strip().split('.')[0]}."
 
-        # Apply minor individual variation to habits
         name_format = self._vary_name_format(archetype.name_format)
         rank_format = self._vary_rank_format(archetype.rank_format)
         unit_format = self._vary_unit_format(archetype.unit_format)
@@ -209,6 +174,11 @@ class ClerkFactory:
             unit_format=unit_format,
             vocabulary_density=archetype.vocabulary_density,
             vocabulary_bias=list(archetype.vocabulary_bias),
+            applicable_branches=list(archetype.applicable_branches),
+            familiarity_override=archetype.familiarity_override,
+            familiarity_applies=archetype.familiarity_applies,
+            path_completeness_tendency=archetype.path_completeness_tendency,
+            structural_signals_tendency=archetype.structural_signals_tendency,
             consistency=consistency,
             imperfections=imperfections,
             used_vocabulary=[],
@@ -220,7 +190,6 @@ class ClerkFactory:
 
     def _vary_name_format(self, base: NameFormat) -> NameFormat:
         """Apply minor individual variation to name format."""
-        # Name format is typically locked - only vary drop rate slightly
         return NameFormat(
             template=base.template,
             drop_middle_rate=self._vary_rate(base.drop_middle_rate, 0.05),
@@ -236,20 +205,18 @@ class ClerkFactory:
 
     def _vary_unit_format(self, base: UnitFormat) -> UnitFormat:
         """Apply minor individual variation to unit format."""
-        # Unit format is typically locked - minimal variation
         return UnitFormat(
             style=base.style,
             separator=base.separator,
             orientation=base.orientation,
-            include_division=base.include_division,
-            include_regiment=base.include_regiment,
-            include_company=base.include_company,
-            division_suffix=base.division_suffix,
+            include_sector=base.include_sector,
+            include_branch=base.include_branch,
+            include_level2=base.include_level2,
+            include_lowest_levels=base.include_lowest_levels,
+            omit_level_names=base.omit_level_names,
             label_style=base.label_style,
-            phonetic_companies=base.phonetic_companies,
-            marine_regiment_style=base.marine_regiment_style,
-            include_air_force=base.include_air_force,
-            omit_unit_type=base.omit_unit_type,
+            branch_suffix=base.branch_suffix,
+            phonetic_letters=base.phonetic_letters,
         )
 
     def _vary_consistency(self, base: Consistency) -> Consistency:
@@ -283,16 +250,9 @@ class ClerkFactory:
     def get_random_archetype(
         self,
         context_levels: Optional[List[str]] = None,
+        allowed_archetypes: Optional[List[str]] = None,
     ) -> str:
-        """
-        Get a random archetype ID, optionally filtered by context level.
-
-        Args:
-            context_levels: Optional list of context levels to filter by
-
-        Returns:
-            A random archetype ID
-        """
+        """Get a random archetype ID, optionally filtered."""
         candidates = list(self.archetypes.keys())
 
         if context_levels:
@@ -301,8 +261,11 @@ class ClerkFactory:
                 if arch.context_level in context_levels
             ]
 
+        if allowed_archetypes:
+            candidates = [aid for aid in candidates if aid in allowed_archetypes]
+
         if not candidates:
-            raise ValueError(f"No archetypes found for context levels: {context_levels}")
+            raise ValueError("No archetypes found for the requested filters")
 
         return self.rng.choice(candidates)
 

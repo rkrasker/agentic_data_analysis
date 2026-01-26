@@ -1,107 +1,60 @@
 """
-Pipeline: Wire all components together for synthetic data generation.
-
-Produces raw.parquet and validation.parquet files.
+Pipeline: Wire all components together for synthetic data generation (v4.1).
 """
 
 import random
 from pathlib import Path
 from typing import Dict, List, Optional, Any, Tuple
 
-from .models import Soldier, Source, Entry, Transfer, Assignment
+import numpy as np
+
+from .models import Branch, Entry, Soldier, Source
 from .clerk_factory import ClerkFactory
 from .situation_manager import SituationManager
 from .vocabulary_injector import VocabularyInjector
 from .source_generator import SourceGenerator
-from .transfer_manager import TransferManager
 from .hierarchy_loader import HierarchyLoader
 from .soldier_factory import SoldierFactory
 from .renderer import Renderer
-
-
-# Default component distribution weights
-COMPONENT_WEIGHTS = {
-    "1st_infantry_division": 0.12,
-    "2nd_infantry_division": 0.06,
-    "3rd_infantry_division": 0.06,
-    "82nd_airborne_division": 0.10,
-    "101st_airborne_division": 0.10,
-    "1st_marine_division": 0.10,
-    "2nd_marine_division": 0.08,
-    "3rd_marine_division": 0.08,
-    "1st_armored_division": 0.05,
-    "2nd_armored_division": 0.05,
-    "10th_mountain_division": 0.05,
-    "8th_air_force": 0.06,
-    "9th_air_force": 0.04,
-    "15th_air_force": 0.03,
-    "36th_infantry_division": 0.02,
-}
-
-# Focused weights for 82nd Airborne resolver validation
-# Only includes 82nd and its collision rivals from the resolver
-COMPONENT_WEIGHTS_82ND_FOCUSED = {
-    "82nd_airborne_division": 0.20,      # Target component (higher weight)
-    "101st_airborne_division": 0.12,     # Rival: airborne collision
-    "1st_infantry_division": 0.10,       # Rival: regiment collision (1, 5, 7)
-    "2nd_infantry_division": 0.10,       # Rival: regiment collision (1, 3, 9)
-    "3rd_infantry_division": 0.10,       # Rival: regiment collision (5, 7, 11)
-    "36th_infantry_division": 0.08,      # Rival: regiment collision
-    "10th_mountain_division": 0.08,      # Rival: regiment collision
-    "1st_marine_division": 0.11,         # Rival: regiment collision + branch
-    "3rd_marine_division": 0.11,         # Rival: regiment collision + branch
-}
+from .completeness_analyzer import CompletenessAnalyzer
+from .difficulty_computer import DifficultyComputer
+from .difficulty_rebalancer import DifficultyRebalancer
 
 
 class Pipeline:
-    """
-    Main pipeline for synthetic data generation.
-
-    Orchestrates all components to produce synthetic datasets
-    matching the v3 spec.
-    """
+    """Main pipeline for synthetic data generation."""
 
     def __init__(
         self,
         style_spec_path: Path,
+        themes_path: Path,
         vocabulary_path: Path,
         hierarchy_path: Path,
         random_seed: Optional[int] = None,
     ):
-        """
-        Initialize the pipeline with all required config paths.
-
-        Args:
-            style_spec_path: Path to synthetic_style_spec_v3.yaml
-            vocabulary_path: Path to synthetic_vocabulary.json
-            hierarchy_path: Path to hierarchy_reference.json
-            random_seed: Seed for reproducibility
-        """
         self.rng = random.Random(random_seed)
+        self.np_rng = np.random.default_rng(random_seed)
         self.seed = random_seed
 
-        # Initialize all components
         self.clerk_factory = ClerkFactory(
             style_spec_path=style_spec_path,
             random_seed=random_seed,
         )
         self.situation_manager = SituationManager(
-            style_spec_path=style_spec_path,
+            themes_path=themes_path,
+            vocabulary_path=vocabulary_path,
             random_seed=random_seed,
         )
         self.vocabulary_injector = VocabularyInjector(
             vocabulary_path=vocabulary_path,
             random_seed=random_seed,
         )
-        self.transfer_manager = TransferManager(
-            random_seed=random_seed,
-        )
         self.hierarchy_loader = HierarchyLoader(
-            hierarchy_path=hierarchy_path,
+            config_path=hierarchy_path,
         )
         self.soldier_factory = SoldierFactory(
-            hierarchy_loader=self.hierarchy_loader,
-            random_seed=random_seed,
+            hierarchy=self.hierarchy_loader,
+            rng=self.np_rng,
         )
         self.renderer = Renderer(
             hierarchy_loader=self.hierarchy_loader,
@@ -110,244 +63,232 @@ class Pipeline:
         self.source_generator = SourceGenerator(
             clerk_factory=self.clerk_factory,
             situation_manager=self.situation_manager,
-            vocabulary_injector=self.vocabulary_injector,
             random_seed=random_seed,
         )
 
-        # Storage
+        self.completeness_analyzer = CompletenessAnalyzer(self.hierarchy_loader)
+        self.difficulty_computer = DifficultyComputer(self.completeness_analyzer)
+        self.rebalancer = DifficultyRebalancer()
+
         self.soldiers: Dict[str, Soldier] = {}
         self.sources: Dict[str, Source] = {}
         self.entries: Dict[str, Entry] = {}
+        self._entry_counter = 0
+
+    def _generate_entry_id(self) -> str:
+        self._entry_counter += 1
+        return f"ENT{self._entry_counter:06d}"
 
     def generate(
         self,
         target_records: int = 10000,
         soldiers_count: Optional[int] = None,
-        component_weights: Optional[Dict[str, float]] = None,
     ) -> Tuple[List[Dict], List[Dict], List[Dict]]:
-        """
-        Generate synthetic dataset.
-
-        Args:
-            target_records: Target number of raw entries to generate
-            soldiers_count: Number of unique soldiers (auto-calculated if None)
-            component_weights: Distribution weights by component
-
-        Returns:
-            Tuple of (raw_records, validation_records, transfer_records)
-        """
-        if component_weights is None:
-            component_weights = COMPONENT_WEIGHTS
-
-        # Calculate soldier count if not provided
-        # Assume ~2-3 entries per soldier on average
+        """Generate synthetic dataset records."""
         if soldiers_count is None:
-            soldiers_count = target_records // 3
+            soldiers_count = max(1, target_records // 3)
 
-        # Phase 1: Generate soldiers
-        print(f"Generating {soldiers_count} soldiers...")
-        self._generate_soldiers(soldiers_count, component_weights)
+        self._generate_soldiers(soldiers_count)
 
-        # Phase 2: Apply transfers
-        print("Applying transfers...")
-        self._apply_transfers()
-
-        # Phase 3: Generate sources and entries
-        print(f"Generating entries (target: {target_records})...")
-        self._generate_entries(target_records)
-
-        # Phase 4: Export records
-        print("Preparing export records...")
-        raw_records = self._build_raw_records()
-        validation_records = self._build_validation_records()
-        transfer_records = self.transfer_manager.to_records()
-
-        print(f"Generated {len(raw_records)} raw entries")
-        print(f"Generated {len(validation_records)} validation records")
-        print(f"Generated {len(transfer_records)} transfer records")
-
-        return raw_records, validation_records, transfer_records
-
-    def _generate_soldiers(
-        self,
-        count: int,
-        component_weights: Dict[str, float],
-    ) -> None:
-        """Generate soldiers across components."""
-        components = list(component_weights.keys())
-        weights = [component_weights[c] for c in components]
-
-        # Normalize weights
-        total = sum(weights)
-        weights = [w / total for w in weights]
-
-        # Distribute soldiers by component
-        for _ in range(count):
-            component_id = self.rng.choices(components, weights=weights)[0]
-            soldier = self.soldier_factory.create_soldier(component_id)
-            self.soldiers[soldier.primary_id] = soldier
-
-    def _apply_transfers(self) -> None:
-        """Apply transfers to soldiers."""
-        soldiers_list = list(self.soldiers.values())
-
-        # Build available regiments by component
-        available_regiments = {}
-        for comp_id in self.hierarchy_loader.list_components():
-            regs = self.hierarchy_loader.get_regiments(comp_id)
-            if regs:
-                available_regiments[comp_id] = regs
-
-        # Apply transfers
-        self.transfer_manager.apply_transfers_to_soldiers(
-            soldiers_list,
-            available_regiments=available_regiments,
-            available_divisions=self.hierarchy_loader.get_all_divisions(),
-        )
-
-    def _generate_entries(self, target_records: int) -> None:
-        """Generate sources and entries until target is reached."""
-        soldiers_list = list(self.soldiers.values())
         total_entries = 0
+        entries_by_soldier: Dict[str, List[Entry]] = {
+            s.soldier_id: [] for s in self.soldiers.values()
+        }
 
         while total_entries < target_records:
-            # Select soldiers for this source
-            source_size = self.source_generator.get_entries_per_source_count()
+            source_size = self._entries_per_source()
             source_size = min(source_size, target_records - total_entries)
-
             if source_size <= 0:
                 break
 
-            # Sample soldiers (with possible duplicates for multi-appearance)
+            temporal_anchor = self.rng.choice([1, 2, 3])
             source_soldiers = self._sample_soldiers_for_source(
-                soldiers_list, source_size
+                list(self.soldiers.values()),
+                source_size,
+                temporal_anchor,
             )
-
             if not source_soldiers:
                 break
 
-            # Determine component for this source (majority component)
-            component_counts: Dict[str, int] = {}
-            for s in source_soldiers:
-                cid = s.assignment.component_id
-                component_counts[cid] = component_counts.get(cid, 0) + 1
+            states_for_source = [
+                self._select_state_for_source(soldier, temporal_anchor)
+                for soldier in source_soldiers
+            ]
+            home_unit = self._determine_home_unit(states_for_source)
+            branch = self._branch_from_home_unit(home_unit) or states_for_source[0].branch
 
-            primary_component = max(component_counts, key=component_counts.get)
-
-            # Create source
-            source = self.source_generator.create_source(primary_component)
+            source = self.source_generator.create_source(
+                branch=branch,
+                home_unit=home_unit,
+                temporal_anchor=temporal_anchor,
+            )
             self.sources[source.source_id] = source
 
-            # Generate entries
-            # Render function that handles transfer assignment selection
-            def render_with_transfer(soldier, clerk):
-                assignment = None  # Use current assignment by default
-                if soldier.has_transfer and soldier.original_assignment:
-                    # 50% chance to use original assignment for transferred soldiers
-                    if self.rng.random() < 0.5:
-                        assignment = soldier.original_assignment
-                return self.renderer.render(soldier, clerk, assignment=assignment)
+            clerk = self.clerk_factory.get_clerk(source.clerk_id)
+            situation = self.situation_manager.get_situation(source.situation_id)
+            if not clerk or not situation:
+                continue
 
-            entries = self.source_generator.generate_entries(
-                source,
-                source_soldiers,
-                render_func=render_with_transfer,
-            )
-
-            for entry in entries:
+            for soldier, state in zip(source_soldiers, states_for_source):
+                entry_id = self._generate_entry_id()
+                entry = self.renderer.render_entry(
+                    entry_id=entry_id,
+                    soldier=soldier,
+                    state=state,
+                    source=source,
+                    clerk=clerk,
+                    situation=situation,
+                    vocabulary_injector=self.vocabulary_injector,
+                )
                 self.entries[entry.entry_id] = entry
+                entries_by_soldier[soldier.soldier_id].append(entry)
+                clerk.entry_count += 1
 
-            total_entries += len(entries)
+            total_entries += source_size
+
+        for soldier in self.soldiers.values():
+            soldier_entries = entries_by_soldier.get(soldier.soldier_id, [])
+            self.difficulty_computer.compute_difficulty(soldier, soldier_entries)
+
+        if self.rebalancer.needs_rebalancing(list(self.soldiers.values())):
+            self.rebalancer.identify_adjustments(list(self.soldiers.values()))
+
+        raw_records = self._build_raw_records()
+        validation_records = self._build_validation_records()
+        source_records = self._build_source_records()
+
+        return raw_records, validation_records, source_records
+
+    def _generate_soldiers(self, count: int) -> None:
+        """Generate soldiers across branches."""
+        for i in range(count):
+            soldier = self.soldier_factory.create_soldier(f"S{i:04d}")
+            self.soldiers[soldier.soldier_id] = soldier
+
+    def _entries_per_source(self) -> int:
+        """Sample entries per source from a truncated normal distribution."""
+        count = int(self.rng.gauss(35, 15))
+        return max(8, min(80, count))
 
     def _sample_soldiers_for_source(
         self,
         soldiers: List[Soldier],
         count: int,
+        temporal_anchor: int,
     ) -> List[Soldier]:
-        """
-        Sample soldiers for a source with unit concentration.
-
-        Args:
-            soldiers: Pool of available soldiers
-            count: Number of soldiers to sample
-
-        Returns:
-            List of soldiers (may include duplicates for multi-appearance)
-        """
+        """Sample soldiers with unit concentration by Level-3."""
         if not soldiers:
             return []
 
-        # Select a primary component (70% from same battalion)
+        count = min(count, len(soldiers))
         primary = self.rng.choice(soldiers)
-        same_component = [
+        primary_state = self._select_state_for_source(primary, temporal_anchor)
+        primary_branch = primary_state.branch
+
+        same_branch = [
             s for s in soldiers
-            if s.assignment.component_id == primary.assignment.component_id
+            if self._select_state_for_source(s, temporal_anchor).branch == primary_branch
         ]
 
-        result = []
-        for _ in range(count):
-            if self.rng.random() < 0.70 and same_component:
-                # Same component
-                soldier = self.rng.choice(same_component)
-            else:
-                # Any soldier
-                soldier = self.rng.choice(soldiers)
-
-            result.append(soldier)
+        result: List[Soldier] = [primary]
+        chosen = {primary.soldier_id}
+        while len(result) < count:
+            pool = same_branch if self.rng.random() < 0.70 and same_branch else soldiers
+            candidates = [s for s in pool if s.soldier_id not in chosen]
+            if not candidates:
+                candidates = [s for s in soldiers if s.soldier_id not in chosen]
+            if not candidates:
+                break
+            pick = self.rng.choice(candidates)
+            result.append(pick)
+            chosen.add(pick.soldier_id)
 
         return result
 
+    def _select_state_for_source(self, soldier: Soldier, temporal_anchor: int):
+        """Select which state a source captures for a soldier."""
+        if temporal_anchor <= len(soldier.states):
+            return soldier.states[temporal_anchor - 1]
+        return soldier.states[-1]
+
+    def _determine_home_unit(self, states) -> str:
+        """Determine the home unit for a source based on majority Level-3."""
+        counts: Dict[str, int] = {}
+        for state in states:
+            home_unit = self._build_home_unit(state)
+            counts[home_unit] = counts.get(home_unit, 0) + 1
+        return max(counts, key=counts.get)
+
+    def _build_home_unit(self, state) -> str:
+        """Build a branch-prefixed Level-3 home unit string."""
+        levels = self.hierarchy_loader.get_branch_levels(state.branch)
+        level3 = levels[:3]
+        path = "/".join(state.post_levels.get(lvl, "") for lvl in level3)
+        return f"{state.branch.value}:{path}"
+
+    def _branch_from_home_unit(self, home_unit: str) -> Optional[Branch]:
+        if ":" not in home_unit:
+            return None
+        branch_str = home_unit.split(":", 1)[0]
+        try:
+            return Branch(branch_str)
+        except ValueError:
+            return None
+
     def _build_raw_records(self) -> List[Dict[str, Any]]:
-        """Build raw records for parquet export."""
+        """Build raw records for export."""
         records = []
-
         for entry in self.entries.values():
-            source = self.sources.get(entry.source_id)
-            if not source:
-                continue
-
-            record = {
+            records.append({
                 "source_id": entry.source_id,
                 "soldier_id": entry.soldier_id,
+                "state_id": entry.state_id,
                 "raw_text": entry.raw_text,
-                "clerk_id": source.clerk_id,
-                "situation_id": source.situation_id,
-                "quality_tier": source.quality_tier,
-            }
-            records.append(record)
-
+                "clerk_id": entry.clerk_id,
+                "situation_id": entry.situation_id,
+                "quality_tier": entry.quality_tier,
+                "path_completeness": entry.path_completeness,
+                "levels_provided": entry.levels_provided,
+                "extraction_signals": entry.extraction_signals,
+            })
         return records
 
     def _build_validation_records(self) -> List[Dict[str, Any]]:
-        """Build validation (truth) records for parquet export."""
+        """Build validation records for export."""
         records = []
-
         for soldier in self.soldiers.values():
-            record = {
-                "primary_id": soldier.primary_id,
-                "name_first": soldier.name_first,
-                "name_middle": soldier.name_middle,
-                "name_last": soldier.name_last,
-                "rank": soldier.rank,
-                "component_id": soldier.assignment.component_id,
-                "regiment": soldier.assignment.regiment,
-                "battalion": soldier.assignment.battalion,
-                "company": soldier.assignment.company,
-                "combat_command": soldier.assignment.combat_command,
-                "bomb_group": soldier.assignment.bomb_group,
-                "squadron": soldier.assignment.squadron,
-                "has_transfer": soldier.has_transfer,
-            }
+            for state in soldier.states:
+                records.append({
+                    "soldier_id": soldier.soldier_id,
+                    "state_id": state.state_id,
+                    "state_order": state.state_order,
+                    "branch": state.branch.value,
+                    "post_path": state.post_path,
+                    **state.post_levels,
+                    "collision_zone_flag": state.collision_zone_flag,
+                    "collision_severity": state.collision_severity.value,
+                    "soldier_difficulty_tier": (
+                        soldier.difficulty_tier.value
+                        if soldier.difficulty_tier
+                        else None
+                    ),
+                    "complementarity_score": soldier.complementarity_score,
+                    "structural_resolvability": soldier.structural_resolvability,
+                })
+        return records
 
-            # Add original assignment if transferred
-            if soldier.has_transfer and soldier.original_assignment:
-                record["original_component_id"] = soldier.original_assignment.component_id
-                record["original_regiment"] = soldier.original_assignment.regiment
-                record["original_battalion"] = soldier.original_assignment.battalion
-                record["original_company"] = soldier.original_assignment.company
-
-            records.append(record)
-
+    def _build_source_records(self) -> List[Dict[str, Any]]:
+        """Build sources records for export."""
+        records = []
+        for source in self.sources.values():
+            records.append({
+                "source_id": source.source_id,
+                "clerk_id": source.clerk_id,
+                "situation_id": source.situation_id,
+                "quality_tier": source.quality_tier,
+                "home_unit": source.home_unit,
+                "temporal_anchor": source.temporal_anchor,
+            })
         return records
 
     def export_parquet(
@@ -355,17 +296,9 @@ class Pipeline:
         output_dir: Path,
         raw_records: List[Dict],
         validation_records: List[Dict],
-        transfer_records: List[Dict],
+        source_records: List[Dict],
     ) -> None:
-        """
-        Export records to parquet files (with CSV fallback).
-
-        Args:
-            output_dir: Directory to write parquet files
-            raw_records: Raw entry records
-            validation_records: Truth records
-            transfer_records: Transfer records
-        """
+        """Export records to parquet files (with CSV fallback)."""
         try:
             import pandas as pd
         except ImportError:
@@ -374,20 +307,18 @@ class Pipeline:
         output_dir = Path(output_dir)
         output_dir.mkdir(parents=True, exist_ok=True)
 
-        # Check if parquet is available
         parquet_available = True
         try:
-            import pyarrow
+            import pyarrow  # noqa: F401
         except ImportError:
             try:
-                import fastparquet
+                import fastparquet  # noqa: F401
             except ImportError:
                 parquet_available = False
                 print("Note: pyarrow not available, using CSV export")
 
         ext = ".parquet" if parquet_available else ".csv"
 
-        # Export raw
         if raw_records:
             raw_df = pd.DataFrame(raw_records)
             if parquet_available:
@@ -396,7 +327,6 @@ class Pipeline:
                 raw_df.to_csv(output_dir / "raw.csv", index=False)
             print(f"Wrote {len(raw_df)} records to {output_dir}/raw{ext}")
 
-        # Export validation
         if validation_records:
             val_df = pd.DataFrame(validation_records)
             if parquet_available:
@@ -405,40 +335,24 @@ class Pipeline:
                 val_df.to_csv(output_dir / "validation.csv", index=False)
             print(f"Wrote {len(val_df)} records to {output_dir}/validation{ext}")
 
-        # Export unit_changes
-        if transfer_records:
-            transfer_df = pd.DataFrame(transfer_records)
+        if source_records:
+            src_df = pd.DataFrame(source_records)
             if parquet_available:
-                transfer_df.to_parquet(output_dir / "unit_changes.parquet", index=False)
+                src_df.to_parquet(output_dir / "sources.parquet", index=False)
             else:
-                transfer_df.to_csv(output_dir / "unit_changes.csv", index=False)
-            print(f"Wrote {len(transfer_df)} records to {output_dir}/unit_changes{ext}")
+                src_df.to_csv(output_dir / "sources.csv", index=False)
+            print(f"Wrote {len(src_df)} records to {output_dir}/sources{ext}")
 
     def get_stats(self) -> Dict[str, Any]:
         """Get comprehensive pipeline statistics."""
-        # Count entries by source
         entries_per_source: Dict[str, int] = {}
         for entry in self.entries.values():
-            entries_per_source[entry.source_id] = (
-                entries_per_source.get(entry.source_id, 0) + 1
-            )
+            entries_per_source[entry.source_id] = entries_per_source.get(entry.source_id, 0) + 1
 
-        # Count soldiers by component
-        soldiers_by_component: Dict[str, int] = {}
+        difficulty_counts: Dict[str, int] = {}
         for soldier in self.soldiers.values():
-            cid = soldier.assignment.component_id
-            soldiers_by_component[cid] = soldiers_by_component.get(cid, 0) + 1
-
-        # Count entries with vocabulary
-        entries_with_situational = sum(
-            1 for e in self.entries.values() if e.situational_terms
-        )
-        entries_with_clutter = sum(
-            1 for e in self.entries.values() if e.clutter_terms
-        )
-        entries_with_confounder = sum(
-            1 for e in self.entries.values() if e.confounder_terms
-        )
+            tier = soldier.difficulty_tier.value if soldier.difficulty_tier else "unknown"
+            difficulty_counts[tier] = difficulty_counts.get(tier, 0) + 1
 
         return {
             "total_soldiers": len(self.soldiers),
@@ -447,18 +361,12 @@ class Pipeline:
             "avg_entries_per_source": (
                 sum(entries_per_source.values()) / max(len(self.sources), 1)
             ),
-            "soldiers_by_component": soldiers_by_component,
-            "transfer_stats": self.transfer_manager.get_stats(),
+            "difficulty_distribution": {
+                k: v / max(len(self.soldiers), 1)
+                for k, v in difficulty_counts.items()
+            },
             "clerk_stats": self.clerk_factory.get_clerk_stats(),
             "situation_stats": self.situation_manager.get_assignment_stats(),
-            "vocabulary_coverage": {
-                "entries_with_situational": entries_with_situational,
-                "entries_with_clutter": entries_with_clutter,
-                "entries_with_confounder": entries_with_confounder,
-                "situational_rate": entries_with_situational / max(len(self.entries), 1),
-                "clutter_rate": entries_with_clutter / max(len(self.entries), 1),
-                "confounder_rate": entries_with_confounder / max(len(self.entries), 1),
-            },
         }
 
 
@@ -466,97 +374,68 @@ def run_pipeline(
     output_dir: str = "data/synthetic",
     target_records: int = 10000,
     random_seed: int = 42,
-    component_weights: Optional[Dict[str, float]] = None,
 ) -> Dict[str, Any]:
-    """
-    Convenience function to run the full pipeline.
-
-    Args:
-        output_dir: Directory for output parquet files
-        target_records: Target number of raw entries
-        random_seed: Seed for reproducibility
-        component_weights: Optional custom component weights (uses COMPONENT_WEIGHTS if None)
-
-    Returns:
-        Pipeline statistics
-    """
-    # Default paths
-    style_spec = Path("docs/components/synthetic_data_generation/synthetic_style_spec_v3.yaml")
+    """Convenience function to run the full pipeline."""
+    style_spec = Path("docs/components/synthetic_data_generation/synthetic_style_spec_v4.1.yaml")
+    themes_path = Path("config/synthetic/synthetic_themes.json")
     vocab_path = Path("config/synthetic/synthetic_vocabulary.json")
     hierarchy_path = Path("config/hierarchies/hierarchy_reference.json")
 
-    # Initialize pipeline
     pipeline = Pipeline(
         style_spec_path=style_spec,
+        themes_path=themes_path,
         vocabulary_path=vocab_path,
         hierarchy_path=hierarchy_path,
         random_seed=random_seed,
     )
 
-    # Generate data
-    raw_records, validation_records, transfer_records = pipeline.generate(
+    raw_records, validation_records, source_records = pipeline.generate(
         target_records=target_records,
-        component_weights=component_weights,
     )
 
-    # Export to parquet
     pipeline.export_parquet(
         output_dir=Path(output_dir),
         raw_records=raw_records,
         validation_records=validation_records,
-        transfer_records=transfer_records,
+        source_records=source_records,
     )
 
-    # Return stats
     return pipeline.get_stats()
 
 
 if __name__ == "__main__":
     import argparse
-    import json
 
     parser = argparse.ArgumentParser(description="Generate synthetic data")
     parser.add_argument(
         "--output-dir", "-o",
         default="data/synthetic",
-        help="Output directory for parquet files"
+        help="Output directory for parquet files",
     )
     parser.add_argument(
         "--target-records", "-n",
         type=int,
         default=10000,
-        help="Target number of raw entries"
+        help="Target number of raw entries",
     )
     parser.add_argument(
         "--seed", "-s",
         type=int,
         default=42,
-        help="Random seed for reproducibility"
-    )
-    parser.add_argument(
-        "--focused-82nd",
-        action="store_true",
-        help="Use focused weights for 82nd Airborne and its rivals only"
+        help="Random seed for reproducibility",
     )
 
     args = parser.parse_args()
 
-    # Select component weights
-    weights = COMPONENT_WEIGHTS_82ND_FOCUSED if args.focused_82nd else None
-
-    print(f"Generating synthetic data...")
+    print("Generating synthetic data...")
     print(f"  Output: {args.output_dir}")
     print(f"  Target records: {args.target_records}")
     print(f"  Seed: {args.seed}")
-    if args.focused_82nd:
-        print(f"  Mode: 82nd Airborne focused (9 components)")
-        print(f"  Components: {list(COMPONENT_WEIGHTS_82ND_FOCUSED.keys())}")
 
     stats = run_pipeline(
         output_dir=args.output_dir,
         target_records=args.target_records,
         random_seed=args.seed,
-        component_weights=weights,
     )
 
     print("\n=== Generation Complete ===")
@@ -564,12 +443,6 @@ if __name__ == "__main__":
     print(f"Total sources: {stats['total_sources']}")
     print(f"Total entries: {stats['total_entries']}")
     print(f"Avg entries/source: {stats['avg_entries_per_source']:.1f}")
-    print("\nSoldiers by component:")
-    for comp, count in sorted(stats['soldiers_by_component'].items()):
-        print(f"  {comp}: {count}")
-    print("\nVocabulary coverage:")
-    for key, val in stats['vocabulary_coverage'].items():
-        if isinstance(val, float):
-            print(f"  {key}: {val:.1%}")
-        else:
-            print(f"  {key}: {val}")
+    print("\nDifficulty distribution:")
+    for tier, ratio in stats["difficulty_distribution"].items():
+        print(f"  {tier}: {ratio:.1%}")

@@ -1,233 +1,68 @@
 {
   "meta": {
-    "version": "1.0.0",
-    "created_utc": "2026-01-13T00:00:00Z",
-    "description": "Theme definitions for synthetic data generation. NOT provided to parsing LLM.",
-    "usage": "Themes define conceptual categories that drive vocabulary selection during raw text rendering."
+    "version": "4.1.0",
+    "setting": "terraform_combine"
   },
-
-  "theme_types": {
-    "operational_context": "Theater, campaign, or mission type context",
-    "logistics": "Transport, supply, and movement patterns",
-    "administrative": "Paperwork, processing, and clerk notation patterns",
-    "organizational": "Unit structure and command patterns",
-    "equipment": "Weapons, vehicles, and materiel associations",
-    "geographic": "Basing, staging, and operational areas"
-  },
-
-  "specificity_levels": {
-    "universal": "Applies to all military records",
-    "service": "Applies to a service branch (army, marines, army_air_forces)",
-    "type": "Applies to a component type (division, air_force)",
-    "subtype": "Applies to a division subtype via component_id list (e.g., all airborne divisions)",
-    "component": "Applies to a specific component_id"
-  },
-
-  "themes": [
-    {
-      "theme_id": "army_ground_general",
-      "theme_type": "operational_context",
-      "specificity": "service",
-      "applies_to": {"service_branch": ["army"]},
-      "description": "General US Army ground forces context"
+  "themes": {
+    "defense_command": {
+      "situations": [
+        "patrol_incursion",
+        "patrol_routine",
+        "station_defense",
+        "fleet_transit"
+      ],
+      "vocabulary_pool": "defense_*",
+      "clerk_archetypes": [
+        "defense_squadron",
+        "fleet_rushed",
+        "fleet_methodical",
+        "sector_efficient"
+      ]
     },
-    {
-      "theme_id": "marine_amphibious",
-      "theme_type": "operational_context",
-      "specificity": "service",
-      "applies_to": {"service_branch": ["marines"]},
-      "description": "Marine Corps amphibious and Pacific operations"
+    "colonial_administration": {
+      "situations": [
+        "colonial_founding",
+        "district_review",
+        "settlement_audit",
+        "colony_supply"
+      ],
+      "vocabulary_pool": "colonial_*",
+      "clerk_archetypes": [
+        "sector_formal",
+        "sector_efficient",
+        "processing_intake",
+        "transport_shuttle"
+      ]
     },
-    {
-      "theme_id": "aaf_strategic",
-      "theme_type": "operational_context",
-      "specificity": "service",
-      "applies_to": {"service_branch": ["army_air_forces"]},
-      "description": "Army Air Forces strategic bombing operations"
+    "expeditionary_corps": {
+      "situations": [
+        "expeditionary_survey",
+        "beacon_deployment",
+        "anomaly_probe",
+        "frontier_handoff"
+      ],
+      "vocabulary_pool": "expeditionary_*",
+      "clerk_archetypes": [
+        "expeditionary_field",
+        "field_exhausted",
+        "field_minimal",
+        "sector_efficient"
+      ]
     },
-
-    {
-      "theme_id": "infantry_standard",
-      "theme_type": "organizational",
-      "specificity": "subtype",
-      "applies_to": {"component_id": ["1st_infantry_division", "2nd_infantry_division", "3rd_infantry_division", "36th_infantry_division"]},
-      "description": "Standard infantry division organization and operations"
-    },
-    {
-      "theme_id": "airborne_vertical",
-      "theme_type": "operational_context",
-      "specificity": "subtype",
-      "applies_to": {"component_id": ["82nd_airborne_division", "101st_airborne_division"]},
-      "description": "Airborne vertical envelopment operations"
-    },
-    {
-      "theme_id": "airborne_air_transport",
-      "theme_type": "logistics",
-      "specificity": "subtype",
-      "applies_to": {"component_id": ["82nd_airborne_division", "101st_airborne_division"]},
-      "description": "Troop carrier aircraft transport patterns"
-    },
-    {
-      "theme_id": "marine_naval_transport",
-      "theme_type": "logistics",
-      "specificity": "subtype",
-      "applies_to": {"component_id": ["1st_marine_division", "2nd_marine_division", "3rd_marine_division"]},
-      "description": "Navy ship-based transport and embarkation"
-    },
-    {
-      "theme_id": "marine_fmf_admin",
-      "theme_type": "administrative",
-      "specificity": "subtype",
-      "applies_to": {"component_id": ["1st_marine_division", "2nd_marine_division", "3rd_marine_division"]},
-      "description": "Fleet Marine Force administrative patterns"
-    },
-    {
-      "theme_id": "armored_mechanized",
-      "theme_type": "organizational",
-      "specificity": "subtype",
-      "applies_to": {"component_id": ["1st_armored_division", "2nd_armored_division"]},
-      "description": "Armored and mechanized unit patterns"
-    },
-    {
-      "theme_id": "armored_vehicle_ops",
-      "theme_type": "equipment",
-      "specificity": "subtype",
-      "applies_to": {"component_id": ["1st_armored_division", "2nd_armored_division"]},
-      "description": "Tank and armored vehicle operations"
-    },
-    {
-      "theme_id": "mountain_alpine",
-      "theme_type": "operational_context",
-      "specificity": "subtype",
-      "applies_to": {"component_id": ["10th_mountain_division"]},
-      "description": "Mountain and alpine warfare operations"
-    },
-    {
-      "theme_id": "mountain_specialized_equip",
-      "theme_type": "equipment",
-      "specificity": "subtype",
-      "applies_to": {"component_id": ["10th_mountain_division"]},
-      "description": "Specialized mountain warfare equipment"
-    },
-    {
-      "theme_id": "air_force_heavy_bomb",
-      "theme_type": "operational_context",
-      "specificity": "type",
-      "applies_to": {"component_type": ["air_force"]},
-      "description": "Heavy bombardment operations"
-    },
-    {
-      "theme_id": "air_force_aircrew",
-      "theme_type": "administrative",
-      "specificity": "type",
-      "applies_to": {"component_type": ["air_force"]},
-      "description": "Aircrew assignment and manifest patterns"
-    },
-    {
-      "theme_id": "air_force_uk_basing",
-      "theme_type": "geographic",
-      "specificity": "type",
-      "applies_to": {"component_type": ["air_force"]},
-      "description": "UK-based operations (primarily 8th AF)"
-    },
-
-    {
-      "theme_id": "1id_eto_assault",
-      "theme_type": "operational_context",
-      "specificity": "component",
-      "applies_to": {"component_id": ["1st_infantry_division"]},
-      "description": "1st ID European assault operations"
-    },
-    {
-      "theme_id": "2id_eto_campaign",
-      "theme_type": "operational_context",
-      "specificity": "component",
-      "applies_to": {"component_id": ["2nd_infantry_division"]},
-      "description": "2nd ID European campaign operations"
-    },
-    {
-      "theme_id": "82ab_normandy_drops",
-      "theme_type": "operational_context",
-      "specificity": "component",
-      "applies_to": {"component_id": ["82nd_airborne_division"]},
-      "description": "82nd Airborne Normandy drop operations"
-    },
-    {
-      "theme_id": "101ab_bastogne",
-      "theme_type": "operational_context",
-      "specificity": "component",
-      "applies_to": {"component_id": ["101st_airborne_division"]},
-      "description": "101st Airborne Ardennes operations"
-    },
-    {
-      "theme_id": "1mardiv_guadalcanal",
-      "theme_type": "operational_context",
-      "specificity": "component",
-      "applies_to": {"component_id": ["1st_marine_division"]},
-      "description": "1st MarDiv early Pacific island campaigns"
-    },
-    {
-      "theme_id": "2mardiv_tarawa",
-      "theme_type": "operational_context",
-      "specificity": "component",
-      "applies_to": {"component_id": ["2nd_marine_division"]},
-      "description": "2nd MarDiv Central Pacific operations"
-    },
-    {
-      "theme_id": "3mardiv_iwo",
-      "theme_type": "operational_context",
-      "specificity": "component",
-      "applies_to": {"component_id": ["3rd_marine_division"]},
-      "description": "3rd MarDiv Western Pacific operations"
-    },
-    {
-      "theme_id": "1ad_north_africa",
-      "theme_type": "operational_context",
-      "specificity": "component",
-      "applies_to": {"component_id": ["1st_armored_division"]},
-      "description": "1st AD North African campaign"
-    },
-    {
-      "theme_id": "2ad_normandy_breakout",
-      "theme_type": "operational_context",
-      "specificity": "component",
-      "applies_to": {"component_id": ["2nd_armored_division"]},
-      "description": "2nd AD Normandy breakout operations"
-    },
-    {
-      "theme_id": "10mtn_italian_alps",
-      "theme_type": "operational_context",
-      "specificity": "component",
-      "applies_to": {"component_id": ["10th_mountain_division"]},
-      "description": "10th Mountain Italian Alpine operations"
-    },
-    {
-      "theme_id": "8af_daylight_precision",
-      "theme_type": "operational_context",
-      "specificity": "component",
-      "applies_to": {"component_id": ["8th_air_force"]},
-      "description": "8th AF daylight precision bombing"
-    },
-    {
-      "theme_id": "9af_tactical_support",
-      "theme_type": "operational_context",
-      "specificity": "component",
-      "applies_to": {"component_id": ["9th_air_force"]},
-      "description": "9th AF tactical ground support"
-    },
-    {
-      "theme_id": "15af_mediterranean",
-      "theme_type": "operational_context",
-      "specificity": "component",
-      "applies_to": {"component_id": ["15th_air_force"]},
-      "description": "15th AF Mediterranean strategic bombing"
-    },
-    {
-      "theme_id": "36id_anzio",
-      "theme_type": "operational_context",
-      "specificity": "component",
-      "applies_to": {"component_id": ["36th_infantry_division"]},
-      "description": "36th ID Italian campaign operations"
+    "resource_directorate": {
+      "situations": [
+        "resource_extraction",
+        "facility_shift",
+        "yield_report",
+        "transport_manifest"
+      ],
+      "vocabulary_pool": "resource_*",
+      "clerk_archetypes": [
+        "resource_facility",
+        "fleet_methodical",
+        "processing_intake",
+        "sector_formal"
+      ]
     }
-  ]
+  }
 }

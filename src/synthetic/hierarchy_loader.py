@@ -1,236 +1,139 @@
 """
-HierarchyLoader: Load and query unit hierarchy data.
-
-Provides collision-aware lookups and designator resolution
-per component conventions.
+HierarchyLoader: Load and query Terraform Combine hierarchy data.
 """
 
 import json
 from pathlib import Path
-from typing import Dict, List, Optional, Any, Set
+from typing import Dict, List, Optional, Any
+
+from .models import Branch, CollisionSeverity
 
 
 class HierarchyLoader:
     """
-    Loads and queries unit hierarchy data.
+    Loads and queries branch hierarchy data.
 
-    Handles collision-aware lookups - the same regiment number
-    can belong to multiple components.
+    Provides collision-aware lookups and structural signals.
     """
 
-    def __init__(
-        self,
-        hierarchy_path: Optional[Path] = None,
-    ):
-        """
-        Initialize the loader.
+    def __init__(self, config_path: Optional[Path] = None):
+        self.config: Dict[str, Any] = {}
+        self.branches: Dict[str, Dict[str, Any]] = {}
+        self.collision_index: Dict[str, Dict[str, List[str]]] = {}
+        self.structural_signals: Dict[str, Any] = {}
 
-        Args:
-            hierarchy_path: Path to hierarchy_reference.json
-        """
-        self.components: Dict[str, Dict[str, Any]] = {}
-        self.collision_index: Dict[str, Any] = {}
+        if config_path:
+            self.load_config(config_path)
 
-        # Quick lookups
-        self._regiments_by_component: Dict[str, List[str]] = {}
-        self._divisions_by_branch: Dict[str, List[str]] = {}
-
-        if hierarchy_path:
-            self.load_hierarchy(hierarchy_path)
-
-    def load_hierarchy(self, hierarchy_path: Path) -> None:
+    def load_config(self, config_path: Path) -> None:
         """Load hierarchy from JSON file."""
-        with open(hierarchy_path, "r") as f:
-            data = json.load(f)
+        with open(config_path, "r") as f:
+            self.config = json.load(f)
 
-        self.components = data.get("components", {})
-        self.collision_index = data.get("collision_index", {})
+        self.branches = self.config.get("branches", {})
+        self.collision_index = self.config.get("collision_index", {})
+        self.structural_signals = self.config.get("structural_signals", {})
 
-        self._build_indexes()
+    def get_branch_depth(self, branch: Branch) -> int:
+        """Return depth for a branch (3, 4, or 5)."""
+        return int(self.branches[branch.value]["depth"])
 
-    def _build_indexes(self) -> None:
-        """Build quick-lookup indexes."""
-        self._regiments_by_component = {}
-        self._divisions_by_branch = {}
+    def get_branch_levels(self, branch: Branch) -> List[str]:
+        """Return ordered level names for a branch."""
+        return list(self.branches[branch.value]["levels"])
 
-        for comp_id, comp_data in self.components.items():
-            # Index regiments
-            org = comp_data.get("organizational_structure", {})
-            levels = org.get("levels", {})
+    def get_level_values(self, branch: Branch, level: str) -> List[str]:
+        """Return available designators for a branch level."""
+        level_config = self.branches[branch.value]["level_config"]
+        return list(level_config.get(level, {}).get("values", []))
 
-            if "regiment" in levels:
-                self._regiments_by_component[comp_id] = levels["regiment"].get(
-                    "designators", []
-                )
+    def get_branch_abbreviation(self, branch: Branch) -> str:
+        """Return branch abbreviation."""
+        return self.branches[branch.value].get("abbreviation", branch.value)
 
-            # Index by service branch
-            branch = comp_data.get("service_branch", "unknown")
-            if branch not in self._divisions_by_branch:
-                self._divisions_by_branch[branch] = []
-            self._divisions_by_branch[branch].append(comp_id)
-
-    def get_component(self, component_id: str) -> Optional[Dict[str, Any]]:
-        """Get a component by ID."""
-        return self.components.get(component_id)
-
-    def list_components(self) -> List[str]:
-        """List all component IDs."""
-        return list(self.components.keys())
-
-    def get_components_by_branch(self, branch: str) -> List[str]:
-        """Get component IDs for a service branch."""
-        return self._divisions_by_branch.get(branch, [])
-
-    def get_regiments(self, component_id: str) -> List[str]:
-        """Get regiment designators for a component."""
-        return self._regiments_by_component.get(component_id, [])
-
-    def get_battalions(self, component_id: str) -> List[str]:
-        """Get battalion designators for a component."""
-        comp = self.components.get(component_id, {})
-        org = comp.get("organizational_structure", {})
-        levels = org.get("levels", {})
-        return levels.get("battalion", {}).get("designators", [])
-
-    def get_companies(self, component_id: str) -> List[str]:
-        """Get company designators for a component."""
-        comp = self.components.get(component_id, {})
-        org = comp.get("organizational_structure", {})
-        levels = org.get("levels", {})
-        return levels.get("company", {}).get("designators", [])
-
-    def get_hierarchy_pattern(self, component_id: str) -> str:
-        """Get the hierarchy pattern for a component."""
-        comp = self.components.get(component_id, {})
-        org = comp.get("organizational_structure", {})
-        return org.get("hierarchy_pattern", "")
-
-    def is_collision(self, designator: str, level: str = "regiment") -> bool:
-        """
-        Check if a designator has collisions across components.
-
-        Args:
-            designator: The designator to check
-            level: The level (regiment, battalion)
-
-        Returns:
-            True if multiple components use this designator
-        """
-        collision_key = f"{level}_collisions"
-        collisions = self.collision_index.get(collision_key, {})
-        components_with_designator = collisions.get(designator, [])
-        return len(components_with_designator) > 1
-
-    def get_colliding_components(
+    def get_collision_severity(
         self,
-        designator: str,
-        level: str = "regiment",
+        branch: Branch,
+        post_levels: Dict[str, str],
+    ) -> CollisionSeverity:
+        """
+        Determine collision severity for a post.
+
+        Checks each designator against collision index to see how many
+        other posts could have the same partial path.
+        """
+        if not post_levels:
+            return CollisionSeverity.NONE
+
+        max_collisions = 0
+        cross_branch = False
+
+        for designator in post_levels.values():
+            matches = self._get_collisions_for_designator(designator)
+            if not matches:
+                continue
+
+            max_collisions = max(max_collisions, len(matches))
+            if self._has_cross_branch_collision(branch, matches):
+                cross_branch = True
+
+        if cross_branch:
+            return CollisionSeverity.CROSS_BRANCH
+        if max_collisions <= 1:
+            return CollisionSeverity.NONE
+        if max_collisions == 2:
+            return CollisionSeverity.LOW
+        if max_collisions == 3:
+            return CollisionSeverity.MEDIUM
+        return CollisionSeverity.HIGH
+
+    def get_colliding_paths(
+        self,
+        branch: Branch,
+        post_levels: Dict[str, str],
     ) -> List[str]:
-        """
-        Get components that share a designator.
+        """Return list of other posts this could be confused with."""
+        colliding_paths: List[str] = []
+        for level, designator in post_levels.items():
+            matches = self._get_collisions_for_designator(designator)
+            for match in matches:
+                match_branch, match_level = self._split_collision_entry(match)
+                if match_branch == branch.value and match_level == level:
+                    continue
+                colliding_paths.append(f"{match_branch}.{match_level}:{designator}")
+        return sorted(set(colliding_paths))
 
-        Args:
-            designator: The designator to check
-            level: The level (regiment, battalion)
-
-        Returns:
-            List of component IDs that use this designator
-        """
-        collision_key = f"{level}_collisions"
-        collisions = self.collision_index.get(collision_key, {})
-        return collisions.get(designator, [])
-
-    def get_canonical_name(self, component_id: str) -> str:
-        """Get the canonical name for a component."""
-        comp = self.components.get(component_id, {})
-        return comp.get("canonical_name", component_id)
-
-    def get_component_type(self, component_id: str) -> str:
-        """Get the component type (division, air_force, etc.)."""
-        comp = self.components.get(component_id, {})
-        return comp.get("component_type", "unknown")
-
-    def get_division_type(self, component_id: str) -> str:
-        """
-        Get the division type for rendering (infantry, airborne, etc.).
-
-        Returns type based on canonical name analysis.
-        """
-        name = self.get_canonical_name(component_id).lower()
-
-        if "airborne" in name:
-            return "airborne"
-        elif "armored" in name:
-            return "armored"
-        elif "mountain" in name:
-            return "mountain"
-        elif "marine" in name:
-            return "marine"
-        elif "air force" in name:
-            return "air_force"
-        else:
-            return "infantry"
-
-    def get_subordinate_units(
-        self,
-        component_id: str,
-        unit_type: str,
-    ) -> List[Dict[str, Any]]:
-        """
-        Get subordinate units of a specific type.
-
-        Args:
-            component_id: The parent component
-            unit_type: Type of units (regiments, battalions, etc.)
-
-        Returns:
-            List of subordinate unit data
-        """
-        comp = self.components.get(component_id, {})
-        subs = comp.get("known_subordinate_units", {})
-        return subs.get(unit_type, [])
-
-    def resolve_regiment_name(
-        self,
-        component_id: str,
-        regiment_designator: str,
-    ) -> str:
-        """
-        Resolve a regiment designator to its canonical name.
-
-        Args:
-            component_id: The division component
-            regiment_designator: The regiment number/designator
-
-        Returns:
-            Canonical regiment name or formatted string
-        """
-        regiments = self.get_subordinate_units(component_id, "regiments")
-        for reg in regiments:
-            if reg.get("designator") == regiment_designator:
-                return reg.get("canonical_name", f"{regiment_designator} Regiment")
-
-        # Fallback
-        div_type = self.get_division_type(component_id)
-        if div_type == "marine":
-            return f"{regiment_designator} Marine Regiment"
-        elif div_type == "airborne":
-            return f"{regiment_designator} Parachute Infantry Regiment"
-        elif div_type == "mountain":
-            return f"{regiment_designator} Mountain Infantry Regiment"
-        else:
-            return f"{regiment_designator} Infantry Regiment"
-
-    def get_all_divisions(self) -> List[str]:
-        """Get all division component IDs."""
+    def get_structural_signals_for_branch(self, branch: Branch) -> List[str]:
+        """Return level names unique to this branch."""
+        branch_terms = self.structural_signals.get("branch_unique_terms", {})
         return [
-            cid for cid, comp in self.components.items()
-            if comp.get("component_type") == "division"
+            term for term, b in branch_terms.items()
+            if b == branch.value
         ]
 
-    def get_all_air_forces(self) -> List[str]:
-        """Get all air force component IDs."""
-        return [
-            cid for cid, comp in self.components.items()
-            if comp.get("component_type") == "air_force"
-        ]
+    def _get_collisions_for_designator(self, designator: str) -> List[str]:
+        """Return collision index entries for a designator."""
+        for section in ("numbers", "letters", "names"):
+            matches = self.collision_index.get(section, {}).get(designator)
+            if matches:
+                return list(matches)
+        return []
+
+    def _has_cross_branch_collision(
+        self,
+        branch: Branch,
+        matches: List[str],
+    ) -> bool:
+        """Check if collision entries include a different branch."""
+        for match in matches:
+            match_branch, _ = self._split_collision_entry(match)
+            if match_branch and match_branch != branch.value:
+                return True
+        return False
+
+    def _split_collision_entry(self, entry: str) -> (str, str):
+        """Split a collision entry into branch and level."""
+        if "." not in entry:
+            return entry, ""
+        branch, level = entry.split(".", 1)
+        return branch, level

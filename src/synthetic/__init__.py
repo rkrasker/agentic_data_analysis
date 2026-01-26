@@ -1,7 +1,5 @@
 """
-Synthetic data generation module (v3).
-
-Philosophy: Clerks are characters, not sampling functions.
+Synthetic data generation module (v4.1).
 """
 
 from .models import (
@@ -11,8 +9,11 @@ from .models import (
     Soldier,
     Source,
     Entry,
-    Transfer,
-    Assignment,
+    State,
+    Branch,
+    CollisionSeverity,
+    DifficultyTier,
+    FamiliarityLevel,
 )
 from .clerk_factory import ClerkFactory
 from .situation_manager import SituationManager
@@ -22,29 +23,34 @@ from .transfer_manager import TransferManager
 from .hierarchy_loader import HierarchyLoader
 from .renderer import Renderer
 from .soldier_factory import SoldierFactory
+from .completeness_analyzer import CompletenessAnalyzer
+from .difficulty_computer import DifficultyComputer
+from .difficulty_rebalancer import DifficultyRebalancer
 from .pipeline import Pipeline, run_pipeline
 
 __all__ = [
-    # Models
     "Clerk",
     "ClerkArchetype",
     "Situation",
     "Soldier",
     "Source",
     "Entry",
-    "Transfer",
-    "Assignment",
-    # Factories/Managers
+    "State",
+    "Branch",
+    "CollisionSeverity",
+    "DifficultyTier",
+    "FamiliarityLevel",
     "ClerkFactory",
     "SituationManager",
     "VocabularyInjector",
     "SourceGenerator",
     "TransferManager",
-    # Phase 2: Rendering
     "HierarchyLoader",
     "Renderer",
-    # Phase 3: Pipeline
     "SoldierFactory",
+    "CompletenessAnalyzer",
+    "DifficultyComputer",
+    "DifficultyRebalancer",
     "Pipeline",
     "run_pipeline",
 ]

@@ -1,12 +1,10 @@
 """
-Data models for synthetic data generation.
-
-These models represent the core entities in the v3 clerk-as-character philosophy.
+Data models for synthetic data generation (v4.1).
 """
 
 from dataclasses import dataclass, field
-from typing import Optional, Dict, List, Any
 from enum import Enum
+from typing import Dict, List, Optional
 
 
 class RankStyle(Enum):
@@ -19,25 +17,22 @@ class RankStyle(Enum):
 
 class RankForm(Enum):
     """The form of rank abbreviation."""
-    PROPER_ABBREV = "proper_abbrev"  # S/Sgt, T/5, Cpl
-    CAPS_ABBREV = "caps_abbrev"      # SGT, CPL, PVT
-    MIXED_ABBREV = "mixed_abbrev"    # Sgt, Cpl, Pvt
-    PHONETIC = "phonetic"            # SSgt, Sarnt, Pfc
+    PROPER_ABBREV = "proper_abbrev"
+    CAPS_ABBREV = "caps_abbrev"
+    MIXED_ABBREV = "mixed_abbrev"
+    PHONETIC = "phonetic"
 
 
 class UnitFormatStyle(Enum):
     """How unit hierarchy is formatted."""
-    LABELED_HIERARCHICAL = "labeled_hierarchical"    # Co E, 2nd Bn, 116th Inf, 29th Div
-    LABELED_FULL = "labeled_full"                    # Co E, 2nd Bn, 116th Inf Regt, 29th Inf Div
-    LABELED_MICRO = "labeled_micro"                  # E Co 2Bn 116Inf
-    SLASH_POSITIONAL = "slash_positional"            # E/2/116/29ID
-    SLASH_COMPACT = "slash_compact"                  # A/1/7
-    RUNON_COMPACT = "runon_compact"                  # E2-116
-    PHONETIC_INFORMAL = "phonetic_informal"          # Easy Co 116
-    MINIMAL = "minimal"                              # 116th or 2/116
-    AAF_STANDARD = "aaf_standard"                    # 3rd Sq, 91st BG, 8th AF
-    COMPACT_AAF = "compact_aaf"                      # 91BG-3
-    MARINE_STANDARD = "marine_standard"              # Co A, 1st Bn, 7th Mar, 1st MarDiv
+    LABELED_HIERARCHICAL = "labeled_hierarchical"
+    LABELED_FULL = "labeled_full"
+    LABELED_MICRO = "labeled_micro"
+    SLASH_POSITIONAL = "slash_positional"
+    SLASH_COMPACT = "slash_compact"
+    RUNON_COMPACT = "runon_compact"
+    PHONETIC_INFORMAL = "phonetic_informal"
+    MINIMAL = "minimal"
 
 
 class VocabularyDensity(Enum):
@@ -47,12 +42,45 @@ class VocabularyDensity(Enum):
     HIGH = "high"
 
 
-class TransferType(Enum):
-    """Level of unit transfer."""
-    COMPANY = "company_level"
-    BATTALION = "battalion_level"
-    REGIMENT = "regiment_level"
-    DIVISION = "division_level"
+class Branch(Enum):
+    """Terraform Combine branches."""
+    COLONIAL_ADMINISTRATION = "colonial_administration"
+    DEFENSE_COMMAND = "defense_command"
+    EXPEDITIONARY_CORPS = "expeditionary_corps"
+    RESOURCE_DIRECTORATE = "resource_directorate"
+
+
+class TransferScope(Enum):
+    """Scope of a transfer between states."""
+    WITHIN_LEVEL3 = "within_level3"
+    WITHIN_LEVEL2 = "within_level2"
+    WITHIN_BRANCH = "within_branch"
+    CROSS_BRANCH = "cross_branch"
+
+
+class CollisionSeverity(Enum):
+    """Severity of collision zone for a post."""
+    NONE = "none"
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+    CROSS_BRANCH = "cross_branch"
+
+
+class DifficultyTier(Enum):
+    """Soldier-level difficulty tier."""
+    EASY = "easy"
+    MODERATE = "moderate"
+    HARD = "hard"
+    EXTREME = "extreme"
+
+
+class FamiliarityLevel(Enum):
+    """Familiarity level for rendering."""
+    SAME_L3 = "same_level3"
+    SAME_L2 = "same_level2"
+    SAME_BRANCH = "same_branch"
+    DIFFERENT_BRANCH = "different_branch"
 
 
 @dataclass
@@ -76,15 +104,14 @@ class UnitFormat:
     style: UnitFormatStyle
     separator: str = ", "
     orientation: str = "child_over_parent"
-    include_division: bool = True
-    include_regiment: bool = True
-    include_company: bool = True
-    division_suffix: bool = False
+    include_sector: bool = True
+    include_branch: bool = False
+    include_level2: bool = True
+    include_lowest_levels: bool = True
+    omit_level_names: bool = False
     label_style: str = "abbreviated"
-    phonetic_companies: bool = False
-    marine_regiment_style: str = "Mar"
-    include_air_force: bool = True
-    omit_unit_type: bool = False  # When True, renders "3rd" instead of "3rd PIR"
+    branch_suffix: bool = False
+    phonetic_letters: bool = False
 
 
 @dataclass
@@ -110,8 +137,6 @@ class Imperfections:
 class ClerkArchetype:
     """
     A clerk archetype defines the behavioral patterns for a category of clerks.
-
-    Individual clerks are instantiated from archetypes with their habits locked.
     """
     archetype_id: str
     description: str
@@ -121,36 +146,35 @@ class ClerkArchetype:
     unit_format: UnitFormat
     vocabulary_density: VocabularyDensity
     vocabulary_bias: List[str] = field(default_factory=list)
+    applicable_branches: List[str] = field(default_factory=list)
+    familiarity_override: Optional[str] = None
+    familiarity_applies: bool = False
+    path_completeness_tendency: str = "medium"
+    structural_signals_tendency: str = "medium"
     consistency: Consistency = field(default_factory=Consistency)
     imperfections: Imperfections = field(default_factory=Imperfections)
 
 
 @dataclass
 class Clerk:
-    """
-    A concrete clerk instance with locked habits.
-
-    Once instantiated, a clerk's style never changes. This is the key to
-    the v3 philosophy: clerks are persistent characters, not sampling functions.
-    """
+    """A concrete clerk instance with locked habits."""
     clerk_id: str
     archetype_id: str
-    name: str  # The clerk's own name (for context)
-    context: str  # Description of their working situation
-
-    # Locked habits from archetype (with minor individual variation)
+    name: str
+    context: str
     name_format: NameFormat
     rank_format: RankFormat
     unit_format: UnitFormat
     vocabulary_density: VocabularyDensity
     vocabulary_bias: List[str]
+    applicable_branches: List[str]
+    familiarity_override: Optional[str]
+    familiarity_applies: bool
+    path_completeness_tendency: str
+    structural_signals_tendency: str
     consistency: Consistency
     imperfections: Imperfections
-
-    # Vocabulary terms this clerk has used (for persistence within source)
     used_vocabulary: List[str] = field(default_factory=list)
-
-    # How many entries this clerk has produced
     entry_count: int = 0
 
 
@@ -164,117 +188,68 @@ class VocabularyPool:
 
 @dataclass
 class Situation:
-    """
-    An operational situation that drives vocabulary selection.
-
-    Sources are assigned situations, and all entries in that source share
-    the situational vocabulary because they're from the same event.
-    """
+    """An operational situation that drives vocabulary selection."""
     situation_id: str
     description: str
-    theater: str
-    operation_type: str
-    applies_to: List[str]  # component_ids or "any"
-    vocabulary_pool: VocabularyPool
-    date_range: List[str] = field(default_factory=list)
+    branch: Optional[str] = None
+    vocabulary_pool: VocabularyPool = field(default_factory=VocabularyPool)
 
 
 @dataclass
-class Assignment:
-    """A soldier's unit assignment."""
-    component_id: str
-    # Infantry/Airborne/Mountain/Marine structure
-    regiment: Optional[str] = None
-    battalion: Optional[str] = None
-    company: Optional[str] = None
-    # Armored structure
-    combat_command: Optional[str] = None
-    # Air Force structure
-    bomb_group: Optional[str] = None
-    squadron: Optional[str] = None
+class State:
+    """
+    A single state in a soldier's service.
 
-    def to_dict(self) -> Dict[str, Any]:
-        """Convert to dictionary, excluding None values."""
-        return {k: v for k, v in {
-            "component_id": self.component_id,
-            "regiment": self.regiment,
-            "battalion": self.battalion,
-            "company": self.company,
-            "combat_command": self.combat_command,
-            "bomb_group": self.bomb_group,
-            "squadron": self.squadron,
-        }.items() if v is not None}
-
-
-@dataclass
-class Transfer:
-    """A soldier's unit transfer record."""
+    Each state represents a temporal segment where the soldier
+    was assigned to a specific post.
+    """
+    state_id: str
     soldier_id: str
-    transfer_type: TransferType
-    original_assignment: Assignment
-    new_assignment: Assignment
+    state_order: int
+    branch: Branch
+    post_path: str
+    post_levels: Dict[str, str]
+    collision_zone_flag: bool = False
+    collision_severity: CollisionSeverity = CollisionSeverity.NONE
+    colliding_paths: List[str] = field(default_factory=list)
 
 
 @dataclass
 class Soldier:
-    """
-    A soldier's truth record.
-
-    This represents "what the soldier is" - the canonical facts.
-    How they appear in raw entries depends on the rendering layer.
-    """
-    primary_id: str
+    """A soldier with 1-3 states."""
+    soldier_id: str
     name_first: str
+    name_middle: str
     name_last: str
-    name_middle: Optional[str]
     rank: str
-
-    # Current assignment (or new assignment if transferred)
-    assignment: Assignment
-
-    # Optional: original assignment if transferred
-    original_assignment: Optional[Assignment] = None
-    has_transfer: bool = False
-
-
-@dataclass
-class Source:
-    """
-    A source document representing a physical manifest page or list.
-
-    Produced by one clerk in one situation. All entries share the
-    clerk's locked format and situational vocabulary.
-    """
-    source_id: str
-    clerk_id: str
-    situation_id: str
-    quality_tier: int  # 1-5
-
-    # Entry IDs in this source
-    entry_ids: List[str] = field(default_factory=list)
-
-    # Vocabulary terms selected for this source (for consistency)
-    selected_vocabulary: List[str] = field(default_factory=list)
+    states: List[State]
+    difficulty_tier: Optional[DifficultyTier] = None
+    complementarity_score: Optional[float] = None
+    structural_resolvability: Optional[bool] = None
 
 
 @dataclass
 class Entry:
-    """
-    A rendered entry in a source document.
-
-    This is the raw text output - how the truth record appears
-    when rendered by a specific clerk in a specific situation.
-    """
+    """A single rendered record."""
     entry_id: str
     source_id: str
     soldier_id: str
+    state_id: str
     raw_text: str
+    clerk_id: str
+    situation_id: str
+    quality_tier: int
+    path_completeness: float = 0.0
+    levels_provided: List[str] = field(default_factory=list)
+    extraction_signals: List[str] = field(default_factory=list)
 
-    # Which assignment was used (for transferred soldiers)
-    is_original_assignment: bool = False
-    is_new_assignment: bool = False
 
-    # Optional metadata
-    clutter_terms: List[str] = field(default_factory=list)
-    confounder_terms: List[str] = field(default_factory=list)
-    situational_terms: List[str] = field(default_factory=list)
+@dataclass
+class Source:
+    """A source document (manifest page, personnel list, etc.)."""
+    source_id: str
+    clerk_id: str
+    situation_id: str
+    quality_tier: int
+    home_unit: str
+    temporal_anchor: int
