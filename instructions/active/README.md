@@ -28,13 +28,14 @@ Number sequentially. Gaps are fine (after completion/removal).
 
 | # | Task | Status | Component |
 |---|------|--------|-----------|
-| 002 | Collision Sampling + Synthetic Fix | Phase 1 Complete | resolver, synthetic |
-| 003 | Synthetic Degradation Redesign (Phase 2) | Code Complete (pending validation) | synthetic |
+| — | (none) | — | — |
 
 ## Recently Completed
 
 | # | Task | Completed | Component |
 |---|------|-----------|-----------|
+| 004 | Synthetic Data v4.1 – Terraform Combine | 2026-01-25 | synthetic_data_generation |
+| 001 | Documentation Restructure | 2026-01-25 | docs |
 | 001 | Synthetic Data Generator (v3) | 2026-01-14 | synthetic_data_generation |
 | — | Preprocessing Adapter | 2026-01-14 | preprocessing |
 

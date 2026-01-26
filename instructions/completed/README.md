@@ -27,6 +27,8 @@ Before moving here, verify:
 
 | # | Task | Completed | Component | Notes |
 |---|------|-----------|-----------|-------|
+| 004 | Synthetic Data v4.1 – Terraform Combine | 2026-01-25 | synthetic_data_generation | Full v4.1 rewrite + difficulty model |
+| 001 | Documentation Restructure | 2026-01-25 | docs | CLAUDE.md + docs reorg |
 | 001 | Synthetic Data Generator (v3) | 2026-01-14 | synthetic_data_generation | 10K records, v3 clerk-as-character |
 
 ## Ad-Hoc Implementations
