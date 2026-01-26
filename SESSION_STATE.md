@@ -1,80 +1,79 @@
 # Current Session State
 
-**Last Updated:** 2026-01-25 14:30
+**Last Updated:** 2026-01-26 10:00
 
 ## Active Task
 
-Synthetic Data v4 Implementation - spec complete, ready for code implementation
+Synthetic Data v4.1 Implementation - complete; next is data generation + preprocessing updates
 
 ## What We Accomplished
 
-Created the v4 synthetic data specification based on ADR-007:
+Completed the v4.1 synthetic data implementation based on ADR-006 and ADR-007:
 
-### New/Updated Documentation
-1. **[synthetic_style_spec_v4.yaml](docs/components/synthetic_data_generation/synthetic_style_spec_v4.yaml)** - Complete v4 specification (1400+ lines)
-   - Terraform Combine fictional domain (4 branches with depths 3-5)
-   - Explicit state model (1-3 states per soldier)
-   - Familiarity gradient at Level-3 granularity
-   - Source-anchored state assignment
-   - Cross-branch transfers (15%)
-   - Full clerk archetype system translated to new domain
+### Config Rewrites (Implemented)
+1. **[hierarchy_reference.json](config/hierarchies/hierarchy_reference.json)** - Terraform Combine branches + collision index
+2. **[synthetic_vocabulary.json](config/synthetic/synthetic_vocabulary.json)** - New domain vocabulary
+3. **[synthetic_themes.json](config/synthetic/synthetic_themes.json)** - Branch-based themes
 
-2. **[CURRENT.md](docs/components/synthetic_data_generation/CURRENT.md)** - Already updated to v4 design (pre-existing)
+### New/Updated Code (Implemented)
+4. **[models.py](src/synthetic/models.py)** - State model + difficulty fields + new enums
+5. **[hierarchy_loader.py](src/synthetic/hierarchy_loader.py)** - Variable-depth support + collision queries
+6. **[soldier_factory.py](src/synthetic/soldier_factory.py)** - State generation + collision tagging
+7. **[source_generator.py](src/synthetic/source_generator.py)** - home_unit + temporal_anchor
+8. **[renderer.py](src/synthetic/renderer.py)** - Familiarity-aware rendering + completeness tracking
+9. **[transfer_manager.py](src/synthetic/transfer_manager.py)** - Cross-branch transfers
+10. **[pipeline.py](src/synthetic/pipeline.py)** - Wired difficulty computation + rebalancer
+11. **[clerk_factory.py](src/synthetic/clerk_factory.py)** - Updated archetypes
+12. **[situation_manager.py](src/synthetic/situation_manager.py)** - Updated situations
+13. **[vocabulary_injector.py](src/synthetic/vocabulary_injector.py)** - New vocabulary structure
 
-### New Instruction File
-3. **[004_synthetic-v4-terraform-combine.md](instructions/active/004_synthetic-v4-terraform-combine.md)** - Implementation guide
-   - Full task breakdown for config files and Python modules
-   - Detailed warnings and pitfalls
-   - Acceptance criteria checklist
-   - Test strategy
+### New Difficulty Modules
+14. **[completeness_analyzer.py](src/synthetic/completeness_analyzer.py)** - Path coverage + complementarity score
+15. **[difficulty_computer.py](src/synthetic/difficulty_computer.py)** - Soldier-level difficulty tier
+16. **[difficulty_rebalancer.py](src/synthetic/difficulty_rebalancer.py)** - Target difficulty distribution controls
+
+### Documentation Updates
+17. **[ADR_INDEX.md](docs/ADR_INDEX.md)** - ADR-006/ADR-007 entries clarified
+18. **[CURRENT.md](docs/architecture/CURRENT.md)** - v4.1 status and difficulty model documented
+19. **[planning-synthetic.md](docs/context-packets/planning-synthetic.md)** - v4.1 context + glossary added
+20. **[GLOSSARY.md](docs/GLOSSARY.md)** - New glossary with difficulty model terms
 
 ### Session Extract
-4. **[2026-01-25_opus_synthetic-v4-design.md](.project_history/extracts/raw/2026-01-25_opus_synthetic-v4-design.md)** - Decision record
+21. **[2026-01-25_opus_synthetic-v4-design.md](.project_history/extracts/raw/2026-01-25_opus_synthetic-v4-design.md)** - Decision record
 
 ## Current State of Project
 
-The v4 synthetic data specification is complete. The following files need to be created/updated by executing instruction 004:
-
-### Config Files (Full Rewrite)
-- `config/hierarchies/hierarchy_reference.json` → Terraform Combine branches
-- `config/synthetic/synthetic_vocabulary.json` → New vocabulary terms
-- `config/synthetic/synthetic_themes.json` → Branch-based themes
-
-### Python Modules (Significant Updates)
-- `src/synthetic/models.py` → Add State, update enums
-- `src/synthetic/soldier_factory.py` → State generation
-- `src/synthetic/source_generator.py` → home_unit, temporal_anchor
-- `src/synthetic/renderer.py` → Familiarity-aware rendering
-- `src/synthetic/hierarchy_loader.py` → Variable-depth support
-- `src/synthetic/transfer_manager.py` → Cross-branch transfers
-- `src/synthetic/pipeline.py` → Wire state assignment
+The v4.1 synthetic data system is implemented. Code now emits:
+- `state_id` and explicit states (1-3 per soldier)
+- `path_completeness`, `levels_provided`, `extraction_signals`
+- `difficulty_tier`, `complementarity_score`, `structural_resolvability`
 
 ## Issues and Surprises Encountered
 
-None - clean planning session.
+Docs are slightly out of sync with implementation status:
+- `docs/components/synthetic_data_generation/CURRENT.md` still says "not yet implemented"
+- `docs/architecture/CURRENT.md` still frames v4.1 as "in progress"
 
 ## Next Steps
 
 ### Immediate
-- Execute instruction 004 (Sonnet execution mode) to implement code changes
-- This is a substantial implementation (~13 files affected)
+- Run generation pipeline to produce new v4.1 artifacts
+- Create `seed_set_v4.json` with hand-crafted calibration examples
+- Update preprocessing for new domain/schema
+- Update evaluation metrics to report by difficulty tier
 
 ### After Implementation
-- Create `seed_set_v4.json` with hand-crafted calibration examples
-- Run generation pipeline and validate output schema
-- Update preprocessing for new domain
+- Validate schema and outputs (raw/validation/canonical)
+- Revisit resolver strategy inputs for new fields
 
 ### Pending Active Instructions
-Three instruction files in `instructions/active/`:
-- **002_collision-sampling-synthetic-fix.md** - Phase 1 complete, Phase 2 may be superseded by v4
-- **003_synthetic-degradation-phase2.md** - May be superseded by v4
-- **004_synthetic-v4-terraform-combine.md** - NEW: Ready for execution
-
-**Note:** Instructions 002 and 003 were designed for v3. Review whether they're still relevant after v4 implementation.
+None. Instruction 004 moved to completed:
+- `instructions/completed/004_synthetic-v4.1-terraform-combine.md`
 
 ## Recent Context
 
 - **ADR-007**: `docs/architecture/decisions/ADR-007-synthetic-data-redesign.md`
-- **v4 Style Spec**: `docs/components/synthetic_data_generation/synthetic_style_spec_v4.yaml`
+- **ADR-006**: `docs/architecture/decisions/ADR-006_per-record-vs-per-soldier-difficulty.md`
+- **v4.1 Style Spec**: `docs/components/synthetic_data_generation/synthetic_style_spec_v4.1.yaml`
 - **Extract**: `.project_history/extracts/raw/2026-01-25_opus_synthetic-v4-design.md`
 - **Key principle**: Domain decontamination - fictional setting eliminates LLM pretraining bias
