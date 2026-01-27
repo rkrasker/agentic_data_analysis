@@ -1,10 +1,10 @@
 # Current Session State
 
-**Last Updated:** 2026-01-26 10:00
+**Last Updated:** 2026-01-26 13:17
 
 ## Active Task
 
-Synthetic Data v4.1 Implementation - complete; next is data generation + preprocessing updates
+Rebuild resolver strategy with updated synthetic data
 
 ## What We Accomplished
 
@@ -32,43 +32,50 @@ Completed the v4.1 synthetic data implementation based on ADR-006 and ADR-007:
 15. **[difficulty_computer.py](src/synthetic/difficulty_computer.py)** - Soldier-level difficulty tier
 16. **[difficulty_rebalancer.py](src/synthetic/difficulty_rebalancer.py)** - Target difficulty distribution controls
 
+### Preprocessing v4.1 Updates
+17. **[glossary_generator.py](src/preprocessing/glossary_generator.py)** - Terraform Combine glossary generation (v4.1 sources)
+18. **[preprocessing_adapter.py](src/preprocessing/preprocessing_adapter.py)** - v4.1 schema routing + explicit join key
+19. **[synthetic_glossary.json](config/glossaries/synthetic_glossary.json)** - Regenerated glossary
+20. **[CURRENT.md](docs/components/preprocessing/CURRENT.md)** - Updated preprocessing documentation
+
+### Regenerated Artifacts (v4.1)
+21. **[raw.parquet](data/synthetic/raw.parquet)** - 200,000 records
+22. **[validation.parquet](data/synthetic/validation.parquet)** - 1,408 state rows (1,000 soldiers)
+23. **[sources.parquet](data/synthetic/sources.parquet)** - 5,762 sources
+24. **[canonical.parquet](data/synthetic/canonical.parquet)** - Record-level extraction output (200,000 rows)
+25. **[synthetic_metadata.parquet](data/synthetic/synthetic_metadata.parquet)** - Synthetic-only fields (200,000 rows)
+
 ### Documentation Updates
-17. **[ADR_INDEX.md](docs/ADR_INDEX.md)** - ADR-006/ADR-007 entries clarified
-18. **[CURRENT.md](docs/architecture/CURRENT.md)** - v4.1 status and difficulty model documented
-19. **[planning-synthetic.md](docs/context-packets/planning-synthetic.md)** - v4.1 context + glossary added
-20. **[GLOSSARY.md](docs/GLOSSARY.md)** - New glossary with difficulty model terms
+26. **[ADR_INDEX.md](docs/ADR_INDEX.md)** - ADR-006/ADR-007 entries clarified
+27. **[CURRENT.md](docs/architecture/CURRENT.md)** - v4.1 status and difficulty model documented
+28. **[planning-synthetic.md](docs/context-packets/planning-synthetic.md)** - v4.1 context + glossary added
+29. **[GLOSSARY.md](docs/GLOSSARY.md)** - New glossary with difficulty model terms
 
 ### Session Extract
-21. **[2026-01-25_opus_synthetic-v4-design.md](.project_history/extracts/raw/2026-01-25_opus_synthetic-v4-design.md)** - Decision record
+30. **[2026-01-25_opus_synthetic-v4-design.md](.project_history/extracts/raw/2026-01-25_opus_synthetic-v4-design.md)** - Decision record
+31. **[2026-01-26_codex_difficulty-tier-all-easy-investigation.md](.project_history/extracts/raw/2026-01-26_codex_difficulty-tier-all-easy-investigation.md)** - Investigation report
 
 ## Current State of Project
 
-The v4.1 synthetic data system is implemented. Code now emits:
+The v4.1 synthetic data system is implemented and artifacts are regenerated. Preprocessing now supports v4.1
+schema routing with a record-level canonical output. Code emits:
 - `state_id` and explicit states (1-3 per soldier)
 - `path_completeness`, `levels_provided`, `extraction_signals`
 - `difficulty_tier`, `complementarity_score`, `structural_resolvability`
 
 ## Issues and Surprises Encountered
 
-Docs are slightly out of sync with implementation status:
-- `docs/components/synthetic_data_generation/CURRENT.md` still says "not yet implemented"
-- `docs/architecture/CURRENT.md` still frames v4.1 as "in progress"
+- Difficulty distribution reported as 100% easy in the latest regeneration run (see `.project_history/extracts/raw/2026-01-26_codex_difficulty-tier-all-easy-investigation.md`).
+- PyArrow emitted sandbox sysctl warnings during parquet writes (non-fatal).
 
 ## Next Steps
 
 ### Immediate
-- Run generation pipeline to produce new v4.1 artifacts
-- Create `seed_set_v4.json` with hand-crafted calibration examples
-- Update preprocessing for new domain/schema
-- Update evaluation metrics to report by difficulty tier
-
-### After Implementation
-- Validate schema and outputs (raw/validation/canonical)
-- Revisit resolver strategy inputs for new fields
+- Rebuild resolver strategy with updated synthetic data
 
 ### Pending Active Instructions
-None. Instruction 004 moved to completed:
-- `instructions/completed/004_synthetic-v4.1-terraform-combine.md`
+None. Instruction 005 moved to completed:
+- `instructions/completed/005_preprocessing-v4.1-terraform-combine.md`
 
 ## Recent Context
 

@@ -1,411 +1,227 @@
 {
   "meta": {
-    "version": "1.0.0",
-    "description": "Auto-generated glossary for synthetic data preprocessing",
+    "version": "4.1.0",
+    "description": "Auto-generated glossary for synthetic data preprocessing (Terraform Combine)",
     "source_files": [
-      "docs/components/synthetic_data_generation/synthetic_style_spec_v3.yaml",
+      "docs/components/synthetic_data_generation/synthetic_style_spec_v4.1.yaml",
       "config/hierarchies/hierarchy_reference.json",
       "config/synthetic/synthetic_vocabulary.json"
     ],
     "term_types": {
-      "Organization Term": "Branch, division type, and organizational indicators",
-      "Unit Term": "Unit structure terms (company, battalion, regiment, etc.)",
-      "Role Term": "Rank and position terms"
-    }
+      "Organization Term": "Branch terms for Terraform Combine",
+      "Unit Term": "Hierarchy level names and named designators",
+      "Role Term": "Rank terms (placeholder; empty in v4.1)"
+    },
+    "role_terms_placeholder": "Role Terms intentionally empty; ranks TBD for real data transition."
   },
   "terms": [
     {
-      "full term": "Airborne Division",
+      "full term": "Colonial Administration",
       "abbreviations": [
-        "AB"
+        "CA"
       ],
       "term type": "Organization Term"
     },
     {
-      "full term": "Airborne indicator",
+      "full term": "Defense Command",
       "abbreviations": [
-        "ABN"
+        "DC"
       ],
       "term type": "Organization Term"
     },
     {
-      "full term": "Alpine unit indicator",
+      "full term": "Expeditionary Corps",
       "abbreviations": [
-        "ALP"
+        "EC"
       ],
       "term type": "Organization Term"
     },
     {
-      "full term": "Armored Division",
+      "full term": "Resource Directorate",
       "abbreviations": [
-        "AD"
+        "RD"
       ],
       "term type": "Organization Term"
     },
     {
-      "full term": "Armored indicator",
-      "abbreviations": [
-        "ARMD"
-      ],
-      "term type": "Organization Term"
-    },
-    {
-      "full term": "Army",
-      "abbreviations": [
-        "USA"
-      ],
-      "term type": "Organization Term"
-    },
-    {
-      "full term": "Army Air Forces",
-      "abbreviations": [
-        "AAF",
-        "AF",
-        "Air Force"
-      ],
-      "term type": "Organization Term"
-    },
-    {
-      "full term": "Army Ground Forces",
-      "abbreviations": [
-        "AGF"
-      ],
-      "term type": "Organization Term"
-    },
-    {
-      "full term": "Detachment notation",
-      "abbreviations": [
-        "DET"
-      ],
-      "term type": "Organization Term"
-    },
-    {
-      "full term": "European Theater of Operations",
-      "abbreviations": [
-        "ETOUSA"
-      ],
-      "term type": "Organization Term"
-    },
-    {
-      "full term": "Fleet Marine Force",
-      "abbreviations": [
-        "FMF"
-      ],
-      "term type": "Organization Term"
-    },
-    {
-      "full term": "Glider Infantry Regiment",
-      "abbreviations": [
-        "GIR"
-      ],
-      "term type": "Organization Term"
-    },
-    {
-      "full term": "Headquarters notation",
-      "abbreviations": [
-        "HQ"
-      ],
-      "term type": "Organization Term"
-    },
-    {
-      "full term": "Infantry Division",
-      "abbreviations": [
-        "ID"
-      ],
-      "term type": "Organization Term"
-    },
-    {
-      "full term": "Marine Corps",
-      "abbreviations": [
-        "USMC",
-        "Marines",
-        "Mar"
-      ],
-      "term type": "Organization Term"
-    },
-    {
-      "full term": "Marine Division",
-      "abbreviations": [
-        "MARDIV",
-        "MarDiv"
-      ],
-      "term type": "Organization Term"
-    },
-    {
-      "full term": "Mountain Division",
-      "abbreviations": [
-        "MTN",
-        "Mtn"
-      ],
-      "term type": "Organization Term"
-    },
-    {
-      "full term": "Mountain unit indicator",
-      "abbreviations": [
-        "MTN"
-      ],
-      "term type": "Organization Term"
-    },
-    {
-      "full term": "Parachute Infantry Regiment",
-      "abbreviations": [
-        "PIR"
-      ],
-      "term type": "Organization Term"
-    },
-    {
-      "full term": "Troop Carrier Command",
-      "abbreviations": [
-        "TCC"
-      ],
-      "term type": "Organization Term"
-    },
-    {
-      "full term": "Troop Carrier Group",
-      "abbreviations": [
-        "TCG"
-      ],
-      "term type": "Organization Term"
-    },
-    {
-      "full term": "United States Marine Corps",
-      "abbreviations": [
-        "USMC"
-      ],
-      "term type": "Organization Term"
-    },
-    {
-      "full term": "Able",
+      "full term": "Aegis",
       "abbreviations": [],
       "term type": "Unit Term"
     },
     {
-      "full term": "Baker",
+      "full term": "Alpha",
       "abbreviations": [],
       "term type": "Unit Term"
     },
     {
-      "full term": "Battalion",
-      "abbreviations": [
-        "Bn"
-      ],
-      "term type": "Unit Term"
-    },
-    {
-      "full term": "Bombardment Group",
-      "abbreviations": [
-        "BG",
-        "Bomb Group"
-      ],
-      "term type": "Unit Term"
-    },
-    {
-      "full term": "Charlie",
+      "full term": "Amber",
       "abbreviations": [],
       "term type": "Unit Term"
     },
     {
-      "full term": "Combat Command",
-      "abbreviations": [
-        "CC"
-      ],
-      "term type": "Unit Term"
-    },
-    {
-      "full term": "Company",
-      "abbreviations": [
-        "Co"
-      ],
-      "term type": "Unit Term"
-    },
-    {
-      "full term": "Division",
-      "abbreviations": [
-        "Div"
-      ],
-      "term type": "Unit Term"
-    },
-    {
-      "full term": "Dog",
+      "full term": "Beacon",
       "abbreviations": [],
       "term type": "Unit Term"
     },
     {
-      "full term": "Easy",
+      "full term": "Beta",
       "abbreviations": [],
       "term type": "Unit Term"
     },
     {
-      "full term": "Fox",
+      "full term": "Colony",
       "abbreviations": [],
       "term type": "Unit Term"
     },
     {
-      "full term": "George",
+      "full term": "Crew",
       "abbreviations": [],
       "term type": "Unit Term"
     },
     {
-      "full term": "Headquarters",
-      "abbreviations": [
-        "HQ",
-        "Hq"
-      ],
-      "term type": "Unit Term"
-    },
-    {
-      "full term": "How",
+      "full term": "Delta",
       "abbreviations": [],
       "term type": "Unit Term"
     },
     {
-      "full term": "Infantry Regiment",
-      "abbreviations": [
-        "Inf"
-      ],
-      "term type": "Unit Term"
-    },
-    {
-      "full term": "Item",
+      "full term": "District",
       "abbreviations": [],
       "term type": "Unit Term"
     },
     {
-      "full term": "King",
+      "full term": "Element",
       "abbreviations": [],
       "term type": "Unit Term"
     },
     {
-      "full term": "Love",
+      "full term": "Expedition",
       "abbreviations": [],
       "term type": "Unit Term"
     },
     {
-      "full term": "Mike",
+      "full term": "Facility",
+      "abbreviations": [],
+      "term type": "Unit Term"
+    },
+    {
+      "full term": "Fleet",
+      "abbreviations": [],
+      "term type": "Unit Term"
+    },
+    {
+      "full term": "Forge",
+      "abbreviations": [],
+      "term type": "Unit Term"
+    },
+    {
+      "full term": "Gamma",
+      "abbreviations": [],
+      "term type": "Unit Term"
+    },
+    {
+      "full term": "Haven",
+      "abbreviations": [],
+      "term type": "Unit Term"
+    },
+    {
+      "full term": "Helix",
+      "abbreviations": [],
+      "term type": "Unit Term"
+    },
+    {
+      "full term": "Horizon",
+      "abbreviations": [],
+      "term type": "Unit Term"
+    },
+    {
+      "full term": "Kestrel",
+      "abbreviations": [],
+      "term type": "Unit Term"
+    },
+    {
+      "full term": "Landfall",
+      "abbreviations": [],
+      "term type": "Unit Term"
+    },
+    {
+      "full term": "Operation",
+      "abbreviations": [],
+      "term type": "Unit Term"
+    },
+    {
+      "full term": "Palisade",
+      "abbreviations": [],
+      "term type": "Unit Term"
+    },
+    {
+      "full term": "Pioneer",
+      "abbreviations": [],
+      "term type": "Unit Term"
+    },
+    {
+      "full term": "Prospect",
+      "abbreviations": [],
+      "term type": "Unit Term"
+    },
+    {
+      "full term": "Sable",
+      "abbreviations": [],
+      "term type": "Unit Term"
+    },
+    {
+      "full term": "Sector",
+      "abbreviations": [],
+      "term type": "Unit Term"
+    },
+    {
+      "full term": "Settlement",
       "abbreviations": [],
       "term type": "Unit Term"
     },
     {
       "full term": "Squadron",
-      "abbreviations": [
-        "Sq"
-      ],
+      "abbreviations": [],
       "term type": "Unit Term"
     },
     {
-      "full term": "Captain",
-      "abbreviations": [
-        "CPT",
-        "Capt"
-      ],
-      "term type": "Role Term"
+      "full term": "Talon",
+      "abbreviations": [],
+      "term type": "Unit Term"
     },
     {
-      "full term": "Corporal",
-      "abbreviations": [
-        "CPL",
-        "Cpl"
-      ],
-      "term type": "Role Term"
+      "full term": "Team",
+      "abbreviations": [],
+      "term type": "Unit Term"
     },
     {
-      "full term": "First Lieutenant",
-      "abbreviations": [
-        "1LT",
-        "1st Lt"
-      ],
-      "term type": "Role Term"
+      "full term": "Thornmark",
+      "abbreviations": [],
+      "term type": "Unit Term"
     },
     {
-      "full term": "First Sergeant",
-      "abbreviations": [
-        "1SGT",
-        "1st Sgt"
-      ],
-      "term type": "Role Term"
+      "full term": "Vanguard",
+      "abbreviations": [],
+      "term type": "Unit Term"
     },
     {
-      "full term": "Major",
-      "abbreviations": [
-        "MAJ",
-        "Maj"
-      ],
-      "term type": "Role Term"
+      "full term": "Verdant",
+      "abbreviations": [],
+      "term type": "Unit Term"
     },
     {
-      "full term": "Master Sergeant",
-      "abbreviations": [
-        "M/Sgt",
-        "MSGT",
-        "MSgt"
-      ],
-      "term type": "Role Term"
+      "full term": "Waypoint",
+      "abbreviations": [],
+      "term type": "Unit Term"
     },
     {
-      "full term": "Private",
-      "abbreviations": [
-        "PVT",
-        "Pvt"
-      ],
-      "term type": "Role Term"
+      "full term": "Waystation",
+      "abbreviations": [],
+      "term type": "Unit Term"
     },
     {
-      "full term": "Private First Class",
-      "abbreviations": [
-        "PFC",
-        "Pfc"
-      ],
-      "term type": "Role Term"
-    },
-    {
-      "full term": "Second Lieutenant",
-      "abbreviations": [
-        "2LT",
-        "2nd Lt"
-      ],
-      "term type": "Role Term"
-    },
-    {
-      "full term": "Sergeant",
-      "abbreviations": [
-        "SGT",
-        "Sgt"
-      ],
-      "term type": "Role Term"
-    },
-    {
-      "full term": "Staff Sergeant",
-      "abbreviations": [
-        "S/Sgt",
-        "SSGT",
-        "SSgt"
-      ],
-      "term type": "Role Term"
-    },
-    {
-      "full term": "Technical Sergeant",
-      "abbreviations": [
-        "T/Sgt",
-        "TSGT",
-        "TSgt"
-      ],
-      "term type": "Role Term"
-    },
-    {
-      "full term": "Technician Fifth Grade",
-      "abbreviations": [
-        "T/5",
-        "T5"
-      ],
-      "term type": "Role Term"
-    },
-    {
-      "full term": "Technician Fourth Grade",
-      "abbreviations": [
-        "T/4",
-        "T4"
-      ],
-      "term type": "Role Term"
+      "full term": "Wing",
+      "abbreviations": [],
+      "term type": "Unit Term"
     }
   ]
 }

@@ -2,7 +2,7 @@
 
 **Version:** 4.1.0  
 **Last Updated:** 2026-01-26  
-**Status:** Implemented (artifacts not yet regenerated)
+**Status:** Implemented (artifacts regenerated; difficulty-tier issue noted)
 
 ---
 
@@ -400,6 +400,15 @@ Tolerance: ±5% from targets.
 - Identify soldiers to regenerate
 - Adjust source/clerk assignments
 - Re-run generation for affected soldiers
+
+### Known Issue: Difficulty Tier Saturation (All Easy)
+
+Recent regeneration produced **100% easy** soldiers. Root cause appears to be universal full-path
+records (`path_completeness >= 0.95` for every soldier), which triggers the `any_complete` shortcut
+in `DifficultyComputer`. Structural signals also appear under-detected (abbreviation mismatch), and
+the rebalancer currently does not mutate records. See:
+- `.project_history/extracts/raw/2026-01-26_codex_difficulty-tier-all-easy-investigation.md`
+- `SESSION_STATE.md` (Issues and Surprises)
 
 ---
 
