@@ -78,6 +78,42 @@ LEVEL_LABELS_MICRO = {
     "crew": "Cr",
 }
 
+GREEK_LETTERS = {
+    "Alpha",
+    "Beta",
+    "Gamma",
+    "Delta",
+    "Epsilon",
+    "Zeta",
+    "Eta",
+    "Theta",
+    "Iota",
+    "Kappa",
+    "Lambda",
+    "Omega",
+}
+
+ALTERNATIVE_SEPARATORS = {
+    ", ": [" ", "/", "/ ", " - "],
+    "/": [" ", ", ", "-"],
+    "-": [" ", "/"],
+    " ": ["/", ", ", "-"],
+}
+
+TENDENCY_RETENTION = {
+    "very_high": (0.90, 1.00),
+    "high": (0.70, 0.90),
+    "medium": (0.50, 0.70),
+    "low": (0.30, 0.50),
+    "very_low": (0.20, 0.40),
+}
+
+FAMILIARITY_LABEL_OMISSION_BOOST = {
+    FamiliarityLevel.SAME_L3: 0.70,
+    FamiliarityLevel.SAME_L2: 0.45,
+    FamiliarityLevel.SAME_BRANCH: 0.20,
+    FamiliarityLevel.DIFFERENT_BRANCH: 0.0,
+}
 
 class Renderer:
     """Renders soldier states to raw text using clerk formats."""
@@ -109,6 +145,7 @@ class Renderer:
         raw_text = base_text
         if vocabulary_injector:
             raw_text, _ = vocabulary_injector.inject_vocabulary(base_text, clerk, situation)
+        raw_text = self._apply_imperfections(raw_text, clerk, unit_text)
 
         return Entry(
             entry_id=entry_id,
@@ -177,6 +214,7 @@ class Renderer:
             state,
             levels_provided,
             clerk,
+            familiarity,
         )
 
         return unit_text, levels_provided
@@ -246,6 +284,8 @@ class Renderer:
         else:
             include = list(levels)
 
+        include = self._apply_path_completeness_tendency(levels, include, clerk)
+
         if not clerk.unit_format.include_sector and levels:
             include = [lvl for lvl in include if lvl != levels[0]]
         if not clerk.unit_format.include_level2 and len(levels) > 1:
@@ -258,18 +298,88 @@ class Renderer:
 
         return include
 
-    def _format_unit(self, state: State, levels: List[str], clerk: Clerk) -> str:
+    def _apply_path_completeness_tendency(
+        self,
+        levels: List[str],
+        candidates: List[str],
+        clerk: Clerk,
+    ) -> List[str]:
+        """Drop higher echelon levels based on path completeness tendency."""
+        if not candidates:
+            return candidates
+
+        tendency = getattr(clerk, "path_completeness_tendency", "medium")
+        lo, hi = TENDENCY_RETENTION.get(tendency, (0.50, 0.70))
+        target_retention = self.rng.uniform(lo, hi)
+        target_count = max(1, round(len(candidates) * target_retention))
+
+        if len(candidates) <= target_count:
+            return candidates
+
+        return self._drop_levels_to_target(candidates, levels, target_count)
+
+    def _drop_levels_to_target(
+        self,
+        candidates: List[str],
+        all_levels: List[str],
+        target_count: int,
+    ) -> List[str]:
+        """Drop levels with a bias toward higher echelons."""
+        remaining = list(candidates)
+        if len(remaining) <= target_count:
+            return remaining
+
+        while len(remaining) > target_count and len(remaining) > 1:
+            weights = []
+            for level in remaining:
+                idx = all_levels.index(level)
+                weight = max(len(all_levels) - idx, 1)
+                weights.append(weight * weight)
+            drop_index = self._weighted_choice_index(weights)
+            remaining.pop(drop_index)
+
+        return remaining
+
+    def _weighted_choice_index(self, weights: List[int]) -> int:
+        """Select an index using integer weights."""
+        total = sum(weights)
+        if total <= 0:
+            return 0
+        roll = self.rng.uniform(0, total)
+        upto = 0.0
+        for idx, weight in enumerate(weights):
+            upto += weight
+            if roll <= upto:
+                return idx
+        return len(weights) - 1
+
+    def _format_unit(
+        self,
+        state: State,
+        levels: List[str],
+        clerk: Clerk,
+        familiarity: FamiliarityLevel = FamiliarityLevel.DIFFERENT_BRANCH,
+    ) -> str:
         """Format unit string from selected levels."""
         parts = [(lvl, state.post_levels.get(lvl, "")) for lvl in levels]
 
         if clerk.unit_format.phonetic_letters:
             parts = [(lvl, self._phoneticize(value)) for lvl, value in parts]
 
+        if clerk.unit_format.value_abbreviation_rate > 0:
+            abbreviated_parts = []
+            for lvl, value in parts:
+                if self.rng.random() < clerk.unit_format.value_abbreviation_rate:
+                    abbreviated_parts.append((lvl, self._abbreviate_value(value)))
+                else:
+                    abbreviated_parts.append((lvl, value))
+            parts = abbreviated_parts
+
         style = clerk.unit_format.style
         if style in (UnitFormatStyle.LABELED_HIERARCHICAL, UnitFormatStyle.LABELED_FULL):
-            unit_text = self._format_labeled(parts, clerk)
+            unit_text = self._format_labeled(parts, clerk, familiarity=familiarity)
         elif style == UnitFormatStyle.LABELED_MICRO:
-            unit_text = self._format_labeled(parts, clerk, micro=True)
+            unit_text = self._format_labeled(parts, clerk, micro=True, familiarity=familiarity)
         elif style in (UnitFormatStyle.SLASH_POSITIONAL, UnitFormatStyle.SLASH_COMPACT):
             unit_text = self._format_slash(parts, clerk)
         elif style == UnitFormatStyle.RUNON_COMPACT:
@@ -279,7 +389,9 @@ class Renderer:
         elif style == UnitFormatStyle.MINIMAL:
             unit_text = self._format_minimal(parts, clerk)
         else:
-            unit_text = self._format_labeled(parts, clerk)
+            unit_text = self._format_labeled(parts, clerk, familiarity=familiarity)
+
+        unit_text = self._mix_delimiters(unit_text, clerk)
 
         if clerk.unit_format.include_branch:
             branch_abbrev = self.hierarchy.get_branch_abbreviation(state.branch)
@@ -290,11 +402,28 @@ class Renderer:
 
         return unit_text.strip()
 
-    def _format_labeled(self, parts: List[Tuple[str, str]], clerk: Clerk, micro: bool = False) -> str:
+    def _format_labeled(
+        self,
+        parts: List[Tuple[str, str]],
+        clerk: Clerk,
+        micro: bool = False,
+        familiarity: FamiliarityLevel = FamiliarityLevel.DIFFERENT_BRANCH,
+    ) -> str:
         """Format with labels for each level."""
         formatted: List[str] = []
-        for level, value in parts:
-            if clerk.unit_format.omit_level_names:
+        omit_all = clerk.unit_format.omit_level_names
+        base_omission = clerk.unit_format.label_omission_rate
+        familiarity_boost = FAMILIARITY_LABEL_OMISSION_BOOST.get(familiarity, 0.0)
+        for idx, (level, value) in enumerate(parts):
+            if omit_all:
+                formatted.append(value)
+                continue
+            echelon_bonus = 0.0
+            if len(parts) > 1:
+                position_ratio = idx / (len(parts) - 1)
+                echelon_bonus = position_ratio * 0.2
+            effective_rate = min(1.0, base_omission + echelon_bonus + familiarity_boost)
+            if effective_rate > 0 and self.rng.random() < effective_rate:
                 formatted.append(value)
                 continue
             label = self._level_label(level, clerk, micro)
@@ -334,6 +463,54 @@ class Renderer:
         """Expand letters into phonetic words when possible."""
         return PHONETIC_LETTERS.get(value, value)
 
+    def _abbreviate_value(self, value: str) -> str:
+        """Abbreviate a named designator value."""
+        if not value:
+            return value
+        if len(value) <= 2 or value.isdigit():
+            return value
+
+        if value in GREEK_LETTERS:
+            if self.rng.random() < 0.5:
+                return value[:2]
+            return value
+
+        if len(value) <= 4:
+            return value[:2]
+
+        abbrev_len = self.rng.choice([2, 3, 4])
+        if self.rng.random() < 0.5:
+            return value[:abbrev_len]
+
+        skeleton = value[0] + "".join(c for c in value[1:] if c.lower() not in "aeiou")
+        if len(skeleton) >= 2:
+            return skeleton[:abbrev_len + 1]
+        return value[:abbrev_len]
+
+    def _mix_delimiters(self, unit_text: str, clerk: Clerk) -> str:
+        """Stochastically replace some delimiters in the unit string."""
+        mix_rate = 1.0 - clerk.consistency.format_lock
+        if mix_rate <= 0 or self.rng.random() > mix_rate:
+            return unit_text
+
+        sep = clerk.unit_format.separator
+        alternatives = ALTERNATIVE_SEPARATORS.get(sep, [])
+        if not alternatives:
+            return unit_text
+
+        parts = unit_text.split(sep)
+        if len(parts) <= 1:
+            return unit_text
+
+        result_parts = [parts[0]]
+        for part in parts[1:]:
+            if self.rng.random() < 0.4:
+                new_sep = self.rng.choice(alternatives)
+                result_parts.append(new_sep + part.lstrip())
+            else:
+                result_parts.append(sep + part)
+        return "".join(result_parts)
+
     def _combine_fields(self, name: str, rank: str, unit: str, clerk: Clerk) -> str:
         """Combine name, rank, and unit based on clerk style."""
         if clerk.rank_format.style == RankStyle.PREFIX:
@@ -368,3 +545,133 @@ class Renderer:
             signals.append("depth:5")
 
         return signals
+
+    def _apply_imperfections(self, text: str, clerk: Clerk, unit_text: Optional[str] = None) -> str:
+        """Apply character-level imperfections to rendered text."""
+        result = text
+        imp = clerk.imperfections
+
+        if self.rng.random() < imp.trailing_off and len(result) > 2:
+            cut_point = self.rng.randint(len(result) // 2, len(result) - 1)
+            result = result[:cut_point]
+
+        if unit_text and self.rng.random() < imp.abbreviation_inconsistency:
+            altered_unit = self._apply_abbreviation_inconsistency(unit_text)
+            if altered_unit != unit_text and unit_text in result:
+                result = result.replace(unit_text, altered_unit, 1)
+
+        if self.rng.random() < imp.typo_rate:
+            result = self._inject_typo(result)
+
+        if self.rng.random() < imp.mid_entry_corrections:
+            result = self._apply_mid_entry_correction(result)
+
+        if unit_text and self.rng.random() < imp.incomplete_unit:
+            altered_unit = self._drop_unit_component(unit_text)
+            if altered_unit != unit_text and unit_text in result:
+                result = result.replace(unit_text, altered_unit, 1)
+
+        if self.rng.random() < imp.column_bleed:
+            result = self._apply_column_bleed(result)
+
+        return result
+
+    def _apply_abbreviation_inconsistency(self, unit_text: str) -> str:
+        """Swap one unit label variant for a mixed abbreviation style."""
+        variants = {}
+        for level, label in LEVEL_LABELS.items():
+            variants.setdefault(level, set()).add(label)
+        for level, label in LEVEL_LABELS_ABBREV.items():
+            variants.setdefault(level, set()).add(label)
+        for level, label in LEVEL_LABELS_MICRO.items():
+            variants.setdefault(level, set()).add(label)
+
+        matches = []
+        for level, labels in variants.items():
+            for label in labels:
+                token = f"{label} "
+                if token in unit_text:
+                    matches.append((level, label))
+
+        if not matches:
+            return unit_text
+
+        level, current = self.rng.choice(matches)
+        options = [v for v in variants[level] if v != current]
+        if not options:
+            return unit_text
+
+        replacement = self.rng.choice(options)
+        return unit_text.replace(f"{current} ", f"{replacement} ", 1)
+
+    def _inject_typo(self, text: str) -> str:
+        """Inject a simple typo into the text."""
+        if not text:
+            return text
+
+        ops = ["transpose", "substitute", "omit", "double"]
+        op = self.rng.choice(ops)
+        idx = self.rng.randint(0, max(len(text) - 1, 0))
+
+        if op == "transpose" and len(text) > 2 and idx < len(text) - 1:
+            chars = list(text)
+            chars[idx], chars[idx + 1] = chars[idx + 1], chars[idx]
+            return "".join(chars)
+
+        if op == "omit" and len(text) > 1:
+            return text[:idx] + text[idx + 1:]
+
+        substitutions = {
+            "l": "1",
+            "O": "0",
+            "rn": "m",
+            "m": "rn",
+            "S": "5",
+            "E": "F",
+        }
+        for key, value in substitutions.items():
+            if key in text:
+                return text.replace(key, value, 1)
+
+        if op == "double" and len(text) > 1:
+            return text[:idx] + text[idx] + text[idx:]
+
+        if op == "substitute" and len(text) > 1:
+            alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+            if text[idx].isalpha():
+                replacement = self.rng.choice(alphabet)
+                return text[:idx] + replacement + text[idx + 1:]
+
+        return text
+
+    def _apply_mid_entry_correction(self, text: str) -> str:
+        """Insert a plain-text correction pattern into the entry."""
+        for i, ch in enumerate(text):
+            if ch.isdigit():
+                corrected = str((int(ch) + 1) % 10)
+                return f"{text[:i]}{ch} {corrected}{text[i + 1:]}"
+        return text
+
+    def _drop_unit_component(self, unit_text: str) -> str:
+        """Drop a unit component from the unit string."""
+        separators = ["/", ",", ";"]
+        for sep in separators:
+            if sep in unit_text:
+                parts = [p.strip() for p in unit_text.split(sep) if p.strip()]
+                if len(parts) > 1:
+                    drop_index = self.rng.randint(0, len(parts) - 2)
+                    parts.pop(drop_index)
+                    return f"{sep} ".join(parts) if sep != "/" else sep.join(parts)
+        tokens = unit_text.split()
+        if len(tokens) > 2:
+            drop_index = self.rng.randint(1, len(tokens) - 2)
+            tokens.pop(drop_index)
+            return " ".join(tokens)
+        return unit_text
+
+    def _apply_column_bleed(self, text: str) -> str:
+        """Merge delimiters between adjacent fields."""
+        for i in range(1, len(text) - 1):
+            if text[i] == " " and text[i - 1].isalnum() and text[i + 1].isalnum():
+                return text[:i] + text[i + 1:]
+        return text

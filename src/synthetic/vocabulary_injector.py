@@ -46,7 +46,7 @@ SITUATIONAL_DENSITY = {
     VocabularyDensity.HIGH: 0.55,
 }
 
-CONFOUNDER_RATE = 0.08
+CONFOUNDER_RATE = 0.15
 
 
 class VocabularyInjector:
@@ -108,11 +108,11 @@ class VocabularyInjector:
                 result = self._append_term(result, clutter_term)
                 injected["clutter"].append(clutter_term)
 
-                if self.rng.random() < CONFOUNDER_RATE:
-                    confounder = self._sample_confounder()
-                    if confounder:
-                        result = self._append_term(result, confounder)
-                        injected["confounder"].append(confounder)
+        if self.rng.random() < CONFOUNDER_RATE:
+            confounder = self._sample_confounder()
+            if confounder:
+                result = self._append_term(result, confounder)
+                injected["confounder"].append(confounder)
 
         return result, injected
 

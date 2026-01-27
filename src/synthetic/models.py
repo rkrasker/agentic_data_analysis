@@ -112,6 +112,8 @@ class UnitFormat:
     label_style: str = "abbreviated"
     branch_suffix: bool = False
     phonetic_letters: bool = False
+    label_omission_rate: float = 0.0
+    value_abbreviation_rate: float = 0.0
 
 
 @dataclass

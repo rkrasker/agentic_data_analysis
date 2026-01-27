@@ -215,6 +215,7 @@ The current synthetic generator still produces records that are **cleaner than r
 - Introduce more aggressive abbreviation inconsistency within a single entry.
 - Expand clutter/confounder vocabulary and allow denser injections for specific archetypes.
 - Add explicit “handwritten/ledger” formatting artifacts (column drift, misalignment, spillover).
+- Continue iterating on label omission, value abbreviation, and delimiter mixing based on sample outputs.
 
 This gap should be documented when interpreting downstream resolver performance: current synthetic data may under-represent the noise seen in real archival corpora.
 

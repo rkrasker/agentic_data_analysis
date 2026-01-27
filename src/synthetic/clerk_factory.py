@@ -93,6 +93,8 @@ class ClerkFactory:
             label_style=unit_data.get("label_style", "abbreviated"),
             branch_suffix=unit_data.get("branch_suffix", False),
             phonetic_letters=unit_data.get("phonetic_letters", False),
+            label_omission_rate=unit_data.get("label_omission_rate", 0.0),
+            value_abbreviation_rate=unit_data.get("value_abbreviation_rate", 0.0),
         )
 
         consistency_data = data.get("consistency", {})
@@ -217,6 +219,8 @@ class ClerkFactory:
             label_style=base.label_style,
             branch_suffix=base.branch_suffix,
             phonetic_letters=base.phonetic_letters,
+            label_omission_rate=self._vary_rate(base.label_omission_rate, 0.10),
+            value_abbreviation_rate=self._vary_rate(base.value_abbreviation_rate, 0.10),
         )
 
     def _vary_consistency(self, base: Consistency) -> Consistency:

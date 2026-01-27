@@ -754,6 +754,8 @@ clerk_archetypes:
       include_sector: true
       include_branch: true
       label_style: "abbreviated"
+      label_omission_rate: 0.05
+      value_abbreviation_rate: 0.0
 
     vocabulary_density: "low"
     familiarity_override: "ignore"  # Formal clerks always use full notation
@@ -792,6 +794,8 @@ clerk_archetypes:
       separator: "/"
       include_sector: true
       branch_suffix: true
+      label_omission_rate: 0.0
+      value_abbreviation_rate: 0.15
 
     vocabulary_density: "low"
     familiarity_override: "ignore"
@@ -831,6 +835,8 @@ clerk_archetypes:
       separator: "-"
       include_sector: false
       include_level2: false
+      label_omission_rate: 0.0
+      value_abbreviation_rate: 0.50
 
     vocabulary_density: "medium"
     familiarity_applies: true
@@ -869,6 +875,8 @@ clerk_archetypes:
       separator: " "
       include_sector: false
       label_style: "micro"
+      label_omission_rate: 0.25
+      value_abbreviation_rate: 0.20
 
     vocabulary_density: "low"
     familiarity_applies: true
@@ -909,6 +917,8 @@ clerk_archetypes:
       separator: " "
       include_sector: false
       phonetic_letters: true
+      label_omission_rate: 0.0
+      value_abbreviation_rate: 0.60
 
     vocabulary_density: "high"
     familiarity_applies: true
@@ -948,6 +958,8 @@ clerk_archetypes:
       style: "minimal"
       include_sector: false
       include_lowest_levels: false
+      label_omission_rate: 0.0
+      value_abbreviation_rate: 0.40
 
     vocabulary_density: "high"
     vocabulary_bias: ["status_code"]
@@ -987,6 +999,8 @@ clerk_archetypes:
       style: "minimal"
       include_sector: false
       omit_level_names: true  # KEY: renders "3rd" instead of "3rd Squadron"
+      label_omission_rate: 0.0
+      value_abbreviation_rate: 0.70
 
     vocabulary_density: "low"
     familiarity_applies: true
@@ -1029,6 +1043,8 @@ clerk_archetypes:
       separator: "/"
       include_sector: true
       branch_suffix: true
+      label_omission_rate: 0.0
+      value_abbreviation_rate: 0.10
 
     vocabulary_density: "medium"
     vocabulary_bias: ["transport_code", "manifest_code"]
@@ -1067,6 +1083,8 @@ clerk_archetypes:
       include_sector: true
       include_branch: true
       label_style: "full"
+      label_omission_rate: 0.10
+      value_abbreviation_rate: 0.0
 
     vocabulary_density: "low"
     vocabulary_bias: ["process_code"]
@@ -1083,6 +1101,90 @@ clerk_archetypes:
       typo_rate: 0.01
 
   # ---------------------------------------------------------------------------
+  # COLONIAL DISTRICT CLERKS - Familiar with local settlements
+  # ---------------------------------------------------------------------------
+
+  colonial_district:
+    description: |
+      District-level clerk in Colonial Administration. Processes settlement
+      records daily. Familiar with local settlements, abbreviates heavily.
+    context_level: "level3"
+    applicable_branches: ["colonial_administration"]
+
+    name_format:
+      template: "{LAST}, {FI}."
+
+    rank_format:
+      style: "prefix"
+      form: "caps_abbrev"
+
+    unit_format:
+      style: "labeled_hierarchical"
+      separator: ", "
+      include_sector: false
+      label_style: "abbreviated"
+      label_omission_rate: 0.35
+      value_abbreviation_rate: 0.35
+
+    vocabulary_density: "medium"
+    familiarity_applies: true
+
+    path_completeness_tendency: "medium"
+    structural_signals_tendency: "medium"
+
+    consistency:
+      format_lock: 0.85
+      minor_drift: 0.12
+      major_variation: 0.03
+
+    imperfections:
+      typo_rate: 0.03
+      abbreviation_inconsistency: 0.08
+
+  # ---------------------------------------------------------------------------
+  # DEFENSE OPERATIONS CLERKS - Branch-specific compact notation
+  # ---------------------------------------------------------------------------
+
+  defense_operations:
+    description: |
+      Operations-level clerk in Defense Command. Tracks patrol and
+      intercept assignments. Uses compact notation, moderate abbreviation.
+    context_level: "level2"
+    applicable_branches: ["defense_command"]
+
+    name_format:
+      template: "{LAST} {FI}"
+
+    rank_format:
+      style: "suffix"
+      form: "caps_abbrev"
+
+    unit_format:
+      style: "slash_compact"
+      separator: "/"
+      orientation: "child_over_parent"
+      include_sector: false
+      label_omission_rate: 0.0
+      value_abbreviation_rate: 0.40
+
+    vocabulary_density: "medium"
+    vocabulary_bias: ["defense_ops_code"]
+    familiarity_applies: true
+
+    path_completeness_tendency: "low"
+    structural_signals_tendency: "medium"
+
+    consistency:
+      format_lock: 0.80
+      minor_drift: 0.15
+      major_variation: 0.05
+
+    imperfections:
+      typo_rate: 0.04
+      abbreviation_inconsistency: 0.10
+      trailing_off: 0.03
+
+  # ---------------------------------------------------------------------------
   # BRANCH-SPECIFIC CLERKS (abbreviated for spec length)
   # ---------------------------------------------------------------------------
 
@@ -1090,6 +1192,13 @@ clerk_archetypes:
     description: "Squadron-level clerk in Defense Command"
     context_level: "level3"
     applicable_branches: ["defense_command"]
+    unit_format:
+      style: "labeled_hierarchical"
+      separator: ", "
+      include_sector: false
+      label_style: "abbreviated"
+      label_omission_rate: 0.30
+      value_abbreviation_rate: 0.30
     path_completeness_tendency: "medium"
     structural_signals_tendency: "high"  # DC-specific terms
     # ... (other fields as in original)
@@ -1098,6 +1207,11 @@ clerk_archetypes:
     description: "Field survey clerk on active expedition"
     context_level: "field"
     applicable_branches: ["expeditionary_corps"]
+    unit_format:
+      style: "minimal"
+      include_sector: false
+      label_omission_rate: 0.0
+      value_abbreviation_rate: 0.55
     path_completeness_tendency: "very_low"
     structural_signals_tendency: "medium"  # EC-specific terms sometimes
     # ... (other fields as in original)
@@ -1106,6 +1220,13 @@ clerk_archetypes:
     description: "Facility clerk in Resource Directorate"
     context_level: "level3"
     applicable_branches: ["resource_directorate"]
+    unit_format:
+      style: "labeled_hierarchical"
+      separator: ", "
+      include_sector: false
+      label_style: "abbreviated"
+      label_omission_rate: 0.30
+      value_abbreviation_rate: 0.30
     path_completeness_tendency: "medium"
     structural_signals_tendency: "high"  # RD-specific terms
     # ... (other fields as in original)
