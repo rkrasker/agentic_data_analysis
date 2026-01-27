@@ -79,12 +79,16 @@ class DifficultyComputer:
         structural_resolvability: bool,
     ) -> DifficultyTier:
         """Assign difficulty tier based on three layers."""
-        if any_complete:
+        if any_complete and not collision_zone:
+            return DifficultyTier.EASY
+        if any_complete and collision_zone and structural_resolvability:
             return DifficultyTier.EASY
         if complementarity_score > 0.8 and not collision_zone:
             return DifficultyTier.EASY
         if structural_resolvability and complementarity_score > 0.5:
             return DifficultyTier.EASY
+        if any_complete and collision_zone:
+            return DifficultyTier.MODERATE
 
         if not collision_zone and complementarity_score > 0.5:
             return DifficultyTier.MODERATE

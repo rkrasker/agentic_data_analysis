@@ -111,6 +111,9 @@ Example usage in `examples/sandbox_usage.py`.
 **Deferred:**
 - Scale up synthetic data: 10K → 250K records (after pipeline validation)
 
+**Known limitations:**
+- Synthetic records still appear cleaner than real-world archival data; realism tuning (imperfections, abbreviations, clutter/confounders) remains in progress.
+
 **Blockers:** None
 
 ## Quick Commands

@@ -76,6 +76,8 @@ See [docs/CODE_STYLE.md](docs/CODE_STYLE.md) for detailed guidance. Key principl
 
 **What's in flux**: Synthetic generation code being rewritten for v4.1. Preprocessing will need updates after synthetic v4.1 is complete.
 
+**Known limitation:** Synthetic records still appear cleaner than real-world archival data; quality tier is source-level and does not guarantee noisy text. Realism tuning remains in progress.
+
 ## Key ADRs
 
 | ADR | Decision |

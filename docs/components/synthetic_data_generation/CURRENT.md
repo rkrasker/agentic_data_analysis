@@ -199,6 +199,25 @@ Computed per-soldier after all records are generated:
 
 ---
 
+## Realism Gap / Known Limitations
+
+The current synthetic generator still produces records that are **cleaner than real-world archival data**. Even with imperfections and confounders enabled, many entries look well-formed and fully legible.
+
+### Why entries can look clean
+
+- **Quality tier is source-level**, not per-entry: a tier-3 source can yield clean-looking records depending on randomized effects.
+- **Imperfections are stochastic**: typos, abbreviation drift, corrections, and column bleed may not trigger on any given entry.
+- **Clutter/confounders are bounded**: injected noise is intentionally sparse to avoid overwhelming signal extraction.
+
+### Planned realism improvements
+
+- Increase the frequency and severity of OCR-style corruption (character substitutions, truncation).
+- Introduce more aggressive abbreviation inconsistency within a single entry.
+- Expand clutter/confounder vocabulary and allow denser injections for specific archetypes.
+- Add explicit “handwritten/ledger” formatting artifacts (column drift, misalignment, spillover).
+
+This gap should be documented when interpreting downstream resolver performance: current synthetic data may under-represent the noise seen in real archival corpora.
+
 ## States as First-Class Objects
 
 ### Conceptual Model
