@@ -1,54 +1,87 @@
 # SESSION_STATE.md
 
 **Last Updated:** 2026-01-27
-**Session:** Opus 4.5 strategy session — Resolver generation alignment
+**Session:** Opus 4.5 strategy session — Difficulty batching strategy
 
 ---
 
 ## Active Task
 
-Align resolver generation process with the three-layer disambiguation model (ADR-006) and Terraform Combine domain (ADR-007).
+Implement `compute_soldier_difficulty()` for sampling. Design work complete; ready for implementation.
 
 ---
 
-## Current Approach and Key Decisions
+## Completed This Session
 
-**Scope clarification established:** Resolvers are component discrimination and parsing aids only — they do not handle state discovery, record grouping, or full consolidation orchestration. This narrowed the redesign to four targeted changes.
+### Difficulty Model Design (New Document)
 
-**Decisions made (documented in ADR-009):**
+Created `docs/DIFFICULTY_MODEL.md` as a cross-cutting reference document (peer to `DISAMBIGUATION_MODEL.md`). Captures:
 
-1. **Sampling criterion changed:** Sample soldiers by assignment difficulty (Layer 2-3: collision position, complementarity, structural ambiguity), not record quality tier. Include ALL records for sampled soldiers regardless of quality.
+- Confidence weights for level coverage (1.0 / 0.75 / 0.25)
+- Complementarity formula: sum of level confidences / min(branch_depth, 4)
+- Structural resolvability: boolean based on branch elimination
+- Difficulty tier thresholds: fixed at 0.7 and 0.4
+- Edge case handling
 
-2. **Branch-aware structural encoding:** Phase 1 now produces branch-specific constraints including depth, level names, and structural discriminators (terms unique to a branch like "squadron" for Defense Command).
+### Key Decisions
 
-3. **Phase 5 simplified:** Exclusion mining becomes deterministic derivation from hierarchy — no LLM call, no "value-based" exclusions. Rationale: with synthetic data where hierarchy is complete by construction, mining structural facts from data is backwards.
-
-4. **Hard case criteria reframed:** Aligned with three-layer model (collision position, non-complementary records, structural ambiguity). Removed "transfer indicators" criterion — that's a state problem, not component discrimination.
-
-**Artifacts produced:**
-- `ADR-009_resolver-generation-alignment.md` — formal decision record
-- `resolver_CURRENT.md` — updated specification with new schema examples
+| Decision | Resolution |
+|----------|------------|
+| Data source | `canonical.parquet` — leverage pre-extracted characterized + uncharacterized columns |
+| Complementarity denominator | min(branch_depth, 4) — caps to avoid micro-level penalty |
+| Uncharacterized handling | Check validity against hierarchy; weight by ambiguity level |
+| Multi-branch collisions | Compute complementarity per candidate branch, take max |
+| Threshold type | Fixed values (0.7, 0.4), not percentile-based |
+| Collision detection | Extraction-based, not ground-truth membership |
 
 ---
 
 ## Where I Left Off
 
-**Next step:** Implement `compute_soldier_difficulty()` in `sampling.py` — this is the foundation for the new sampling strategy. Requires defining:
-- How to detect collision position from partial path
-- Complementarity score formula (how much do records cover different path segments?)
-- Structural resolvability check (do hierarchy constraints resolve ambiguity?)
-- Thresholds for difficulty tiers (easy/moderate/hard/extreme)
+**Design complete.** Next step is implementation of `compute_soldier_difficulty()` in `sampling.py`.
+
+Implementation requires:
+1. Build level → valid designators lookup from hierarchy_reference.json
+2. Map characterized extractions to explicit level coverage
+3. Map uncharacterized extractions to speculative level coverage with validity check
+4. Aggregate confidences across records per soldier
+5. Check collision position against collision index
+6. Check structural resolvability (do constraints eliminate all but one branch?)
+7. Apply tier thresholds
 
 ---
 
-## Open Questions
+## Open Questions (Updated)
 
-1. **Complementarity formula:** How exactly to score whether records are complementary vs. redundant? Need to define what "covering different path segments" means operationally.
+### Resolved This Session
 
-2. **Difficulty tier thresholds:** What cutoffs define easy/moderate/hard/extreme? Should these be relative (percentiles) or absolute?
+1. ~~**Complementarity formula**~~ → Sum of level confidences / min(branch_depth, 4)
+2. ~~**Difficulty tier thresholds**~~ → Fixed: 0.7 and 0.4
 
-3. **Structural discriminator extraction:** How to automatically identify which terms are unique to which branch from hierarchy_reference.json? May need to add explicit term lists to hierarchy config.
+### Still Open
 
-4. **Cross-branch collision handling:** When components from different branches share a designator (e.g., "7" in Fleet 7 vs Operation 7), how does depth mismatch interact with the collision sampling logic?
+3. **Structural discriminator extraction:** How to automatically identify which terms are unique to which branch from hierarchy_reference.json? May need explicit `discriminating_terms` list in hierarchy config.
 
-5. **Migration path:** Existing resolver code is marked "complete" — what's the refactoring strategy? Rewrite modules in place, or create v2 alongside?
+4. **Cross-branch collision handling:** Partially addressed (depth mismatch as exclusion signal). May need refinement when hitting real examples.
+
+5. **Migration path:** Existing resolver code marked "complete" — refactoring strategy TBD. Options: rewrite modules in place, or create v2 alongside.
+
+---
+
+## Artifacts Produced
+
+| Artifact | Location | Status |
+|----------|----------|--------|
+| Difficulty Model | `docs/DIFFICULTY_MODEL.md` | New — ready for review |
+| Session Extract | `.project_history/extracts/raw/2026-01-27_opus_difficulty-batching.md` | New |
+| ADR-009 | `docs/architecture/decisions/ADR-009_resolver-generation-alignment.md` | Unchanged (design aligns with existing ADR) |
+| Resolver CURRENT.md | `docs/components/strategies/resolver/CURRENT.md` | Needs update to reference DIFFICULTY_MODEL.md |
+
+---
+
+## References
+
+- `docs/DIFFICULTY_MODEL.md` — Operational difficulty computation (new)
+- `docs/DISAMBIGUATION_MODEL.md` — Three-layer conceptual framework
+- `ADR-006` — Record quality ≠ resolution difficulty
+- `ADR-009` — Resolver generation alignment

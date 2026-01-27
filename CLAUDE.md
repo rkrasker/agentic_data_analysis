@@ -34,7 +34,7 @@ Across workflows, three variable categories define the strategy space:
 
 ## The Three-Layer Difficulty Model
 
-**Critical insight: Record quality ≠ State resolution difficulty** (see [ADR-006](docs/architecture/decisions/ADR-006_per-record-vs-per-soldier-difficulty.md)).
+**Critical insight: Record quality ≠ State resolution difficulty** (see [ADR-006](docs/architecture/decisions/ADR-006_per-record-vs-per-soldier-difficulty.md)). For operational computation of soldier difficulty tiers, see [DIFFICULTY_MODEL.md](docs/DIFFICULTY_MODEL.md).
 
 A pristine record in a collision zone may be harder to resolve than degraded records that are complementary. The three layers—extraction, aggregation, structural—are detailed in ADR-006 and the [Glossary](docs/GLOSSARY.md).
 
@@ -57,6 +57,7 @@ See [docs/CODE_STYLE.md](docs/CODE_STYLE.md) for detailed guidance. Key principl
 |-----------|----------|
 | Architecture overview & status | [docs/architecture/CURRENT.md](docs/architecture/CURRENT.md) |
 | Disambiguation model deep-dive | [docs/DISAMBIGUATION_MODEL.md](docs/DISAMBIGUATION_MODEL.md) |
+| Difficulty computation (operational) | [docs/DIFFICULTY_MODEL.md](docs/DIFFICULTY_MODEL.md) |
 | Three-layer difficulty model | [ADR-006](docs/architecture/decisions/ADR-006_per-record-vs-per-soldier-difficulty.md) |
 | Synthetic data v4.1 spec | [docs/components/synthetic_data_generation/CURRENT.md](docs/components/synthetic_data_generation/CURRENT.md) |
 | Glossary / terminology | [docs/GLOSSARY.md](docs/GLOSSARY.md) |
@@ -72,11 +73,9 @@ See [docs/CODE_STYLE.md](docs/CODE_STYLE.md) for detailed guidance. Key principl
 
 **Active work**: Synthetic data v4.1 implementation — Terraform Combine domain with three-layer difficulty model.
 
-**What's stable**: Core pipeline structure, LLM phase interfaces, evaluation metrics framework, documentation organization, difficulty model design (ADR-006).
+**What's stable**: Core pipeline structure, LLM phase interfaces, evaluation metrics framework, documentation organization, difficulty model design (ADR-006, DIFFICULTY_MODEL.md).
 
 **What's in flux**: Synthetic generation code being rewritten for v4.1. Preprocessing will need updates after synthetic v4.1 is complete.
-
-**Known limitation:** Synthetic records still appear cleaner than real-world archival data; quality tier is source-level and does not guarantee noisy text. Realism tuning remains in progress.
 
 ## Key ADRs
 
@@ -84,5 +83,6 @@ See [docs/CODE_STYLE.md](docs/CODE_STYLE.md) for detailed guidance. Key principl
 |-----|----------|
 | **ADR-006** | Three-layer difficulty model: record quality ≠ resolution difficulty |
 | **ADR-007** | Domain decontamination: Terraform Combine fictional setting for synthetic data |
+| **ADR-009** | Resolver generation alignment: sample by soldier difficulty, not record quality |
 
 See [docs/ADR_INDEX.md](docs/ADR_INDEX.md) for full list.
