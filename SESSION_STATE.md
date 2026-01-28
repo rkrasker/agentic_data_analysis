@@ -1,53 +1,67 @@
 # SESSION_STATE.md
 
-**Last Updated:** 2026-01-27
-**Session:** Opus 4.5 strategy session — Difficulty batching strategy
+**Last Updated:** 2026-01-28
+**Session:** Opus 4.5 strategy session — Structural discriminators extraction
 
 ---
 
 ## Active Task
 
-Implement `compute_soldier_difficulty()` for sampling. Design work complete; ready for implementation.
+Build `extract_structural_discriminators()` utility. This is an intermediate dependency that must be completed before `compute_soldier_difficulty()` implementation.
 
 ---
 
 ## Completed This Session
 
-### Difficulty Model Design (New Document)
+### Identified Shared Dependency
 
-Created `docs/DIFFICULTY_MODEL.md` as a cross-cutting reference document (peer to `DISAMBIGUATION_MODEL.md`). Captures:
+Recognized that "structural discriminator extraction" (previously open question #3) is already scoped as part of resolver Phase 5's deterministic rewrite (ADR-009). Two consumers need the same underlying computation:
 
-- Confidence weights for level coverage (1.0 / 0.75 / 0.25)
-- Complementarity formula: sum of level confidences / min(branch_depth, 4)
-- Structural resolvability: boolean based on branch elimination
-- Difficulty tier thresholds: fixed at 0.7 and 0.4
-- Edge case handling
+| Consumer | Question | Uses Output For |
+|----------|----------|-----------------|
+| **Difficulty Model** | Is this soldier structurally resolvable? | `structural_resolvability` boolean |
+| **Resolver Phase 5** | What exclusion rules apply to this component? | Deterministic exclusion rules in resolver JSON |
 
-### Key Decisions
+### Created Implementation Instruction
 
-| Decision | Resolution |
-|----------|------------|
-| Data source | `canonical.parquet` — leverage pre-extracted characterized + uncharacterized columns |
-| Complementarity denominator | min(branch_depth, 4) — caps to avoid micro-level penalty |
-| Uncharacterized handling | Check validity against hierarchy; weight by ambiguity level |
-| Multi-branch collisions | Compute complementarity per candidate branch, take max |
-| Threshold type | Fixed values (0.7, 0.4), not percentile-based |
-| Collision detection | Extraction-based, not ground-truth membership |
+Produced detailed instruction file for agent to build the utility:
+- Input: `config/hierarchies/hierarchy_reference.json` (includes full component enumeration)
+- Output: `config/hierarchies/structural_discriminators.json`
+- Computation: Level name discriminators, designator discriminators, depth discriminators, branch exclusion rules, collision index
+
+### Clarified Hierarchy Structure
+
+Confirmed that `hierarchy_reference.json` contains:
+- `branches`: Branch definitions with depth, levels, valid_designators
+- `components`: Full enumeration of actual component paths
+
+This enables computing **actual** collisions (components that exist and share ambiguous partial paths) rather than just potential collisions based on designator overlap.
 
 ---
 
 ## Where I Left Off
 
-**Design complete.** Next step is implementation of `compute_soldier_difficulty()` in `sampling.py`.
+**Instruction complete.** Next step is agent execution of `instructions/active/008extract_structural_discriminators.md`.
 
-Implementation requires:
-1. Build level → valid designators lookup from hierarchy_reference.json
-2. Map characterized extractions to explicit level coverage
-3. Map uncharacterized extractions to speculative level coverage with validity check
-4. Aggregate confidences across records per soldier
-5. Check collision position against collision index
-6. Check structural resolvability (do constraints eliminate all but one branch?)
-7. Apply tier thresholds
+After that utility is built and tested:
+1. `compute_soldier_difficulty()` can be implemented (consumes structural_discriminators.json)
+2. Resolver Phase 5 can be updated to use the same output
+
+---
+
+## Task Dependencies (Updated)
+
+```
+extract_structural_discriminators()     ← YOU ARE HERE
+        │
+        ├──► compute_soldier_difficulty()   [blocked]
+        │           │
+        │           └──► sampling.py updates
+        │
+        └──► Phase 5 deterministic exclusions [blocked]
+                    │
+                    └──► llm_phases.py updates
+```
 
 ---
 
@@ -57,14 +71,15 @@ Implementation requires:
 
 1. ~~**Complementarity formula**~~ → Sum of level confidences / min(branch_depth, 4)
 2. ~~**Difficulty tier thresholds**~~ → Fixed: 0.7 and 0.4
+3. ~~**Structural discriminator extraction**~~ → Scoped as shared utility; instruction created
 
 ### Still Open
-
-3. **Structural discriminator extraction:** How to automatically identify which terms are unique to which branch from hierarchy_reference.json? May need explicit `discriminating_terms` list in hierarchy config.
 
 4. **Cross-branch collision handling:** Partially addressed (depth mismatch as exclusion signal). May need refinement when hitting real examples.
 
 5. **Migration path:** Existing resolver code marked "complete" — refactoring strategy TBD. Options: rewrite modules in place, or create v2 alongside.
+
+6. **Minimum extraction threshold:** Should soldiers with zero extractions be excluded from sampling entirely, or left as Extreme? (Deferred to implementation)
 
 ---
 
@@ -72,16 +87,17 @@ Implementation requires:
 
 | Artifact | Location | Status |
 |----------|----------|--------|
-| Difficulty Model | `docs/DIFFICULTY_MODEL.md` | New — ready for review |
-| Session Extract | `.project_history/extracts/raw/2026-01-27_opus_difficulty-batching.md` | New |
-| ADR-009 | `docs/architecture/decisions/ADR-009_resolver-generation-alignment.md` | Unchanged (design aligns with existing ADR) |
-| Resolver CURRENT.md | `docs/components/strategies/resolver/CURRENT.md` | Needs update to reference DIFFICULTY_MODEL.md |
+| Structural Discriminators Instruction | `instructions/active/008extract_structural_discriminators.md` | New — ready for agent execution |
+| Difficulty Model | `docs/DIFFICULTY_MODEL.md` | Complete (previous session) |
+| Session Extract | `.project_history/extracts/raw/2026-01-28_opus_structural-discriminators.md` | New |
+| ADR-009 | `docs/architecture/decisions/ADR-009_resolver-generation-alignment.md` | Unchanged |
+| Resolver CURRENT.md | `docs/components/strategies/resolver/CURRENT.md` | Still needs update to reference DIFFICULTY_MODEL.md |
 
 ---
 
 ## References
 
-- `docs/DIFFICULTY_MODEL.md` — Operational difficulty computation (new)
+- `docs/DIFFICULTY_MODEL.md` — Operational difficulty computation
 - `docs/DISAMBIGUATION_MODEL.md` — Three-layer conceptual framework
 - `ADR-006` — Record quality ≠ resolution difficulty
-- `ADR-009` — Resolver generation alignment
+- `ADR-009` — Resolver generation alignment (Phase 5 deterministic exclusions)

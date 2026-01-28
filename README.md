@@ -102,6 +102,7 @@ Example usage in `examples/sandbox_usage.py`.
 - Harness foundation complete - strategy-agnostic framework (2026-01-15)
 - Resolver generation workflow fully specified (2026-01-15)
 - Multi-provider LLM infrastructure via LangChain (2026-01-15)
+ - Rendering realism overhaul (label omission, value abbreviation, delimiter mixing) (2026-01-27)
 
 **Next:**
 - Resolver generation workflow - implement 7 modules
