@@ -41,14 +41,21 @@ synthetic-only metadata for analysis.
 
 ```
 src/preprocessing/
-├── regex_preprocessing.py    # Core extraction engine (domain-agnostic)
-├── glossary_generator.py     # Generates v4.1 Terraform Combine glossary
-├── preprocessing_adapter.py  # Bridges synthetic raw.parquet to extraction
-├── component_router.py       # Route records based on signals (pending)
-└── id_resolver.py            # Corr table application (pending)
+├── hierarchy/                        # Hierarchy analysis utilities
+│   ├── __init__.py
+│   └── structural_discriminators.py  # Extract discrimination rules from hierarchy
+├── regex_preprocessing.py            # Core extraction engine (domain-agnostic)
+├── glossary_generator.py             # Generates v4.1 Terraform Combine glossary
+├── preprocessing_adapter.py          # Bridges synthetic raw.parquet to extraction
+├── component_router.py               # Route records based on signals (pending)
+└── id_resolver.py                    # Corr table application (pending)
 
 config/glossaries/
-└── synthetic_glossary.json   # Auto-generated glossary (v4.1)
+└── synthetic_glossary.json           # Auto-generated glossary (v4.1)
+
+config/hierarchies/
+├── hierarchy_reference.json          # Branch definitions (human-authored)
+└── structural_discriminators.json    # Derived discrimination rules (computed)
 ```
 
 ## Key Design Choices
@@ -118,9 +125,15 @@ Bridges synthetic `raw.parquet` to regex extraction and splits outputs.
 
 - Glossary regeneration: `python3.11 -m src.preprocessing.glossary_generator`
 - Adapter run: `python3.11 -m src.preprocessing.preprocessing_adapter --timing`
+- Structural discriminators: `python3.11 -m src.preprocessing.hierarchy.structural_discriminators`
 - Validate join integrity on `(source_id, soldier_id, state_id)`
 
 ## Changelog
+
+### v2.1.0 (2026-01-28)
+- Added `hierarchy/` submodule with `structural_discriminators.py`
+- Extracts level name, designator, and depth discriminators from hierarchy
+- Generates `structural_discriminators.json` for difficulty model and resolver Phase 5
 
 ### v2.0.0 (2026-01-26)
 - Updated glossary generator to Terraform Combine v4.1

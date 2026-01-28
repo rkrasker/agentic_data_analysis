@@ -16,6 +16,7 @@ Canonical terminology definitions for the military records disambiguation projec
 | **Difficulty tier** | Per-soldier measure of resolution difficulty (all layers): easy/moderate/hard/extreme |
 | **Complementarity score** | How well a soldier's records cover different path segments (0.0-1.0) |
 | **Structural resolvability** | Whether Layer 3 constraints can resolve ambiguity |
+| **Structural discriminator** | A level name, designator value, or depth that uniquely identifies a branch |
 | **Partial path** | Incomplete hierarchy (e.g., regiment + battalion but no division) |
 | **Structural inference** | Using hierarchy constraints to infer unit types when text omits them |
 | **Familiarity gradient** | Clerks abbreviate for their own unit, spell out foreign units |

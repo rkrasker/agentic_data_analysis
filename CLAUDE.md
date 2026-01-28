@@ -4,7 +4,9 @@ This document provides conceptual context for AI assistants working on this code
 
 ## What This Project Is
 
-A military records disambiguation system for WWII-era data focused on **state resolution**. Each soldier has a canonical `soldier_id`, but may have **multiple latent states**. Each state corresponds to a specific **post** (a unit assignment). The system must discover how many states exist for a soldier, which records belong to each state, and what post each state resolves to.
+A military records disambiguation system targeting WWII-era data, focused on **state resolution**. Each soldier has a canonical `soldier_id`, but may have **multiple latent states**. Each state corresponds to a specific **post** (a unit assignment). The system must discover how many states exist for a soldier, which records belong to each state, and what post each state resolves to.
+
+**Development approach**: We build and validate using fully synthetic data in the fictional "Terraform Combine" domain rather than real WWII data. This prevents LLM training data leakage from contaminating our evaluation results (see ADR-007). The architecture is domain-agnostic; once validated, we deploy against real WWII records.
 
 We build and test multiple LLM workflows for this problem. Even when not stated in a prompt, the LLM's key function is to **infer states**: propose record groupings, determine how many posts are present, and consolidate each group's evidence into a resolved post.
 
@@ -34,7 +36,7 @@ Across workflows, three variable categories define the strategy space:
 
 ## The Three-Layer Difficulty Model
 
-**Critical insight: Record quality ≠ State resolution difficulty** (see [ADR-006](docs/architecture/decisions/ADR-006_per-record-vs-per-soldier-difficulty.md)). For operational computation of soldier difficulty tiers, see [DIFFICULTY_MODEL.md](docs/DIFFICULTY_MODEL.md).
+**Critical insight: Record quality ≠ State resolution difficulty** (see [ADR-006](docs/architecture/decisions/ADR-006_per-record-vs-per-soldier-difficulty.md)). For operational computation of soldier difficulty tiers, see [DIFFICULTY_MODEL.md](DIFFICULTY_MODEL.md).
 
 A pristine record in a collision zone may be harder to resolve than degraded records that are complementary. The three layers—extraction, aggregation, structural—are detailed in ADR-006 and the [Glossary](docs/GLOSSARY.md).
 
@@ -57,7 +59,7 @@ See [docs/CODE_STYLE.md](docs/CODE_STYLE.md) for detailed guidance. Key principl
 |-----------|----------|
 | Architecture overview & status | [docs/architecture/CURRENT.md](docs/architecture/CURRENT.md) |
 | Disambiguation model deep-dive | [docs/DISAMBIGUATION_MODEL.md](docs/DISAMBIGUATION_MODEL.md) |
-| Difficulty computation (operational) | [docs/DIFFICULTY_MODEL.md](docs/DIFFICULTY_MODEL.md) |
+| Difficulty computation (operational) | [DIFFICULTY_MODEL.md](DIFFICULTY_MODEL.md) |
 | Three-layer difficulty model | [ADR-006](docs/architecture/decisions/ADR-006_per-record-vs-per-soldier-difficulty.md) |
 | Synthetic data v4.1 spec | [docs/components/synthetic_data_generation/CURRENT.md](docs/components/synthetic_data_generation/CURRENT.md) |
 | Glossary / terminology | [docs/GLOSSARY.md](docs/GLOSSARY.md) |
@@ -71,11 +73,13 @@ See [docs/CODE_STYLE.md](docs/CODE_STYLE.md) for detailed guidance. Key principl
 
 **Branch**: `main`
 
-**Active work**: Synthetic data v4.1 implementation — Terraform Combine domain with three-layer difficulty model.
+**Recently completed**:
+- Synthetic data v4.1 (Terraform Combine domain with three-layer difficulty model)
+- Preprocessing v4.1 updates including structural discriminators extraction (`src/preprocessing/hierarchy/`)
 
-**What's stable**: Core pipeline structure, LLM phase interfaces, evaluation metrics framework, documentation organization, difficulty model design (ADR-006, DIFFICULTY_MODEL.md).
+**What's stable**: Core pipeline structure, LLM phase interfaces, evaluation metrics framework, documentation organization, difficulty model design (ADR-006, DIFFICULTY_MODEL.md), synthetic data v4.1, preprocessing pipeline.
 
-**What's in flux**: Synthetic generation code being rewritten for v4.1. Preprocessing will need updates after synthetic v4.1 is complete.
+**What's in flux**: Strategy optimization and resolver generation workflows.
 
 ## Key ADRs
 
@@ -83,6 +87,7 @@ See [docs/CODE_STYLE.md](docs/CODE_STYLE.md) for detailed guidance. Key principl
 |-----|----------|
 | **ADR-006** | Three-layer difficulty model: record quality ≠ resolution difficulty |
 | **ADR-007** | Domain decontamination: Terraform Combine fictional setting for synthetic data |
+| **ADR-008** | Preprocessing v4.1: hierarchy-aware preprocessing with structural discriminators |
 | **ADR-009** | Resolver generation alignment: sample by soldier difficulty, not record quality |
 
 See [docs/ADR_INDEX.md](docs/ADR_INDEX.md) for full list.

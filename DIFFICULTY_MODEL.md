@@ -69,12 +69,16 @@ Branch structures with valid designators per level:
 
 ### Collision Index
 
-Output from `extract_structure()` — maps (level, value) pairs to component sets:
+Output from `extract_structural_discriminators()` — pre-computed in `config/hierarchies/structural_discriminators.json`.
+
+Maps (level, value) pairs to component sets:
 
 ```python
 collisions: Dict[Tuple[str, Any], Set[str]]
 # e.g., {("fleet", 3): {"defense_command_alpha_3", "resource_directorate_alpha_3"}}
 ```
+
+**Source:** `src/preprocessing/hierarchy/structural_discriminators.py`
 
 ---
 

@@ -251,14 +251,16 @@ Extracts per-branch:
 **Tier requirement:** Skipped for `sparse` components
 
 ### Phase 5: Exclusion Derivation (Deterministic)
-**Input:** Hierarchy reference
+**Input:** `config/hierarchies/structural_discriminators.json` (pre-computed)
 **Output:** Rules for what definitively excludes this component
-**NO LLM CALL** — computed deterministically from hierarchy
+**NO LLM CALL** — reads pre-computed exclusion rules
 
-Derives:
+**Implementation:** Loads `branch_exclusion_rules` from `structural_discriminators.json`, which contains:
 - Branch-unique term exclusions ("squadron" excludes Colonial Administration)
 - Depth mismatch exclusions (5-level path excludes 3-level branches)
 - Invalid designator exclusions (Fleet 8 doesn't exist)
+
+**Source:** `src/preprocessing/hierarchy/structural_discriminators.py`
 
 **Rationale (ADR-009):** With synthetic data where hierarchy is complete by construction, structural facts are known — mining them from data is redundant.
 
@@ -653,7 +655,7 @@ Downstream code can weight: `structural` (highest trust) > `observed` (high trus
 | Component | Status | Change Needed |
 |-----------|--------|---------------|
 | `sampling.py` | Needs update | Add `compute_soldier_difficulty()`, remove quality tier filtering |
-| `structure.py` | Needs rewrite | Heterogeneous branches, structural discriminators |
+| `structure.py` | Partial | Structural discriminators now in `src/preprocessing/hierarchy/`; component-specific structure TBD |
 | `llm_phases.py` | Needs update | Remove Phase 5 LLM call, remove quality tier filtering |
 | `prompts.py` | Needs update | Three-layer hard case criteria |
 | `assembler.py` | Needs update | New schema for structure/exclusions |
@@ -681,7 +683,16 @@ Downstream code can weight: `structural` (highest trust) > `observed` (high trus
 ### Module 2: Structure Extractor
 
 **File:** `src/strategies/resolver/generator/structure.py`
-**Status:** Needs rewrite for ADR-009
+**Status:** Partially complete — structural discriminators extraction now available
+
+**Dependency:** `src/preprocessing/hierarchy/structural_discriminators.py` provides pre-computed:
+- Level name discriminators (which terms are unique to which branches)
+- Designator discriminators (which values are valid in which branches/levels)
+- Depth discriminators (which depths are unique to which branches)
+- Branch exclusion rules (what signals exclude each branch)
+- Collision index (which (level, value) pairs collide)
+
+**Output:** `config/hierarchies/structural_discriminators.json`
 
 ```python
 @dataclass

@@ -1,77 +1,84 @@
 # SESSION_STATE.md
 
 **Last Updated:** 2026-01-28
-**Session:** Opus 4.5 strategy session — Structural discriminators extraction
+**Session:** Opus 4.5 implementation session — Structural discriminators complete
 
 ---
 
 ## Active Task
 
-Build `extract_structural_discriminators()` utility. This is an intermediate dependency that must be completed before `compute_soldier_difficulty()` implementation.
+None — `extract_structural_discriminators()` implementation complete. Ready for next task.
 
 ---
 
 ## Completed This Session
 
-### Identified Shared Dependency
+### Implemented `extract_structural_discriminators()`
 
-Recognized that "structural discriminator extraction" (previously open question #3) is already scoped as part of resolver Phase 5's deterministic rewrite (ADR-009). Two consumers need the same underlying computation:
+Built the utility that extracts structural discrimination rules from hierarchy reference:
 
-| Consumer | Question | Uses Output For |
-|----------|----------|-----------------|
-| **Difficulty Model** | Is this soldier structurally resolvable? | `structural_resolvability` boolean |
-| **Resolver Phase 5** | What exclusion rules apply to this component? | Deterministic exclusion rules in resolver JSON |
+**Location:** `src/preprocessing/hierarchy/structural_discriminators.py`
 
-### Created Implementation Instruction
+**Output:** `config/hierarchies/structural_discriminators.json`
 
-Produced detailed instruction file for agent to build the utility:
-- Input: `config/hierarchies/hierarchy_reference.json` (includes full component enumeration)
-- Output: `config/hierarchies/structural_discriminators.json`
-- Computation: Level name discriminators, designator discriminators, depth discriminators, branch exclusion rules, collision index
+**Features:**
+- Level name discriminators (which terms are unique to which branches)
+- Designator discriminators (which values are valid in which branches/levels)
+- Depth discriminators (which depths are unique to which branches)
+- Branch exclusion rules (presence-based rules for excluding branches)
+- Collision index (which (level, value) pairs map to multiple components)
 
-### Clarified Hierarchy Structure
+**Tests:** 19 unit tests in `tests/test_structural_discriminators.py` — all passing
 
-Confirmed that `hierarchy_reference.json` contains:
-- `branches`: Branch definitions with depth, levels, valid_designators
-- `components`: Full enumeration of actual component paths
+### Updated Documentation
 
-This enables computing **actual** collisions (components that exist and share ambiguous partial paths) rather than just potential collisions based on designator overlap.
+| File | Update |
+|------|--------|
+| `DIFFICULTY_MODEL.md` | Updated collision index source to reference new module |
+| `CLAUDE.md` | Fixed broken links to DIFFICULTY_MODEL.md |
+| `docs/components/preprocessing/CURRENT.md` | Added hierarchy/ subdirectory, changelog entry |
+| `docs/components/strategies/resolver/CURRENT.md` | Updated Module 2 and Phase 5 to reference new module |
+| `docs/GLOSSARY.md` | Added "structural discriminator" term |
+| `docs/architecture/CURRENT.md` | Updated preprocessing status, added artifact |
+
+### Moved Completed Instruction
+
+`instructions/active/008extract_structural_discriminators.md` → `instructions/completed/`
 
 ---
 
 ## Where I Left Off
 
-**Instruction complete.** Next step is agent execution of `instructions/active/008extract_structural_discriminators.md`.
+**Implementation complete.** The structural discriminators utility is now available for:
 
-After that utility is built and tested:
-1. `compute_soldier_difficulty()` can be implemented (consumes structural_discriminators.json)
-2. Resolver Phase 5 can be updated to use the same output
+1. **Difficulty Model:** `compute_soldier_difficulty()` can load `structural_discriminators.json` to determine `structural_resolvability`
+2. **Resolver Phase 5:** Can read pre-computed `branch_exclusion_rules` instead of computing them
 
 ---
 
 ## Task Dependencies (Updated)
 
 ```
-extract_structural_discriminators()     ← YOU ARE HERE
+extract_structural_discriminators()     ✓ COMPLETE
         │
-        ├──► compute_soldier_difficulty()   [blocked]
+        ├──► compute_soldier_difficulty()   [unblocked - ready to implement]
         │           │
         │           └──► sampling.py updates
         │
-        └──► Phase 5 deterministic exclusions [blocked]
+        └──► Phase 5 deterministic exclusions [unblocked - can use output]
                     │
                     └──► llm_phases.py updates
 ```
 
 ---
 
-## Open Questions (Updated)
+## Open Questions
 
 ### Resolved This Session
 
 1. ~~**Complementarity formula**~~ → Sum of level confidences / min(branch_depth, 4)
 2. ~~**Difficulty tier thresholds**~~ → Fixed: 0.7 and 0.4
-3. ~~**Structural discriminator extraction**~~ → Scoped as shared utility; instruction created
+3. ~~**Structural discriminator extraction**~~ → ✓ Implemented
 
 ### Still Open
 
@@ -87,17 +94,25 @@ extract_structural_discriminators()     ← YOU ARE HERE
 
 | Artifact | Location | Status |
 |----------|----------|--------|
-| Structural Discriminators Instruction | `instructions/active/008extract_structural_discriminators.md` | New — ready for agent execution |
-| Difficulty Model | `docs/DIFFICULTY_MODEL.md` | Complete (previous session) |
-| Session Extract | `.project_history/extracts/raw/2026-01-28_opus_structural-discriminators.md` | New |
-| ADR-009 | `docs/architecture/decisions/ADR-009_resolver-generation-alignment.md` | Unchanged |
-| Resolver CURRENT.md | `docs/components/strategies/resolver/CURRENT.md` | Still needs update to reference DIFFICULTY_MODEL.md |
+| Structural Discriminators Module | `src/preprocessing/hierarchy/structural_discriminators.py` | ✓ Complete |
+| Structural Discriminators Output | `config/hierarchies/structural_discriminators.json` | ✓ Generated |
+| Unit Tests | `tests/test_structural_discriminators.py` | ✓ 19 tests passing |
+| Test Fixtures | `tests/fixtures/test_hierarchy_*.json` | ✓ Complete |
+| Instruction (completed) | `instructions/completed/008extract_structural_discriminators.md` | ✓ Moved |
+
+---
+
+## Next Steps
+
+1. **`compute_soldier_difficulty()`** — Now unblocked; can consume `structural_discriminators.json`
+2. **Resolver Phase 5 update** — Wire up to use pre-computed exclusion rules
+3. **`sampling.py` updates** — Add difficulty-based sampling using new difficulty computation
 
 ---
 
 ## References
 
-- `docs/DIFFICULTY_MODEL.md` — Operational difficulty computation
+- `DIFFICULTY_MODEL.md` — Operational difficulty computation
 - `docs/DISAMBIGUATION_MODEL.md` — Three-layer conceptual framework
 - `ADR-006` — Record quality ≠ resolution difficulty
 - `ADR-009` — Resolver generation alignment (Phase 5 deterministic exclusions)

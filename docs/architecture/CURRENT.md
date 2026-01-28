@@ -17,7 +17,7 @@ Consolidate fragmented historical military records into coherent soldier unit as
 | Component | Status | Notes |
 |-----------|--------|-------|
 | Synthetic Data | ✓ Implemented | Terraform Combine domain + difficulty model; artifacts pending regeneration |
-| Preprocessing | Update needed | Regex + adapter need v4.1 schema updates |
+| Preprocessing | ✓ Partial | Regex + adapter updated; hierarchy discriminators complete |
 | **Harness Foundation** | ✓ Complete | Strategy-agnostic framework |
 | ↳ Base Strategy Interface | ✓ Complete | Plugin architecture |
 | ↳ Train/Test Splitter | ✓ Complete | Stratified splitting |
@@ -84,6 +84,7 @@ Synthetic Generator → raw.parquet → [Regex Preprocessing] → canonical.parq
 - `data/synthetic/raw.parquet` — Generated records (v4.1: includes path_completeness, levels_provided, extraction_signals)
 - `data/synthetic/validation.parquet` — Ground truth with state_id, collision_severity, difficulty tier + complementarity + structural_resolvability
 - `data/synthetic/canonical.parquet` — Preprocessed with extraction columns
+- `config/hierarchies/structural_discriminators.json` — Pre-computed discrimination rules for difficulty model and resolver Phase 5
 - `config/resolvers/*.json` — Per-component resolvers (to be generated)
 
 ## Key Decisions
