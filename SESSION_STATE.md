@@ -1,7 +1,7 @@
 # SESSION_STATE.md
 
 **Last Updated:** 2026-01-28
-**Session:** Opus 4.5 implementation session — Structural discriminators complete
+**Session:** Opus 4.5 implementation session — Difficulty computation implemented
 
 ---
 
@@ -45,14 +45,35 @@ Built the utility that extracts structural discrimination rules from hierarchy r
 
 `instructions/active/008extract_structural_discriminators.md` → `instructions/completed/`
 
+### Implemented `compute_soldier_difficulty()`
+
+Built the soldier-level difficulty computation module and batch helper:
+
+**Location:** `src/preprocessing/difficulty/`
+
+**Features:**
+- Collision position detection using precomputed collision index
+- Complementarity scoring with branch-aware aggregation
+- Structural resolvability via exclusion rules
+- Difficulty tier assignment (easy/moderate/hard/extreme)
+- Batch computation over canonical records
+
+**Tests:** `tests/test_difficulty_compute.py` — 8 unit tests passing
+
+### Added Synthetic Generation Notebook
+
+**Notebook:** `synthetic_generation_pipeline.ipynb`
+
+**Purpose:** End-to-end synthetic generation + preprocessing pipeline scaffold
+
 ---
 
 ## Where I Left Off
 
-**Implementation complete.** The structural discriminators utility is now available for:
+**Implementation complete.** The difficulty computation is now available for:
 
-1. **Difficulty Model:** `compute_soldier_difficulty()` can load `structural_discriminators.json` to determine `structural_resolvability`
-2. **Resolver Phase 5:** Can read pre-computed `branch_exclusion_rules` instead of computing them
+1. **Sampling workflows:** `compute_soldier_difficulty()` can be called from `sampling.py`
+2. **Difficulty stratification:** validation data can be enriched with computed tiers
 
 ---
 
@@ -61,9 +82,9 @@ Built the utility that extracts structural discrimination rules from hierarchy r
 ```
 extract_structural_discriminators()     ✓ COMPLETE
         │
-        ├──► compute_soldier_difficulty()   [unblocked - ready to implement]
+        ├──► compute_soldier_difficulty()   ✓ COMPLETE
         │           │
-        │           └──► sampling.py updates
+        │           └──► sampling.py updates [pending]
         │
         └──► Phase 5 deterministic exclusions [unblocked - can use output]
                     │
@@ -86,7 +107,7 @@ extract_structural_discriminators()     ✓ COMPLETE
 
 5. **Migration path:** Existing resolver code marked "complete" — refactoring strategy TBD. Options: rewrite modules in place, or create v2 alongside.
 
-6. **Minimum extraction threshold:** Should soldiers with zero extractions be excluded from sampling entirely, or left as Extreme? (Deferred to implementation)
+6. ~~**Minimum extraction threshold:** Should soldiers with zero extractions be excluded from sampling entirely, or left as Extreme?~~ → Implemented: zero extractions yield Extreme.
 
 ---
 
@@ -99,14 +120,17 @@ extract_structural_discriminators()     ✓ COMPLETE
 | Unit Tests | `tests/test_structural_discriminators.py` | ✓ 19 tests passing |
 | Test Fixtures | `tests/fixtures/test_hierarchy_*.json` | ✓ Complete |
 | Instruction (completed) | `instructions/completed/008extract_structural_discriminators.md` | ✓ Moved |
+| Difficulty Module | `src/preprocessing/difficulty/compute.py` | ✓ Complete |
+| Difficulty Loader | `src/preprocessing/difficulty/loader.py` | ✓ Complete |
+| Difficulty Tests | `tests/test_difficulty_compute.py` | ✓ 8 tests passing |
+| Synthetic Pipeline Notebook | `synthetic_generation_pipeline.ipynb` | ✓ Added |
 
 ---
 
 ## Next Steps
 
-1. **`compute_soldier_difficulty()`** — Now unblocked; can consume `structural_discriminators.json`
+1. **`sampling.py` updates** — Add difficulty-based sampling using new difficulty computation
 2. **Resolver Phase 5 update** — Wire up to use pre-computed exclusion rules
-3. **`sampling.py` updates** — Add difficulty-based sampling using new difficulty computation
 
 ---
 
