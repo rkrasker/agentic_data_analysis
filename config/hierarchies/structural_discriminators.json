@@ -1,0 +1,1837 @@
+{
+  "metadata": {
+    "generated_from": "hierarchy_reference.json",
+    "generated_at": "2026-01-28T16:15:07.282940+00:00",
+    "branches_analyzed": [
+      "colonial_administration",
+      "defense_command",
+      "expeditionary_corps",
+      "resource_directorate"
+    ]
+  },
+  "level_name_discriminators": {
+    "sector": {
+      "unique_to": null,
+      "appears_in": [
+        "colonial_administration",
+        "defense_command",
+        "expeditionary_corps",
+        "resource_directorate"
+      ]
+    },
+    "colony": {
+      "unique_to": "colonial_administration",
+      "appears_in": [
+        "colonial_administration"
+      ]
+    },
+    "district": {
+      "unique_to": "colonial_administration",
+      "appears_in": [
+        "colonial_administration"
+      ]
+    },
+    "settlement": {
+      "unique_to": "colonial_administration",
+      "appears_in": [
+        "colonial_administration"
+      ]
+    },
+    "wing": {
+      "unique_to": "defense_command",
+      "appears_in": [
+        "defense_command"
+      ]
+    },
+    "element": {
+      "unique_to": "defense_command",
+      "appears_in": [
+        "defense_command"
+      ]
+    },
+    "fleet": {
+      "unique_to": "defense_command",
+      "appears_in": [
+        "defense_command"
+      ]
+    },
+    "squadron": {
+      "unique_to": "defense_command",
+      "appears_in": [
+        "defense_command"
+      ]
+    },
+    "team": {
+      "unique_to": "expeditionary_corps",
+      "appears_in": [
+        "expeditionary_corps"
+      ]
+    },
+    "expedition": {
+      "unique_to": "expeditionary_corps",
+      "appears_in": [
+        "expeditionary_corps"
+      ]
+    },
+    "crew": {
+      "unique_to": "resource_directorate",
+      "appears_in": [
+        "resource_directorate"
+      ]
+    },
+    "facility": {
+      "unique_to": "resource_directorate",
+      "appears_in": [
+        "resource_directorate"
+      ]
+    },
+    "operation": {
+      "unique_to": "resource_directorate",
+      "appears_in": [
+        "resource_directorate"
+      ]
+    }
+  },
+  "designator_discriminators": {
+    "Alpha": {
+      "type": "word",
+      "unique_to_branch": null,
+      "valid_in": {
+        "colonial_administration": [
+          "sector"
+        ],
+        "defense_command": [
+          "sector"
+        ],
+        "expeditionary_corps": [
+          "sector"
+        ],
+        "resource_directorate": [
+          "sector"
+        ]
+      },
+      "collision_levels": [
+        [
+          "colonial_administration",
+          "sector"
+        ],
+        [
+          "defense_command",
+          "sector"
+        ],
+        [
+          "expeditionary_corps",
+          "sector"
+        ],
+        [
+          "resource_directorate",
+          "sector"
+        ]
+      ]
+    },
+    "Beta": {
+      "type": "word",
+      "unique_to_branch": null,
+      "valid_in": {
+        "colonial_administration": [
+          "sector"
+        ],
+        "defense_command": [
+          "sector"
+        ],
+        "expeditionary_corps": [
+          "sector"
+        ],
+        "resource_directorate": [
+          "sector"
+        ]
+      },
+      "collision_levels": [
+        [
+          "colonial_administration",
+          "sector"
+        ],
+        [
+          "defense_command",
+          "sector"
+        ],
+        [
+          "expeditionary_corps",
+          "sector"
+        ],
+        [
+          "resource_directorate",
+          "sector"
+        ]
+      ]
+    },
+    "Gamma": {
+      "type": "word",
+      "unique_to_branch": null,
+      "valid_in": {
+        "colonial_administration": [
+          "sector"
+        ],
+        "defense_command": [
+          "sector"
+        ],
+        "expeditionary_corps": [
+          "sector"
+        ],
+        "resource_directorate": [
+          "sector"
+        ]
+      },
+      "collision_levels": [
+        [
+          "colonial_administration",
+          "sector"
+        ],
+        [
+          "defense_command",
+          "sector"
+        ],
+        [
+          "expeditionary_corps",
+          "sector"
+        ],
+        [
+          "resource_directorate",
+          "sector"
+        ]
+      ]
+    },
+    "Delta": {
+      "type": "word",
+      "unique_to_branch": null,
+      "valid_in": {
+        "colonial_administration": [
+          "sector"
+        ],
+        "defense_command": [
+          "sector"
+        ],
+        "expeditionary_corps": [
+          "sector"
+        ],
+        "resource_directorate": [
+          "sector"
+        ]
+      },
+      "collision_levels": [
+        [
+          "colonial_administration",
+          "sector"
+        ],
+        [
+          "defense_command",
+          "sector"
+        ],
+        [
+          "expeditionary_corps",
+          "sector"
+        ],
+        [
+          "resource_directorate",
+          "sector"
+        ]
+      ]
+    },
+    "Verdant": {
+      "type": "word",
+      "unique_to_branch": null,
+      "valid_in": {
+        "colonial_administration": [
+          "colony"
+        ],
+        "expeditionary_corps": [
+          "expedition"
+        ]
+      },
+      "collision_levels": [
+        [
+          "colonial_administration",
+          "colony"
+        ],
+        [
+          "expeditionary_corps",
+          "expedition"
+        ]
+      ]
+    },
+    "Amber": {
+      "type": "word",
+      "unique_to_branch": null,
+      "valid_in": {
+        "colonial_administration": [
+          "colony"
+        ],
+        "resource_directorate": [
+          "operation"
+        ]
+      },
+      "collision_levels": [
+        [
+          "colonial_administration",
+          "colony"
+        ],
+        [
+          "resource_directorate",
+          "operation"
+        ]
+      ]
+    },
+    "Kestrel": {
+      "type": "word",
+      "unique_to_branch": null,
+      "valid_in": {
+        "colonial_administration": [
+          "colony"
+        ],
+        "defense_command": [
+          "fleet"
+        ],
+        "expeditionary_corps": [
+          "expedition"
+        ],
+        "resource_directorate": [
+          "operation"
+        ]
+      },
+      "collision_levels": [
+        [
+          "colonial_administration",
+          "colony"
+        ],
+        [
+          "defense_command",
+          "fleet"
+        ],
+        [
+          "expeditionary_corps",
+          "expedition"
+        ],
+        [
+          "resource_directorate",
+          "operation"
+        ]
+      ]
+    },
+    "Thornmark": {
+      "type": "word",
+      "unique_to_branch": "colonial_administration",
+      "valid_in": {
+        "colonial_administration": [
+          "colony"
+        ]
+      },
+      "collision_levels": [
+        [
+          "colonial_administration",
+          "colony"
+        ]
+      ]
+    },
+    "Waystation": {
+      "type": "word",
+      "unique_to_branch": "colonial_administration",
+      "valid_in": {
+        "colonial_administration": [
+          "colony"
+        ]
+      },
+      "collision_levels": [
+        [
+          "colonial_administration",
+          "colony"
+        ]
+      ]
+    },
+    "1": {
+      "type": "numeric",
+      "unique_to_branch": null,
+      "valid_in": {
+        "colonial_administration": [
+          "district"
+        ],
+        "defense_command": [
+          "squadron"
+        ],
+        "expeditionary_corps": [
+          "team"
+        ],
+        "resource_directorate": [
+          "facility"
+        ]
+      },
+      "collision_levels": [
+        [
+          "colonial_administration",
+          "district"
+        ],
+        [
+          "defense_command",
+          "squadron"
+        ],
+        [
+          "expeditionary_corps",
+          "team"
+        ],
+        [
+          "resource_directorate",
+          "facility"
+        ]
+      ]
+    },
+    "2": {
+      "type": "numeric",
+      "unique_to_branch": null,
+      "valid_in": {
+        "colonial_administration": [
+          "district"
+        ],
+        "defense_command": [
+          "squadron"
+        ],
+        "expeditionary_corps": [
+          "team"
+        ],
+        "resource_directorate": [
+          "facility"
+        ]
+      },
+      "collision_levels": [
+        [
+          "colonial_administration",
+          "district"
+        ],
+        [
+          "defense_command",
+          "squadron"
+        ],
+        [
+          "expeditionary_corps",
+          "team"
+        ],
+        [
+          "resource_directorate",
+          "facility"
+        ]
+      ]
+    },
+    "3": {
+      "type": "numeric",
+      "unique_to_branch": null,
+      "valid_in": {
+        "colonial_administration": [
+          "district"
+        ],
+        "defense_command": [
+          "squadron"
+        ],
+        "expeditionary_corps": [
+          "team"
+        ],
+        "resource_directorate": [
+          "facility"
+        ]
+      },
+      "collision_levels": [
+        [
+          "colonial_administration",
+          "district"
+        ],
+        [
+          "defense_command",
+          "squadron"
+        ],
+        [
+          "expeditionary_corps",
+          "team"
+        ],
+        [
+          "resource_directorate",
+          "facility"
+        ]
+      ]
+    },
+    "4": {
+      "type": "numeric",
+      "unique_to_branch": null,
+      "valid_in": {
+        "colonial_administration": [
+          "district"
+        ],
+        "defense_command": [
+          "squadron"
+        ],
+        "expeditionary_corps": [
+          "team"
+        ],
+        "resource_directorate": [
+          "facility"
+        ]
+      },
+      "collision_levels": [
+        [
+          "colonial_administration",
+          "district"
+        ],
+        [
+          "defense_command",
+          "squadron"
+        ],
+        [
+          "expeditionary_corps",
+          "team"
+        ],
+        [
+          "resource_directorate",
+          "facility"
+        ]
+      ]
+    },
+    "5": {
+      "type": "numeric",
+      "unique_to_branch": null,
+      "valid_in": {
+        "colonial_administration": [
+          "district"
+        ],
+        "defense_command": [
+          "squadron"
+        ],
+        "expeditionary_corps": [
+          "team"
+        ],
+        "resource_directorate": [
+          "facility"
+        ]
+      },
+      "collision_levels": [
+        [
+          "colonial_administration",
+          "district"
+        ],
+        [
+          "defense_command",
+          "squadron"
+        ],
+        [
+          "expeditionary_corps",
+          "team"
+        ],
+        [
+          "resource_directorate",
+          "facility"
+        ]
+      ]
+    },
+    "6": {
+      "type": "numeric",
+      "unique_to_branch": null,
+      "valid_in": {
+        "colonial_administration": [
+          "district"
+        ],
+        "defense_command": [
+          "squadron"
+        ],
+        "expeditionary_corps": [
+          "team"
+        ],
+        "resource_directorate": [
+          "facility"
+        ]
+      },
+      "collision_levels": [
+        [
+          "colonial_administration",
+          "district"
+        ],
+        [
+          "defense_command",
+          "squadron"
+        ],
+        [
+          "expeditionary_corps",
+          "team"
+        ],
+        [
+          "resource_directorate",
+          "facility"
+        ]
+      ]
+    },
+    "7": {
+      "type": "numeric",
+      "unique_to_branch": null,
+      "valid_in": {
+        "colonial_administration": [
+          "district"
+        ],
+        "defense_command": [
+          "squadron"
+        ],
+        "expeditionary_corps": [
+          "team"
+        ],
+        "resource_directorate": [
+          "facility"
+        ]
+      },
+      "collision_levels": [
+        [
+          "colonial_administration",
+          "district"
+        ],
+        [
+          "defense_command",
+          "squadron"
+        ],
+        [
+          "expeditionary_corps",
+          "team"
+        ],
+        [
+          "resource_directorate",
+          "facility"
+        ]
+      ]
+    },
+    "8": {
+      "type": "numeric",
+      "unique_to_branch": null,
+      "valid_in": {
+        "colonial_administration": [
+          "district"
+        ],
+        "defense_command": [
+          "squadron"
+        ],
+        "expeditionary_corps": [
+          "team"
+        ],
+        "resource_directorate": [
+          "facility"
+        ]
+      },
+      "collision_levels": [
+        [
+          "colonial_administration",
+          "district"
+        ],
+        [
+          "defense_command",
+          "squadron"
+        ],
+        [
+          "expeditionary_corps",
+          "team"
+        ],
+        [
+          "resource_directorate",
+          "facility"
+        ]
+      ]
+    },
+    "Haven": {
+      "type": "word",
+      "unique_to_branch": "colonial_administration",
+      "valid_in": {
+        "colonial_administration": [
+          "settlement"
+        ]
+      },
+      "collision_levels": [
+        [
+          "colonial_administration",
+          "settlement"
+        ]
+      ]
+    },
+    "Prospect": {
+      "type": "word",
+      "unique_to_branch": "colonial_administration",
+      "valid_in": {
+        "colonial_administration": [
+          "settlement"
+        ]
+      },
+      "collision_levels": [
+        [
+          "colonial_administration",
+          "settlement"
+        ]
+      ]
+    },
+    "Landfall": {
+      "type": "word",
+      "unique_to_branch": "colonial_administration",
+      "valid_in": {
+        "colonial_administration": [
+          "settlement"
+        ]
+      },
+      "collision_levels": [
+        [
+          "colonial_administration",
+          "settlement"
+        ]
+      ]
+    },
+    "Waypoint": {
+      "type": "word",
+      "unique_to_branch": "colonial_administration",
+      "valid_in": {
+        "colonial_administration": [
+          "settlement"
+        ]
+      },
+      "collision_levels": [
+        [
+          "colonial_administration",
+          "settlement"
+        ]
+      ]
+    },
+    "Horizon": {
+      "type": "word",
+      "unique_to_branch": null,
+      "valid_in": {
+        "colonial_administration": [
+          "settlement"
+        ],
+        "expeditionary_corps": [
+          "expedition"
+        ]
+      },
+      "collision_levels": [
+        [
+          "colonial_administration",
+          "settlement"
+        ],
+        [
+          "expeditionary_corps",
+          "expedition"
+        ]
+      ]
+    },
+    "Talon": {
+      "type": "word",
+      "unique_to_branch": "defense_command",
+      "valid_in": {
+        "defense_command": [
+          "fleet"
+        ]
+      },
+      "collision_levels": [
+        [
+          "defense_command",
+          "fleet"
+        ]
+      ]
+    },
+    "Vanguard": {
+      "type": "word",
+      "unique_to_branch": "defense_command",
+      "valid_in": {
+        "defense_command": [
+          "fleet"
+        ]
+      },
+      "collision_levels": [
+        [
+          "defense_command",
+          "fleet"
+        ]
+      ]
+    },
+    "Aegis": {
+      "type": "word",
+      "unique_to_branch": "defense_command",
+      "valid_in": {
+        "defense_command": [
+          "fleet"
+        ]
+      },
+      "collision_levels": [
+        [
+          "defense_command",
+          "fleet"
+        ]
+      ]
+    },
+    "Sable": {
+      "type": "word",
+      "unique_to_branch": "defense_command",
+      "valid_in": {
+        "defense_command": [
+          "fleet"
+        ]
+      },
+      "collision_levels": [
+        [
+          "defense_command",
+          "fleet"
+        ]
+      ]
+    },
+    "9": {
+      "type": "numeric",
+      "unique_to_branch": null,
+      "valid_in": {
+        "defense_command": [
+          "squadron"
+        ],
+        "expeditionary_corps": [
+          "team"
+        ],
+        "resource_directorate": [
+          "facility"
+        ]
+      },
+      "collision_levels": [
+        [
+          "defense_command",
+          "squadron"
+        ],
+        [
+          "expeditionary_corps",
+          "team"
+        ],
+        [
+          "resource_directorate",
+          "facility"
+        ]
+      ]
+    },
+    "10": {
+      "type": "numeric",
+      "unique_to_branch": null,
+      "valid_in": {
+        "defense_command": [
+          "squadron"
+        ],
+        "expeditionary_corps": [
+          "team"
+        ],
+        "resource_directorate": [
+          "facility"
+        ]
+      },
+      "collision_levels": [
+        [
+          "defense_command",
+          "squadron"
+        ],
+        [
+          "expeditionary_corps",
+          "team"
+        ],
+        [
+          "resource_directorate",
+          "facility"
+        ]
+      ]
+    },
+    "11": {
+      "type": "numeric",
+      "unique_to_branch": null,
+      "valid_in": {
+        "defense_command": [
+          "squadron"
+        ],
+        "expeditionary_corps": [
+          "team"
+        ],
+        "resource_directorate": [
+          "facility"
+        ]
+      },
+      "collision_levels": [
+        [
+          "defense_command",
+          "squadron"
+        ],
+        [
+          "expeditionary_corps",
+          "team"
+        ],
+        [
+          "resource_directorate",
+          "facility"
+        ]
+      ]
+    },
+    "12": {
+      "type": "numeric",
+      "unique_to_branch": null,
+      "valid_in": {
+        "defense_command": [
+          "squadron"
+        ],
+        "expeditionary_corps": [
+          "team"
+        ],
+        "resource_directorate": [
+          "facility"
+        ]
+      },
+      "collision_levels": [
+        [
+          "defense_command",
+          "squadron"
+        ],
+        [
+          "expeditionary_corps",
+          "team"
+        ],
+        [
+          "resource_directorate",
+          "facility"
+        ]
+      ]
+    },
+    "A": {
+      "type": "alpha",
+      "unique_to_branch": null,
+      "valid_in": {
+        "defense_command": [
+          "element",
+          "wing"
+        ],
+        "expeditionary_corps": [
+          "team"
+        ],
+        "resource_directorate": [
+          "crew"
+        ]
+      },
+      "collision_levels": [
+        [
+          "defense_command",
+          "element"
+        ],
+        [
+          "defense_command",
+          "wing"
+        ],
+        [
+          "expeditionary_corps",
+          "team"
+        ],
+        [
+          "resource_directorate",
+          "crew"
+        ]
+      ]
+    },
+    "B": {
+      "type": "alpha",
+      "unique_to_branch": null,
+      "valid_in": {
+        "defense_command": [
+          "element",
+          "wing"
+        ],
+        "expeditionary_corps": [
+          "team"
+        ],
+        "resource_directorate": [
+          "crew"
+        ]
+      },
+      "collision_levels": [
+        [
+          "defense_command",
+          "element"
+        ],
+        [
+          "defense_command",
+          "wing"
+        ],
+        [
+          "expeditionary_corps",
+          "team"
+        ],
+        [
+          "resource_directorate",
+          "crew"
+        ]
+      ]
+    },
+    "C": {
+      "type": "alpha",
+      "unique_to_branch": null,
+      "valid_in": {
+        "defense_command": [
+          "element",
+          "wing"
+        ],
+        "expeditionary_corps": [
+          "team"
+        ],
+        "resource_directorate": [
+          "crew"
+        ]
+      },
+      "collision_levels": [
+        [
+          "defense_command",
+          "element"
+        ],
+        [
+          "defense_command",
+          "wing"
+        ],
+        [
+          "expeditionary_corps",
+          "team"
+        ],
+        [
+          "resource_directorate",
+          "crew"
+        ]
+      ]
+    },
+    "D": {
+      "type": "alpha",
+      "unique_to_branch": null,
+      "valid_in": {
+        "defense_command": [
+          "element",
+          "wing"
+        ],
+        "expeditionary_corps": [
+          "team"
+        ],
+        "resource_directorate": [
+          "crew"
+        ]
+      },
+      "collision_levels": [
+        [
+          "defense_command",
+          "element"
+        ],
+        [
+          "defense_command",
+          "wing"
+        ],
+        [
+          "expeditionary_corps",
+          "team"
+        ],
+        [
+          "resource_directorate",
+          "crew"
+        ]
+      ]
+    },
+    "E": {
+      "type": "alpha",
+      "unique_to_branch": null,
+      "valid_in": {
+        "defense_command": [
+          "element",
+          "wing"
+        ],
+        "expeditionary_corps": [
+          "team"
+        ],
+        "resource_directorate": [
+          "crew"
+        ]
+      },
+      "collision_levels": [
+        [
+          "defense_command",
+          "element"
+        ],
+        [
+          "defense_command",
+          "wing"
+        ],
+        [
+          "expeditionary_corps",
+          "team"
+        ],
+        [
+          "resource_directorate",
+          "crew"
+        ]
+      ]
+    },
+    "F": {
+      "type": "alpha",
+      "unique_to_branch": null,
+      "valid_in": {
+        "defense_command": [
+          "element",
+          "wing"
+        ],
+        "expeditionary_corps": [
+          "team"
+        ],
+        "resource_directorate": [
+          "crew"
+        ]
+      },
+      "collision_levels": [
+        [
+          "defense_command",
+          "element"
+        ],
+        [
+          "defense_command",
+          "wing"
+        ],
+        [
+          "expeditionary_corps",
+          "team"
+        ],
+        [
+          "resource_directorate",
+          "crew"
+        ]
+      ]
+    },
+    "Pioneer": {
+      "type": "word",
+      "unique_to_branch": "expeditionary_corps",
+      "valid_in": {
+        "expeditionary_corps": [
+          "expedition"
+        ]
+      },
+      "collision_levels": [
+        [
+          "expeditionary_corps",
+          "expedition"
+        ]
+      ]
+    },
+    "Beacon": {
+      "type": "word",
+      "unique_to_branch": "expeditionary_corps",
+      "valid_in": {
+        "expeditionary_corps": [
+          "expedition"
+        ]
+      },
+      "collision_levels": [
+        [
+          "expeditionary_corps",
+          "expedition"
+        ]
+      ]
+    },
+    "Forge": {
+      "type": "word",
+      "unique_to_branch": "resource_directorate",
+      "valid_in": {
+        "resource_directorate": [
+          "operation"
+        ]
+      },
+      "collision_levels": [
+        [
+          "resource_directorate",
+          "operation"
+        ]
+      ]
+    },
+    "Helix": {
+      "type": "word",
+      "unique_to_branch": "resource_directorate",
+      "valid_in": {
+        "resource_directorate": [
+          "operation"
+        ]
+      },
+      "collision_levels": [
+        [
+          "resource_directorate",
+          "operation"
+        ]
+      ]
+    },
+    "Palisade": {
+      "type": "word",
+      "unique_to_branch": "resource_directorate",
+      "valid_in": {
+        "resource_directorate": [
+          "operation"
+        ]
+      },
+      "collision_levels": [
+        [
+          "resource_directorate",
+          "operation"
+        ]
+      ]
+    }
+  },
+  "depth_discriminators": {
+    "4": {
+      "branches": [
+        "colonial_administration",
+        "resource_directorate"
+      ],
+      "is_unique": false
+    },
+    "5": {
+      "branches": [
+        "defense_command"
+      ],
+      "is_unique": true
+    },
+    "3": {
+      "branches": [
+        "expeditionary_corps"
+      ],
+      "is_unique": true
+    }
+  },
+  "branch_exclusion_rules": {
+    "colonial_administration": [
+      {
+        "rule_type": "term_presence",
+        "condition": "contains term 'wing'",
+        "excludes_branch": "colonial_administration",
+        "implies_branch": "defense_command",
+        "strength": "definitive"
+      },
+      {
+        "rule_type": "term_presence",
+        "condition": "contains term 'element'",
+        "excludes_branch": "colonial_administration",
+        "implies_branch": "defense_command",
+        "strength": "definitive"
+      },
+      {
+        "rule_type": "term_presence",
+        "condition": "contains term 'fleet'",
+        "excludes_branch": "colonial_administration",
+        "implies_branch": "defense_command",
+        "strength": "definitive"
+      },
+      {
+        "rule_type": "term_presence",
+        "condition": "contains term 'squadron'",
+        "excludes_branch": "colonial_administration",
+        "implies_branch": "defense_command",
+        "strength": "definitive"
+      },
+      {
+        "rule_type": "term_presence",
+        "condition": "contains term 'team'",
+        "excludes_branch": "colonial_administration",
+        "implies_branch": "expeditionary_corps",
+        "strength": "definitive"
+      },
+      {
+        "rule_type": "term_presence",
+        "condition": "contains term 'expedition'",
+        "excludes_branch": "colonial_administration",
+        "implies_branch": "expeditionary_corps",
+        "strength": "definitive"
+      },
+      {
+        "rule_type": "term_presence",
+        "condition": "contains term 'crew'",
+        "excludes_branch": "colonial_administration",
+        "implies_branch": "resource_directorate",
+        "strength": "definitive"
+      },
+      {
+        "rule_type": "term_presence",
+        "condition": "contains term 'facility'",
+        "excludes_branch": "colonial_administration",
+        "implies_branch": "resource_directorate",
+        "strength": "definitive"
+      },
+      {
+        "rule_type": "term_presence",
+        "condition": "contains term 'operation'",
+        "excludes_branch": "colonial_administration",
+        "implies_branch": "resource_directorate",
+        "strength": "definitive"
+      },
+      {
+        "rule_type": "designator_invalidity",
+        "condition": "contains designator 'Talon' (only valid in defense_command)",
+        "excludes_branch": "colonial_administration",
+        "implies_branch": "defense_command",
+        "strength": "definitive"
+      },
+      {
+        "rule_type": "designator_invalidity",
+        "condition": "contains designator 'Vanguard' (only valid in defense_command)",
+        "excludes_branch": "colonial_administration",
+        "implies_branch": "defense_command",
+        "strength": "definitive"
+      },
+      {
+        "rule_type": "designator_invalidity",
+        "condition": "contains designator 'Aegis' (only valid in defense_command)",
+        "excludes_branch": "colonial_administration",
+        "implies_branch": "defense_command",
+        "strength": "definitive"
+      },
+      {
+        "rule_type": "designator_invalidity",
+        "condition": "contains designator 'Sable' (only valid in defense_command)",
+        "excludes_branch": "colonial_administration",
+        "implies_branch": "defense_command",
+        "strength": "definitive"
+      },
+      {
+        "rule_type": "designator_invalidity",
+        "condition": "contains designator 'Pioneer' (only valid in expeditionary_corps)",
+        "excludes_branch": "colonial_administration",
+        "implies_branch": "expeditionary_corps",
+        "strength": "definitive"
+      },
+      {
+        "rule_type": "designator_invalidity",
+        "condition": "contains designator 'Beacon' (only valid in expeditionary_corps)",
+        "excludes_branch": "colonial_administration",
+        "implies_branch": "expeditionary_corps",
+        "strength": "definitive"
+      },
+      {
+        "rule_type": "designator_invalidity",
+        "condition": "contains designator 'Forge' (only valid in resource_directorate)",
+        "excludes_branch": "colonial_administration",
+        "implies_branch": "resource_directorate",
+        "strength": "definitive"
+      },
+      {
+        "rule_type": "designator_invalidity",
+        "condition": "contains designator 'Helix' (only valid in resource_directorate)",
+        "excludes_branch": "colonial_administration",
+        "implies_branch": "resource_directorate",
+        "strength": "definitive"
+      },
+      {
+        "rule_type": "designator_invalidity",
+        "condition": "contains designator 'Palisade' (only valid in resource_directorate)",
+        "excludes_branch": "colonial_administration",
+        "implies_branch": "resource_directorate",
+        "strength": "definitive"
+      },
+      {
+        "rule_type": "depth_mismatch",
+        "condition": "path has 5 levels (branch only has 4)",
+        "excludes_branch": "colonial_administration",
+        "possible_branches": [
+          "defense_command"
+        ],
+        "strength": "definitive"
+      }
+    ],
+    "defense_command": [
+      {
+        "rule_type": "term_presence",
+        "condition": "contains term 'colony'",
+        "excludes_branch": "defense_command",
+        "implies_branch": "colonial_administration",
+        "strength": "definitive"
+      },
+      {
+        "rule_type": "term_presence",
+        "condition": "contains term 'district'",
+        "excludes_branch": "defense_command",
+        "implies_branch": "colonial_administration",
+        "strength": "definitive"
+      },
+      {
+        "rule_type": "term_presence",
+        "condition": "contains term 'settlement'",
+        "excludes_branch": "defense_command",
+        "implies_branch": "colonial_administration",
+        "strength": "definitive"
+      },
+      {
+        "rule_type": "term_presence",
+        "condition": "contains term 'team'",
+        "excludes_branch": "defense_command",
+        "implies_branch": "expeditionary_corps",
+        "strength": "definitive"
+      },
+      {
+        "rule_type": "term_presence",
+        "condition": "contains term 'expedition'",
+        "excludes_branch": "defense_command",
+        "implies_branch": "expeditionary_corps",
+        "strength": "definitive"
+      },
+      {
+        "rule_type": "term_presence",
+        "condition": "contains term 'crew'",
+        "excludes_branch": "defense_command",
+        "implies_branch": "resource_directorate",
+        "strength": "definitive"
+      },
+      {
+        "rule_type": "term_presence",
+        "condition": "contains term 'facility'",
+        "excludes_branch": "defense_command",
+        "implies_branch": "resource_directorate",
+        "strength": "definitive"
+      },
+      {
+        "rule_type": "term_presence",
+        "condition": "contains term 'operation'",
+        "excludes_branch": "defense_command",
+        "implies_branch": "resource_directorate",
+        "strength": "definitive"
+      },
+      {
+        "rule_type": "designator_invalidity",
+        "condition": "contains designator 'Thornmark' (only valid in colonial_administration)",
+        "excludes_branch": "defense_command",
+        "implies_branch": "colonial_administration",
+        "strength": "definitive"
+      },
+      {
+        "rule_type": "designator_invalidity",
+        "condition": "contains designator 'Waystation' (only valid in colonial_administration)",
+        "excludes_branch": "defense_command",
+        "implies_branch": "colonial_administration",
+        "strength": "definitive"
+      },
+      {
+        "rule_type": "designator_invalidity",
+        "condition": "contains designator 'Haven' (only valid in colonial_administration)",
+        "excludes_branch": "defense_command",
+        "implies_branch": "colonial_administration",
+        "strength": "definitive"
+      },
+      {
+        "rule_type": "designator_invalidity",
+        "condition": "contains designator 'Prospect' (only valid in colonial_administration)",
+        "excludes_branch": "defense_command",
+        "implies_branch": "colonial_administration",
+        "strength": "definitive"
+      },
+      {
+        "rule_type": "designator_invalidity",
+        "condition": "contains designator 'Landfall' (only valid in colonial_administration)",
+        "excludes_branch": "defense_command",
+        "implies_branch": "colonial_administration",
+        "strength": "definitive"
+      },
+      {
+        "rule_type": "designator_invalidity",
+        "condition": "contains designator 'Waypoint' (only valid in colonial_administration)",
+        "excludes_branch": "defense_command",
+        "implies_branch": "colonial_administration",
+        "strength": "definitive"
+      },
+      {
+        "rule_type": "designator_invalidity",
+        "condition": "contains designator 'Pioneer' (only valid in expeditionary_corps)",
+        "excludes_branch": "defense_command",
+        "implies_branch": "expeditionary_corps",
+        "strength": "definitive"
+      },
+      {
+        "rule_type": "designator_invalidity",
+        "condition": "contains designator 'Beacon' (only valid in expeditionary_corps)",
+        "excludes_branch": "defense_command",
+        "implies_branch": "expeditionary_corps",
+        "strength": "definitive"
+      },
+      {
+        "rule_type": "designator_invalidity",
+        "condition": "contains designator 'Forge' (only valid in resource_directorate)",
+        "excludes_branch": "defense_command",
+        "implies_branch": "resource_directorate",
+        "strength": "definitive"
+      },
+      {
+        "rule_type": "designator_invalidity",
+        "condition": "contains designator 'Helix' (only valid in resource_directorate)",
+        "excludes_branch": "defense_command",
+        "implies_branch": "resource_directorate",
+        "strength": "definitive"
+      },
+      {
+        "rule_type": "designator_invalidity",
+        "condition": "contains designator 'Palisade' (only valid in resource_directorate)",
+        "excludes_branch": "defense_command",
+        "implies_branch": "resource_directorate",
+        "strength": "definitive"
+      }
+    ],
+    "expeditionary_corps": [
+      {
+        "rule_type": "term_presence",
+        "condition": "contains term 'colony'",
+        "excludes_branch": "expeditionary_corps",
+        "implies_branch": "colonial_administration",
+        "strength": "definitive"
+      },
+      {
+        "rule_type": "term_presence",
+        "condition": "contains term 'district'",
+        "excludes_branch": "expeditionary_corps",
+        "implies_branch": "colonial_administration",
+        "strength": "definitive"
+      },
+      {
+        "rule_type": "term_presence",
+        "condition": "contains term 'settlement'",
+        "excludes_branch": "expeditionary_corps",
+        "implies_branch": "colonial_administration",
+        "strength": "definitive"
+      },
+      {
+        "rule_type": "term_presence",
+        "condition": "contains term 'wing'",
+        "excludes_branch": "expeditionary_corps",
+        "implies_branch": "defense_command",
+        "strength": "definitive"
+      },
+      {
+        "rule_type": "term_presence",
+        "condition": "contains term 'element'",
+        "excludes_branch": "expeditionary_corps",
+        "implies_branch": "defense_command",
+        "strength": "definitive"
+      },
+      {
+        "rule_type": "term_presence",
+        "condition": "contains term 'fleet'",
+        "excludes_branch": "expeditionary_corps",
+        "implies_branch": "defense_command",
+        "strength": "definitive"
+      },
+      {
+        "rule_type": "term_presence",
+        "condition": "contains term 'squadron'",
+        "excludes_branch": "expeditionary_corps",
+        "implies_branch": "defense_command",
+        "strength": "definitive"
+      },
+      {
+        "rule_type": "term_presence",
+        "condition": "contains term 'crew'",
+        "excludes_branch": "expeditionary_corps",
+        "implies_branch": "resource_directorate",
+        "strength": "definitive"
+      },
+      {
+        "rule_type": "term_presence",
+        "condition": "contains term 'facility'",
+        "excludes_branch": "expeditionary_corps",
+        "implies_branch": "resource_directorate",
+        "strength": "definitive"
+      },
+      {
+        "rule_type": "term_presence",
+        "condition": "contains term 'operation'",
+        "excludes_branch": "expeditionary_corps",
+        "implies_branch": "resource_directorate",
+        "strength": "definitive"
+      },
+      {
+        "rule_type": "designator_invalidity",
+        "condition": "contains designator 'Thornmark' (only valid in colonial_administration)",
+        "excludes_branch": "expeditionary_corps",
+        "implies_branch": "colonial_administration",
+        "strength": "definitive"
+      },
+      {
+        "rule_type": "designator_invalidity",
+        "condition": "contains designator 'Waystation' (only valid in colonial_administration)",
+        "excludes_branch": "expeditionary_corps",
+        "implies_branch": "colonial_administration",
+        "strength": "definitive"
+      },
+      {
+        "rule_type": "designator_invalidity",
+        "condition": "contains designator 'Haven' (only valid in colonial_administration)",
+        "excludes_branch": "expeditionary_corps",
+        "implies_branch": "colonial_administration",
+        "strength": "definitive"
+      },
+      {
+        "rule_type": "designator_invalidity",
+        "condition": "contains designator 'Prospect' (only valid in colonial_administration)",
+        "excludes_branch": "expeditionary_corps",
+        "implies_branch": "colonial_administration",
+        "strength": "definitive"
+      },
+      {
+        "rule_type": "designator_invalidity",
+        "condition": "contains designator 'Landfall' (only valid in colonial_administration)",
+        "excludes_branch": "expeditionary_corps",
+        "implies_branch": "colonial_administration",
+        "strength": "definitive"
+      },
+      {
+        "rule_type": "designator_invalidity",
+        "condition": "contains designator 'Waypoint' (only valid in colonial_administration)",
+        "excludes_branch": "expeditionary_corps",
+        "implies_branch": "colonial_administration",
+        "strength": "definitive"
+      },
+      {
+        "rule_type": "designator_invalidity",
+        "condition": "contains designator 'Talon' (only valid in defense_command)",
+        "excludes_branch": "expeditionary_corps",
+        "implies_branch": "defense_command",
+        "strength": "definitive"
+      },
+      {
+        "rule_type": "designator_invalidity",
+        "condition": "contains designator 'Vanguard' (only valid in defense_command)",
+        "excludes_branch": "expeditionary_corps",
+        "implies_branch": "defense_command",
+        "strength": "definitive"
+      },
+      {
+        "rule_type": "designator_invalidity",
+        "condition": "contains designator 'Aegis' (only valid in defense_command)",
+        "excludes_branch": "expeditionary_corps",
+        "implies_branch": "defense_command",
+        "strength": "definitive"
+      },
+      {
+        "rule_type": "designator_invalidity",
+        "condition": "contains designator 'Sable' (only valid in defense_command)",
+        "excludes_branch": "expeditionary_corps",
+        "implies_branch": "defense_command",
+        "strength": "definitive"
+      },
+      {
+        "rule_type": "designator_invalidity",
+        "condition": "contains designator 'Forge' (only valid in resource_directorate)",
+        "excludes_branch": "expeditionary_corps",
+        "implies_branch": "resource_directorate",
+        "strength": "definitive"
+      },
+      {
+        "rule_type": "designator_invalidity",
+        "condition": "contains designator 'Helix' (only valid in resource_directorate)",
+        "excludes_branch": "expeditionary_corps",
+        "implies_branch": "resource_directorate",
+        "strength": "definitive"
+      },
+      {
+        "rule_type": "designator_invalidity",
+        "condition": "contains designator 'Palisade' (only valid in resource_directorate)",
+        "excludes_branch": "expeditionary_corps",
+        "implies_branch": "resource_directorate",
+        "strength": "definitive"
+      },
+      {
+        "rule_type": "depth_mismatch",
+        "condition": "path has 4 levels (branch only has 3)",
+        "excludes_branch": "expeditionary_corps",
+        "possible_branches": [
+          "colonial_administration",
+          "resource_directorate"
+        ],
+        "strength": "definitive"
+      },
+      {
+        "rule_type": "depth_mismatch",
+        "condition": "path has 5 levels (branch only has 3)",
+        "excludes_branch": "expeditionary_corps",
+        "possible_branches": [
+          "defense_command"
+        ],
+        "strength": "definitive"
+      }
+    ],
+    "resource_directorate": [
+      {
+        "rule_type": "term_presence",
+        "condition": "contains term 'colony'",
+        "excludes_branch": "resource_directorate",
+        "implies_branch": "colonial_administration",
+        "strength": "definitive"
+      },
+      {
+        "rule_type": "term_presence",
+        "condition": "contains term 'district'",
+        "excludes_branch": "resource_directorate",
+        "implies_branch": "colonial_administration",
+        "strength": "definitive"
+      },
+      {
+        "rule_type": "term_presence",
+        "condition": "contains term 'settlement'",
+        "excludes_branch": "resource_directorate",
+        "implies_branch": "colonial_administration",
+        "strength": "definitive"
+      },
+      {
+        "rule_type": "term_presence",
+        "condition": "contains term 'wing'",
+        "excludes_branch": "resource_directorate",
+        "implies_branch": "defense_command",
+        "strength": "definitive"
+      },
+      {
+        "rule_type": "term_presence",
+        "condition": "contains term 'element'",
+        "excludes_branch": "resource_directorate",
+        "implies_branch": "defense_command",
+        "strength": "definitive"
+      },
+      {
+        "rule_type": "term_presence",
+        "condition": "contains term 'fleet'",
+        "excludes_branch": "resource_directorate",
+        "implies_branch": "defense_command",
+        "strength": "definitive"
+      },
+      {
+        "rule_type": "term_presence",
+        "condition": "contains term 'squadron'",
+        "excludes_branch": "resource_directorate",
+        "implies_branch": "defense_command",
+        "strength": "definitive"
+      },
+      {
+        "rule_type": "term_presence",
+        "condition": "contains term 'team'",
+        "excludes_branch": "resource_directorate",
+        "implies_branch": "expeditionary_corps",
+        "strength": "definitive"
+      },
+      {
+        "rule_type": "term_presence",
+        "condition": "contains term 'expedition'",
+        "excludes_branch": "resource_directorate",
+        "implies_branch": "expeditionary_corps",
+        "strength": "definitive"
+      },
+      {
+        "rule_type": "designator_invalidity",
+        "condition": "contains designator 'Thornmark' (only valid in colonial_administration)",
+        "excludes_branch": "resource_directorate",
+        "implies_branch": "colonial_administration",
+        "strength": "definitive"
+      },
+      {
+        "rule_type": "designator_invalidity",
+        "condition": "contains designator 'Waystation' (only valid in colonial_administration)",
+        "excludes_branch": "resource_directorate",
+        "implies_branch": "colonial_administration",
+        "strength": "definitive"
+      },
+      {
+        "rule_type": "designator_invalidity",
+        "condition": "contains designator 'Haven' (only valid in colonial_administration)",
+        "excludes_branch": "resource_directorate",
+        "implies_branch": "colonial_administration",
+        "strength": "definitive"
+      },
+      {
+        "rule_type": "designator_invalidity",
+        "condition": "contains designator 'Prospect' (only valid in colonial_administration)",
+        "excludes_branch": "resource_directorate",
+        "implies_branch": "colonial_administration",
+        "strength": "definitive"
+      },
+      {
+        "rule_type": "designator_invalidity",
+        "condition": "contains designator 'Landfall' (only valid in colonial_administration)",
+        "excludes_branch": "resource_directorate",
+        "implies_branch": "colonial_administration",
+        "strength": "definitive"
+      },
+      {
+        "rule_type": "designator_invalidity",
+        "condition": "contains designator 'Waypoint' (only valid in colonial_administration)",
+        "excludes_branch": "resource_directorate",
+        "implies_branch": "colonial_administration",
+        "strength": "definitive"
+      },
+      {
+        "rule_type": "designator_invalidity",
+        "condition": "contains designator 'Talon' (only valid in defense_command)",
+        "excludes_branch": "resource_directorate",
+        "implies_branch": "defense_command",
+        "strength": "definitive"
+      },
+      {
+        "rule_type": "designator_invalidity",
+        "condition": "contains designator 'Vanguard' (only valid in defense_command)",
+        "excludes_branch": "resource_directorate",
+        "implies_branch": "defense_command",
+        "strength": "definitive"
+      },
+      {
+        "rule_type": "designator_invalidity",
+        "condition": "contains designator 'Aegis' (only valid in defense_command)",
+        "excludes_branch": "resource_directorate",
+        "implies_branch": "defense_command",
+        "strength": "definitive"
+      },
+      {
+        "rule_type": "designator_invalidity",
+        "condition": "contains designator 'Sable' (only valid in defense_command)",
+        "excludes_branch": "resource_directorate",
+        "implies_branch": "defense_command",
+        "strength": "definitive"
+      },
+      {
+        "rule_type": "designator_invalidity",
+        "condition": "contains designator 'Pioneer' (only valid in expeditionary_corps)",
+        "excludes_branch": "resource_directorate",
+        "implies_branch": "expeditionary_corps",
+        "strength": "definitive"
+      },
+      {
+        "rule_type": "designator_invalidity",
+        "condition": "contains designator 'Beacon' (only valid in expeditionary_corps)",
+        "excludes_branch": "resource_directorate",
+        "implies_branch": "expeditionary_corps",
+        "strength": "definitive"
+      },
+      {
+        "rule_type": "depth_mismatch",
+        "condition": "path has 5 levels (branch only has 4)",
+        "excludes_branch": "resource_directorate",
+        "possible_branches": [
+          "defense_command"
+        ],
+        "strength": "definitive"
+      }
+    ]
+  },
+  "collision_index": {
+    "(sector, \"Alpha\")": [
+      "colonial_administration.sector",
+      "defense_command.sector",
+      "expeditionary_corps.sector",
+      "resource_directorate.sector"
+    ],
+    "(sector, \"Beta\")": [
+      "colonial_administration.sector",
+      "defense_command.sector",
+      "expeditionary_corps.sector",
+      "resource_directorate.sector"
+    ],
+    "(sector, \"Gamma\")": [
+      "colonial_administration.sector",
+      "defense_command.sector",
+      "expeditionary_corps.sector",
+      "resource_directorate.sector"
+    ],
+    "(sector, \"Delta\")": [
+      "colonial_administration.sector",
+      "defense_command.sector",
+      "expeditionary_corps.sector",
+      "resource_directorate.sector"
+    ]
+  }
+}

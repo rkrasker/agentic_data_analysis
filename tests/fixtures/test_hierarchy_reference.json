@@ -1,0 +1,53 @@
+{
+  "meta": {
+    "version": "test",
+    "description": "Test hierarchy for structural discriminator tests"
+  },
+  "branches": {
+    "branch_alpha": {
+      "branch_id": "branch_alpha",
+      "depth": 4,
+      "levels": ["sector", "division", "unit", "team"],
+      "valid_designators": {
+        "sector": ["Alpha", "Beta", "Gamma"],
+        "division": [1, 2, 3, 4],
+        "unit": ["Recon", "Strike", "Support"],
+        "team": ["A", "B", "C", "D"]
+      }
+    },
+    "branch_beta": {
+      "branch_id": "branch_beta",
+      "depth": 3,
+      "levels": ["sector", "squadron", "flight"],
+      "valid_designators": {
+        "sector": ["Alpha", "Beta", "Delta"],
+        "squadron": [1, 2, 3, 4, 5],
+        "flight": ["A", "B", "C"]
+      }
+    },
+    "branch_gamma": {
+      "branch_id": "branch_gamma",
+      "depth": 5,
+      "levels": ["region", "district", "post", "station", "desk"],
+      "valid_designators": {
+        "region": ["North", "South", "East", "West"],
+        "district": [1, 2, 3],
+        "post": ["Central", "Perimeter"],
+        "station": ["A", "B", "C"],
+        "desk": [1, 2, 3, 4]
+      }
+    }
+  },
+  "components": [
+    "branch_alpha/Alpha/1/Recon/A",
+    "branch_alpha/Alpha/1/Recon/B",
+    "branch_alpha/Alpha/2/Strike/A",
+    "branch_alpha/Beta/1/Support/C",
+    "branch_beta/Alpha/1/A",
+    "branch_beta/Alpha/2/B",
+    "branch_beta/Beta/3/A",
+    "branch_gamma/North/1/Central/A/1",
+    "branch_gamma/North/1/Central/A/2",
+    "branch_gamma/South/2/Perimeter/B/1"
+  ]
+}

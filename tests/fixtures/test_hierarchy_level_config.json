@@ -1,0 +1,46 @@
+{
+  "meta": {
+    "version": "test",
+    "description": "Test hierarchy using level_config format"
+  },
+  "branches": {
+    "defense_force": {
+      "branch_id": "defense_force",
+      "depth": 3,
+      "levels": ["sector", "fleet", "element"],
+      "level_config": {
+        "sector": {
+          "designator_style": "greek",
+          "values": ["Alpha", "Beta"]
+        },
+        "fleet": {
+          "designator_style": "number",
+          "values": ["1", "2", "3"]
+        },
+        "element": {
+          "designator_style": "letter",
+          "values": ["A", "B", "C"]
+        }
+      }
+    },
+    "admin_corps": {
+      "branch_id": "admin_corps",
+      "depth": 3,
+      "levels": ["sector", "bureau", "office"],
+      "level_config": {
+        "sector": {
+          "designator_style": "greek",
+          "values": ["Alpha", "Gamma"]
+        },
+        "bureau": {
+          "designator_style": "name",
+          "values": ["Records", "Personnel"]
+        },
+        "office": {
+          "designator_style": "number",
+          "values": ["1", "2"]
+        }
+      }
+    }
+  }
+}
