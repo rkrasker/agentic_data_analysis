@@ -179,6 +179,14 @@ class CodeExecutionSandbox:
 
     def _build_restricted_globals(self) -> Dict[str, Any]:
         """Build restricted global namespace for code execution."""
+        def _safe_import(name, globals=None, locals=None, fromlist=(), level=0):
+            base = name.split('.')[0]
+            if self.config.allowed_imports is not None and base not in self.config.allowed_imports:
+                raise CodeExecutionError(
+                    f"Import of '{base}' not allowed. "
+                    f"Allowed imports: {self.config.allowed_imports}"
+                )
+            return __import__(name, globals, locals, fromlist, level)
 
         # Safe builtins
         safe_builtins = {
@@ -202,6 +210,7 @@ class CodeExecutionSandbox:
             'sum': sum,
             'tuple': tuple,
             'zip': zip,
+            '__import__': _safe_import,
             # Add safe exceptions
             'Exception': Exception,
             'ValueError': ValueError,
@@ -244,7 +253,10 @@ class CodeExecutionSandbox:
         if globals_dict:
             restricted_globals.update(globals_dict)
 
-        restricted_locals = locals_dict or {}
+        if locals_dict is None:
+            restricted_locals = restricted_globals
+        else:
+            restricted_locals = locals_dict
 
         # Validate imports if restricted
         if self.config.allowed_imports is not None:
@@ -272,6 +284,8 @@ class CodeExecutionSandbox:
             # Execute in restricted environment
             exec(compiled_code, restricted_globals, restricted_locals)
 
+            if restricted_locals is not restricted_globals:
+                restricted_globals.update(restricted_locals)
             return restricted_locals
 
         except TimeoutError:
