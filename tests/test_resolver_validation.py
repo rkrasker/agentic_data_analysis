@@ -205,6 +205,23 @@ def load_validation_data(
     val_df = pd.read_parquet(validation_path)
     raw_df = pd.read_parquet(raw_path)
 
+    synthetic_records_path = raw_path.parent / "synthetic_records.parquet"
+    if synthetic_records_path.exists():
+        synthetic_records_df = pd.read_parquet(synthetic_records_path)
+        join_keys = [
+            col for col in ["source_id", "soldier_id"]
+            if col in raw_df.columns and col in synthetic_records_df.columns
+        ]
+        if join_keys:
+            raw_df = raw_df.merge(
+                synthetic_records_df,
+                on=join_keys,
+                how="left",
+                suffixes=("", "_synthetic"),
+            )
+        else:
+            logger.info("Synthetic records found but no join keys; skipping merge")
+
     # Normalize column names
     if "primary_id" in val_df.columns:
         val_df = val_df.rename(columns={"primary_id": "soldier_id"})
@@ -214,8 +231,12 @@ def load_validation_data(
     logger.info(f"Found {len(component_soldiers)} soldiers for {component_id}")
 
     # Filter raw records to degraded quality only (tier 3+)
-    raw_degraded = raw_df[raw_df["quality_tier"] >= min_quality_tier].copy()
-    logger.info(f"Filtered to {len(raw_degraded)} records with quality_tier >= {min_quality_tier}")
+    if "quality_tier" in raw_df.columns:
+        raw_degraded = raw_df[raw_df["quality_tier"] >= min_quality_tier].copy()
+        logger.info(f"Filtered to {len(raw_degraded)} records with quality_tier >= {min_quality_tier}")
+    else:
+        raw_degraded = raw_df.copy()
+        logger.info("quality_tier missing; using all raw records for validation")
 
     # Find soldiers who have degraded records
     soldiers_with_degraded = raw_degraded["soldier_id"].unique()
@@ -243,7 +264,7 @@ def load_validation_data(
         soldier_id = row["soldier_id"]
         soldier_records = raw_records[raw_records["soldier_id"] == soldier_id]
         records = soldier_records["raw_text"].tolist()
-        tiers = soldier_records["quality_tier"].tolist()
+        tiers = soldier_records["quality_tier"].tolist() if "quality_tier" in soldier_records.columns else []
         soldiers.append({
             "soldier_id": soldier_id,
             "raw_texts": records,

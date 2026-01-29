@@ -108,8 +108,8 @@ def test_easy_case_non_collision():
         [_record("S1", unit_alpha_pairs=["Wing:A"])]
     )
     result = compute_soldier_difficulty("S1", records, structural, hierarchy)
-    assert result.collision_position is False
-    assert result.difficulty_tier == "easy"
+    assert result.inferred_collision_position is False
+    assert result.inferred_difficulty_tier == "easy"
 
 
 def test_moderate_resolvable_by_term():
@@ -119,10 +119,10 @@ def test_moderate_resolvable_by_term():
         [_record("S2", unchar_alpha=["Alpha"], unit_terms=["WING"])]
     )
     result = compute_soldier_difficulty("S2", records, structural, hierarchy)
-    assert result.collision_position is True
-    assert result.structural_resolvability is True
-    assert result.difficulty_tier == "moderate"
-    assert result.candidate_branches == ["alpha_branch"]
+    assert result.inferred_collision_position is True
+    assert result.inferred_structural_resolvability is True
+    assert result.inferred_difficulty_tier == "moderate"
+    assert result.inferred_candidate_branches == ["alpha_branch"]
 
 
 def test_moderate_high_complementarity():
@@ -139,10 +139,10 @@ def test_moderate_high_complementarity():
         ]
     )
     result = compute_soldier_difficulty("S3", records, structural, hierarchy)
-    assert result.collision_position is True
-    assert result.structural_resolvability is False
-    assert result.complementarity_score >= 0.7
-    assert result.difficulty_tier == "moderate"
+    assert result.inferred_collision_position is True
+    assert result.inferred_structural_resolvability is False
+    assert result.inferred_complementarity_score >= 0.7
+    assert result.inferred_difficulty_tier == "moderate"
 
 
 def test_hard_case():
@@ -152,10 +152,10 @@ def test_hard_case():
         [_record("S4", unchar_alpha=["Alpha"], unit_digit_pairs=["Fleet:1"])]
     )
     result = compute_soldier_difficulty("S4", records, structural, hierarchy)
-    assert result.collision_position is True
-    assert result.structural_resolvability is False
-    assert 0.4 <= result.complementarity_score < 0.7
-    assert result.difficulty_tier == "hard"
+    assert result.inferred_collision_position is True
+    assert result.inferred_structural_resolvability is False
+    assert 0.4 <= result.inferred_complementarity_score < 0.7
+    assert result.inferred_difficulty_tier == "hard"
 
 
 def test_extreme_case_low_complementarity():
@@ -163,9 +163,9 @@ def test_extreme_case_low_complementarity():
     structural = _make_structural_discriminators()
     records = pd.DataFrame([_record("S5", unchar_alpha=["Alpha"])])
     result = compute_soldier_difficulty("S5", records, structural, hierarchy)
-    assert result.collision_position is True
-    assert result.complementarity_score < 0.4
-    assert result.difficulty_tier == "extreme"
+    assert result.inferred_collision_position is True
+    assert result.inferred_complementarity_score < 0.4
+    assert result.inferred_difficulty_tier == "extreme"
 
 
 def test_edge_no_extractions():
@@ -173,8 +173,8 @@ def test_edge_no_extractions():
     structural = _make_structural_discriminators()
     records = pd.DataFrame([_record("S6")])
     result = compute_soldier_difficulty("S6", records, structural, hierarchy)
-    assert result.complementarity_score == 0.0
-    assert result.difficulty_tier == "extreme"
+    assert result.inferred_complementarity_score == 0.0
+    assert result.inferred_difficulty_tier == "extreme"
 
 
 def test_edge_multi_branch_collision_max_complementarity():
@@ -184,8 +184,8 @@ def test_edge_multi_branch_collision_max_complementarity():
         [_record("S7", unchar_alpha=["Alpha", "Red"])]
     )
     result = compute_soldier_difficulty("S7", records, structural, hierarchy)
-    assert result.collision_position is True
-    assert result.complementarity_score == pytest.approx(0.375)
+    assert result.inferred_collision_position is True
+    assert result.inferred_complementarity_score == pytest.approx(0.375)
 
 
 def test_batch_function_groups_by_soldier():
@@ -199,4 +199,4 @@ def test_batch_function_groups_by_soldier():
     )
     df = compute_all_soldier_difficulties(records, structural, hierarchy)
     assert set(df["soldier_id"]) == {"S8", "S9"}
-    assert df.loc[df["soldier_id"] == "S8", "difficulty_tier"].iloc[0] == "extreme"
+    assert df.loc[df["soldier_id"] == "S8", "inferred_difficulty_tier"].iloc[0] == "extreme"

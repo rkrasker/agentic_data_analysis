@@ -7,21 +7,27 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import json
+from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Set, Tuple
 
 import pandas as pd
 
+from .loader import (
+    load_canonical,
+    load_hierarchy_reference,
+    load_structural_discriminators,
+)
 
 @dataclass
 class DifficultyAssessment:
     soldier_id: str
-    collision_position: bool
-    complementarity_score: float
-    structural_resolvability: bool
-    difficulty_tier: str
-    candidate_branches: List[str]
-    level_confidences: Dict[str, float]
-    eliminating_constraints: List[str]
+    inferred_collision_position: bool
+    inferred_complementarity_score: float
+    inferred_structural_resolvability: bool
+    inferred_difficulty_tier: str
+    inferred_candidate_branches: List[str]
+    inferred_level_confidences: Dict[str, float]
+    inferred_eliminating_constraints: List[str]
 
 
 CHARACTERIZED_CONFIDENCE = 1.0
@@ -75,13 +81,13 @@ def compute_soldier_difficulty(
         difficulty_tier = "extreme"
     return DifficultyAssessment(
         soldier_id=soldier_id,
-        collision_position=collision_position,
-        complementarity_score=complementarity_score,
-        structural_resolvability=structural_resolvability,
-        difficulty_tier=difficulty_tier,
-        candidate_branches=candidate_branches,
-        level_confidences=level_confidences,
-        eliminating_constraints=eliminating_constraints,
+        inferred_collision_position=collision_position,
+        inferred_complementarity_score=complementarity_score,
+        inferred_structural_resolvability=structural_resolvability,
+        inferred_difficulty_tier=difficulty_tier,
+        inferred_candidate_branches=candidate_branches,
+        inferred_level_confidences=level_confidences,
+        inferred_eliminating_constraints=eliminating_constraints,
     )
 
 
@@ -113,13 +119,13 @@ def compute_all_soldier_difficulties(
 def _assessment_to_row(assessment: DifficultyAssessment) -> Dict[str, Any]:
     return {
         "soldier_id": assessment.soldier_id,
-        "collision_position": assessment.collision_position,
-        "complementarity_score": assessment.complementarity_score,
-        "structural_resolvability": assessment.structural_resolvability,
-        "difficulty_tier": assessment.difficulty_tier,
-        "candidate_branches": assessment.candidate_branches,
-        "level_confidences": assessment.level_confidences,
-        "eliminating_constraints": assessment.eliminating_constraints,
+        "inferred_collision_position": assessment.inferred_collision_position,
+        "inferred_complementarity_score": assessment.inferred_complementarity_score,
+        "inferred_structural_resolvability": assessment.inferred_structural_resolvability,
+        "inferred_difficulty_tier": assessment.inferred_difficulty_tier,
+        "inferred_candidate_branches": assessment.inferred_candidate_branches,
+        "inferred_level_confidences": assessment.inferred_level_confidences,
+        "inferred_eliminating_constraints": assessment.inferred_eliminating_constraints,
     }
 
 
@@ -567,3 +573,48 @@ def _assign_difficulty_tier(
     if complementarity_score >= COMPLEMENTARITY_LOW:
         return "hard"
     return "extreme"
+
+
+def compute_and_save_inferred_difficulty(
+    canonical_path: Path,
+    structural_path: Path,
+    hierarchy_path: Path,
+    output_path: Optional[Path] = None,
+) -> pd.DataFrame:
+    """
+    Compute inferred difficulty metrics and save to inferred_difficulty.parquet.
+    """
+    canonical_df = load_canonical(canonical_path)
+    structural = load_structural_discriminators(structural_path)
+    hierarchy = load_hierarchy_reference(hierarchy_path)
+    inferred_df = compute_all_soldier_difficulties(canonical_df, structural, hierarchy)
+
+    output_path = output_path or canonical_path.parent / "inferred_difficulty.parquet"
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    inferred_df.to_parquet(output_path, index=False)
+    return inferred_df
+
+
+if __name__ == "__main__":
+    import argparse
+
+    PROJECT_ROOT = Path(__file__).parent.parent.parent
+    DEFAULT_CANONICAL = PROJECT_ROOT / "data" / "synthetic" / "canonical.parquet"
+    DEFAULT_STRUCTURAL = PROJECT_ROOT / "config" / "hierarchies" / "structural_discriminators.json"
+    DEFAULT_HIERARCHY = PROJECT_ROOT / "config" / "hierarchies" / "hierarchy_reference.json"
+    DEFAULT_OUTPUT = PROJECT_ROOT / "data" / "synthetic" / "inferred_difficulty.parquet"
+
+    parser = argparse.ArgumentParser(description="Compute inferred difficulty metrics")
+    parser.add_argument("--canonical", type=Path, default=DEFAULT_CANONICAL)
+    parser.add_argument("--structural", type=Path, default=DEFAULT_STRUCTURAL)
+    parser.add_argument("--hierarchy", type=Path, default=DEFAULT_HIERARCHY)
+    parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
+
+    args = parser.parse_args()
+
+    compute_and_save_inferred_difficulty(
+        canonical_path=args.canonical,
+        structural_path=args.structural,
+        hierarchy_path=args.hierarchy,
+        output_path=args.output,
+    )

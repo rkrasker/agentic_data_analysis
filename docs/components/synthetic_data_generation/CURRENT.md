@@ -1,7 +1,7 @@
 # Synthetic Data Generation
 
 **Version:** 4.1.0  
-**Last Updated:** 2026-01-26  
+**Last Updated:** 2026-01-29  
 **Status:** Implemented (artifacts regenerated; difficulty-tier issue noted)
 
 ---
@@ -298,11 +298,11 @@ extraction_signals: ["fleet_name_kestrel"]
 
 ## Output Schema (v4.1)
 
-> **Note:** ADR-010 specifies a schema refactoring to separate core data from synthetic metadata. The schemas below reflect the current (pre-ADR-010) implementation. After ADR-010 implementation:
-> - `raw.parquet` will contain only production-equivalent fields (source_id, soldier_id, raw_text)
-> - `validation.parquet` will contain only labels (no difficulty columns)
-> - New files: `synthetic_records.parquet`, `synthetic_soldiers.parquet`, `gt_difficulty.parquet`
-> - See `instructions/010_separate_synthetic_metadata_schema.md` for implementation details.
+> **ADR-010 implemented (2026-01-29):** Core data and synthetic metadata are separated.
+> - `raw.parquet` contains only production-equivalent fields.
+> - `validation.parquet` contains only ground-truth labels.
+> - Synthetic artifacts live in `synthetic_records.parquet` and `synthetic_soldiers.parquet`.
+> - Ground-truth difficulty is computed post-hoc in `gt_difficulty.parquet`.
 
 ### raw.parquet
 
@@ -310,14 +310,7 @@ extraction_signals: ["fleet_name_kestrel"]
 |--------|------|-------------|
 | `source_id` | string | Manifest/page identifier |
 | `soldier_id` | string | Ground truth soldier identifier |
-| `state_id` | string | Ground truth state identifier |
 | `raw_text` | string | Rendered manifest line |
-| `clerk_id` | string | Clerk instance identifier |
-| `situation_id` | string | Situation assigned to source |
-| `quality_tier` | int | 1-5 quality level (Layer 1) |
-| `path_completeness` | float | Fraction of full path provided (v4.1) |
-| `levels_provided` | list[str] | Hierarchy levels in this record (v4.1) |
-| `extraction_signals` | list[str] | Structural signals present (v4.1) |
 
 ### validation.parquet
 
@@ -327,13 +320,44 @@ extraction_signals: ["fleet_name_kestrel"]
 | `state_id` | string | State identifier |
 | `state_order` | int | Temporal position (1, 2, or 3) |
 | `branch` | string | Branch (Colonial, Defense, Expeditionary, Resource) |
-| `component_path` | string | Full path as string |
+| `post_path` | string | Full path as string |
 | Branch-specific columns | string | Level values for this branch |
-| `collision_zone_flag` | bool | Is this post in a collision zone? (v4.1) |
-| `collision_severity` | string | none/low/medium/high/cross_branch (v4.1) |
-| `soldier_difficulty_tier` | string | easy/moderate/hard/extreme (v4.1) |
-| `complementarity_score` | float | 0.0-1.0 record complementarity (v4.1) |
-| `structural_resolvability` | bool | Can Layer 3 resolve? (v4.1) |
+
+### synthetic_records.parquet
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `source_id` | string | Join key to raw records |
+| `soldier_id` | string | Join key to soldiers |
+| `state_id` | string | Ground-truth state for the record |
+| `clerk_id` | string | Clerk instance identifier |
+| `situation_id` | string | Situation assigned to source |
+| `quality_tier` | int | 1-5 quality level (Layer 1) |
+| `path_completeness` | float | Fraction of full path provided |
+| `levels_provided` | list[str] | Hierarchy levels in this record |
+| `extraction_signals` | list[str] | Structural signals present |
+
+### synthetic_soldiers.parquet
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `soldier_id` | string | Soldier identifier |
+| `gen_difficulty_tier` | string | Tier used to control generation |
+| `gen_complementarity_score` | float | Complementarity at generation time |
+| `gen_structural_resolvability` | bool | Resolvability at generation time |
+| `target_state_count` | int | Number of states targeted |
+
+### gt_difficulty.parquet
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `soldier_id` | string | Soldier identifier |
+| `state_id` | string | State identifier (per-state metrics) |
+| `gt_collision_zone_flag` | bool | Is this post in a collision zone? |
+| `gt_collision_severity` | string | none/low/medium/high/cross_branch |
+| `gt_complementarity_score` | float | 0.0-1.0 record complementarity |
+| `gt_structural_resolvability` | bool | Can Layer 3 resolve? |
+| `gt_difficulty_tier` | string | easy/moderate/hard/extreme |
 
 ### sources.parquet
 
@@ -415,11 +439,11 @@ Tolerance: ±5% from targets.
 - Compute path_completeness
 
 ### DifficultyComputer (v4.1 NEW)
-- After all records generated, compute per-soldier difficulty
-- Analyze collision_zone_flag across states
-- Compute complementarity_score from levels_provided
-- Determine structural_resolvability
-- Assign soldier_difficulty_tier
+- After all records generated, compute per-soldier **generation** difficulty (`gen_*`)
+- Analyze collision zones across states
+- Compute complementarity from levels_provided
+- Determine structural resolvability from extraction signals
+- Store outputs in `synthetic_soldiers.parquet`
 
 ### DifficultyRebalancer (v4.1 NEW)
 - Compare actual difficulty distribution to targets
@@ -483,21 +507,19 @@ Quality tier measures **extraction difficulty**, not resolution difficulty.
 
 ---
 
-## Migration from v4
+## ADR-010 Schema Separation
 
-### New Schema Columns
+### New Outputs
 
-**validation.parquet:**
-- `collision_zone_flag` (bool)
-- `collision_severity` (string)
-- `soldier_difficulty_tier` (string)
-- `complementarity_score` (float)
-- `structural_resolvability` (bool)
+- `synthetic_records.parquet` (per-record generation metadata)
+- `synthetic_soldiers.parquet` (per-soldier generation metrics, `gen_` prefix)
+- `gt_difficulty.parquet` (ground-truth difficulty, `gt_` prefix)
 
-**raw.parquet:**
-- `path_completeness` (float)
-- `levels_provided` (list[str])
-- `extraction_signals` (list[str])
+### Column Moves
+
+- `state_id`, `clerk_id`, `situation_id`, `quality_tier`, `path_completeness`,
+  `levels_provided`, `extraction_signals` moved out of `raw.parquet`
+- Difficulty metrics moved out of `validation.parquet` into `gt_difficulty.parquet`
 
 ### New Generator Components
 
@@ -522,6 +544,13 @@ Quality tier measures **extraction difficulty**, not resolution difficulty.
 ---
 
 ## Changelog
+
+### v4.1.1 (2026-01-29)
+- **Schema:** Separate core data from synthetic metadata (ADR-010)
+- **Schema:** `raw.parquet` trimmed to production-equivalent fields only
+- **Schema:** `validation.parquet` trimmed to ground-truth labels only
+- **Feature:** Added `synthetic_records.parquet`, `synthetic_soldiers.parquet`, `gt_difficulty.parquet`
+- **Feature:** Ground-truth difficulty computed post-hoc with `gt_` prefix
 
 ### v4.1.0 (2026-01-25)
 - **Feature:** Three-layer difficulty model (extraction, aggregation, structural)

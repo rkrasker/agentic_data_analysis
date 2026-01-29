@@ -83,7 +83,7 @@ class Pipeline:
         self,
         target_records: int = 10000,
         soldiers_count: Optional[int] = None,
-    ) -> Tuple[List[Dict], List[Dict], List[Dict]]:
+    ) -> Tuple[List[Dict], List[Dict], List[Dict], List[Dict], List[Dict]]:
         """Generate synthetic dataset records."""
         if soldiers_count is None:
             soldiers_count = max(1, target_records // 3)
@@ -156,8 +156,16 @@ class Pipeline:
         raw_records = self._build_raw_records()
         validation_records = self._build_validation_records()
         source_records = self._build_source_records()
+        synthetic_records = self._build_synthetic_records()
+        synthetic_soldiers = self._build_synthetic_soldiers()
 
-        return raw_records, validation_records, source_records
+        return (
+            raw_records,
+            validation_records,
+            source_records,
+            synthetic_records,
+            synthetic_soldiers,
+        )
 
     def _generate_soldiers(self, count: int) -> None:
         """Generate soldiers across branches."""
@@ -242,14 +250,7 @@ class Pipeline:
             records.append({
                 "source_id": entry.source_id,
                 "soldier_id": entry.soldier_id,
-                "state_id": entry.state_id,
                 "raw_text": entry.raw_text,
-                "clerk_id": entry.clerk_id,
-                "situation_id": entry.situation_id,
-                "quality_tier": entry.quality_tier,
-                "path_completeness": entry.path_completeness,
-                "levels_provided": entry.levels_provided,
-                "extraction_signals": entry.extraction_signals,
             })
         return records
 
@@ -265,15 +266,6 @@ class Pipeline:
                     "branch": state.branch.value,
                     "post_path": state.post_path,
                     **state.post_levels,
-                    "collision_zone_flag": state.collision_zone_flag,
-                    "collision_severity": state.collision_severity.value,
-                    "soldier_difficulty_tier": (
-                        soldier.difficulty_tier.value
-                        if soldier.difficulty_tier
-                        else None
-                    ),
-                    "complementarity_score": soldier.complementarity_score,
-                    "structural_resolvability": soldier.structural_resolvability,
                 })
         return records
 
@@ -291,12 +283,49 @@ class Pipeline:
             })
         return records
 
+    def _build_synthetic_records(self) -> List[Dict[str, Any]]:
+        """Build per-record synthetic metadata for export."""
+        records = []
+        for entry in self.entries.values():
+            records.append({
+                "source_id": entry.source_id,
+                "soldier_id": entry.soldier_id,
+                "state_id": entry.state_id,
+                "clerk_id": entry.clerk_id,
+                "situation_id": entry.situation_id,
+                "quality_tier": entry.quality_tier,
+                "path_completeness": entry.path_completeness,
+                "levels_provided": entry.levels_provided,
+                "extraction_signals": entry.extraction_signals,
+            })
+        return records
+
+    def _build_synthetic_soldiers(self) -> List[Dict[str, Any]]:
+        """Build per-soldier synthetic generation metrics for export."""
+        records = []
+        for soldier in self.soldiers.values():
+            records.append({
+                "soldier_id": soldier.soldier_id,
+                "gen_difficulty_tier": (
+                    soldier.difficulty_tier.value
+                    if soldier.difficulty_tier
+                    else None
+                ),
+                "gen_complementarity_score": soldier.complementarity_score,
+                "gen_structural_resolvability": soldier.structural_resolvability,
+                "target_state_count": len(soldier.states),
+            })
+        return records
+
     def export_parquet(
         self,
         output_dir: Path,
         raw_records: List[Dict],
         validation_records: List[Dict],
         source_records: List[Dict],
+        synthetic_records: Optional[List[Dict]] = None,
+        synthetic_soldiers: Optional[List[Dict]] = None,
+        gt_difficulty_records: Optional[List[Dict]] = None,
     ) -> None:
         """Export records to parquet files (with CSV fallback)."""
         try:
@@ -342,6 +371,30 @@ class Pipeline:
             else:
                 src_df.to_csv(output_dir / "sources.csv", index=False)
             print(f"Wrote {len(src_df)} records to {output_dir}/sources{ext}")
+
+        if synthetic_records:
+            syn_df = pd.DataFrame(synthetic_records)
+            if parquet_available:
+                syn_df.to_parquet(output_dir / "synthetic_records.parquet", index=False)
+            else:
+                syn_df.to_csv(output_dir / "synthetic_records.csv", index=False)
+            print(f"Wrote {len(syn_df)} records to {output_dir}/synthetic_records{ext}")
+
+        if synthetic_soldiers:
+            soldier_df = pd.DataFrame(synthetic_soldiers)
+            if parquet_available:
+                soldier_df.to_parquet(output_dir / "synthetic_soldiers.parquet", index=False)
+            else:
+                soldier_df.to_csv(output_dir / "synthetic_soldiers.csv", index=False)
+            print(f"Wrote {len(soldier_df)} records to {output_dir}/synthetic_soldiers{ext}")
+
+        if gt_difficulty_records:
+            gt_df = pd.DataFrame(gt_difficulty_records)
+            if parquet_available:
+                gt_df.to_parquet(output_dir / "gt_difficulty.parquet", index=False)
+            else:
+                gt_df.to_csv(output_dir / "gt_difficulty.csv", index=False)
+            print(f"Wrote {len(gt_df)} records to {output_dir}/gt_difficulty{ext}")
 
     def get_stats(self) -> Dict[str, Any]:
         """Get comprehensive pipeline statistics."""
@@ -389,15 +442,33 @@ def run_pipeline(
         random_seed=random_seed,
     )
 
-    raw_records, validation_records, source_records = pipeline.generate(
+    raw_records, validation_records, source_records, synthetic_records, synthetic_soldiers = pipeline.generate(
         target_records=target_records,
     )
+
+    gt_difficulty_records = None
+    try:
+        import pandas as pd
+        from src.difficulty.ground_truth import compute_ground_truth_difficulty
+
+        gt_df = compute_ground_truth_difficulty(
+            validation_df=pd.DataFrame(validation_records),
+            raw_df=pd.DataFrame(raw_records),
+            hierarchy_reference=pipeline.hierarchy_loader.config,
+            synthetic_records_df=pd.DataFrame(synthetic_records),
+        )
+        gt_difficulty_records = gt_df.to_dict("records")
+    except ImportError:
+        gt_difficulty_records = None
 
     pipeline.export_parquet(
         output_dir=Path(output_dir),
         raw_records=raw_records,
         validation_records=validation_records,
         source_records=source_records,
+        synthetic_records=synthetic_records,
+        synthetic_soldiers=synthetic_soldiers,
+        gt_difficulty_records=gt_difficulty_records,
     )
 
     return pipeline.get_stats()

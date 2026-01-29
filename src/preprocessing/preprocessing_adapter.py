@@ -3,8 +3,8 @@
 Preprocessing adapter for synthetic data (v4.1).
 
 Bridges synthetic generator output (raw.parquet) to the regex extraction pipeline,
-producing canonical.parquet for component routing and synthetic_metadata.parquet
-for synthetic-only fields.
+producing canonical.parquet for component routing and synthetic_records.parquet
+for synthetic-only fields when available.
 
 Usage:
     python -m src.preprocessing.preprocessing_adapter
@@ -29,17 +29,10 @@ from .regex_preprocessing import extract_roster_fields
 PROJECT_ROOT = Path(__file__).parent.parent.parent
 DEFAULT_INPUT_PATH = PROJECT_ROOT / "data/synthetic/raw.parquet"
 DEFAULT_OUTPUT_PATH = PROJECT_ROOT / "data/synthetic/canonical.parquet"
+DEFAULT_SYNTHETIC_RECORDS_PATH = PROJECT_ROOT / "data/synthetic/synthetic_records.parquet"
 GLOSSARY_PATH = PROJECT_ROOT / "config/glossaries/synthetic_glossary.json"
 
-RAW_CORE_COLS = ["source_id", "soldier_id", "state_id", "raw_text"]
-RAW_METADATA_COLS = [
-    "clerk_id",
-    "situation_id",
-    "quality_tier",
-    "path_completeness",
-    "levels_provided",
-    "extraction_signals",
-]
+RAW_CORE_COLS = ["source_id", "soldier_id", "raw_text"]
 
 
 def load_glossary_as_dataframe() -> pd.DataFrame:
@@ -62,8 +55,7 @@ def adapt_raw_for_extraction(df: pd.DataFrame) -> pd.DataFrame:
     Adapt synthetic raw.parquet schema to regex extraction schema.
 
     Synthetic schema (v4.1):
-        source_id, soldier_id, state_id, raw_text, clerk_id, situation_id,
-        quality_tier, path_completeness, levels_provided, extraction_signals
+        source_id, soldier_id, raw_text
 
     Regex extraction expects:
         Name (required), Notes (optional)
@@ -91,6 +83,7 @@ def run_extraction(
     input_path: Optional[Path] = None,
     output_path: Optional[Path] = None,
     enable_timing: bool = False,
+    synthetic_records_path: Optional[Path] = None,
 ) -> pd.DataFrame:
     """
     Run the full extraction pipeline.
@@ -100,26 +93,28 @@ def run_extraction(
     3. Load glossary
     4. Run extraction
     5. Save canonical.parquet
-    6. Save synthetic_metadata.parquet
+    6. Save synthetic_records.parquet (if present or derivable)
     7. Return result
 
     Args:
         input_path: Path to raw.parquet (default: data/synthetic/raw.parquet)
         output_path: Path for canonical.parquet (default: data/synthetic/canonical.parquet)
         enable_timing: If True, print timing information
+        synthetic_records_path: Optional path to synthetic_records.parquet
 
     Returns:
         DataFrame with extraction results
     """
     input_path = input_path or DEFAULT_INPUT_PATH
     output_path = output_path or DEFAULT_OUTPUT_PATH
+    synthetic_records_path = synthetic_records_path or DEFAULT_SYNTHETIC_RECORDS_PATH
 
     # Load raw data
     print(f"Loading raw data from {input_path}")
     raw_df = pd.read_parquet(input_path)
     print(f"  Loaded {len(raw_df)} records")
 
-    expected_raw = set(RAW_CORE_COLS + RAW_METADATA_COLS)
+    expected_raw = set(RAW_CORE_COLS)
     raw_cols = set(raw_df.columns)
     missing_expected = sorted(expected_raw - raw_cols)
     extra_cols = sorted(raw_cols - expected_raw)
@@ -191,16 +186,27 @@ def run_extraction(
     print(f"  Saved {len(canonical_df)} records with {len(canonical_df.columns)} columns")
 
     # Save synthetic metadata separately (for debugging/analysis)
-    metadata_path = output_path.parent / "synthetic_metadata.parquet"
-    metadata_key_cols = [c for c in ["source_id", "soldier_id", "state_id"] if c in result_df.columns]
-    metadata_cols = metadata_key_cols + [c for c in raw_metadata_cols if c in result_df.columns]
-    if metadata_cols:
-        metadata_df = result_df[metadata_cols].copy()
-        metadata_df.to_parquet(metadata_path, index=False)
-        print(f"  Saved synthetic metadata to {metadata_path}")
-        print(f"  Metadata join key: {metadata_key_cols}")
+    raw_metadata_cols = sorted(set(raw_df.columns) - set(RAW_CORE_COLS))
+    synthetic_records_df = None
+
+    if synthetic_records_path and synthetic_records_path.exists():
+        synthetic_records_df = pd.read_parquet(synthetic_records_path)
+        print(f"Loaded synthetic records from {synthetic_records_path}")
+    elif raw_metadata_cols:
+        metadata_key_cols = [
+            c for c in ["source_id", "soldier_id", "state_id"]
+            if c in result_df.columns
+        ]
+        metadata_cols = metadata_key_cols + [c for c in raw_metadata_cols if c in result_df.columns]
+        if metadata_cols:
+            synthetic_records_df = result_df[metadata_cols].copy()
+
+    if synthetic_records_df is not None and not synthetic_records_df.empty:
+        metadata_path = output_path.parent / "synthetic_records.parquet"
+        synthetic_records_df.to_parquet(metadata_path, index=False)
+        print(f"  Saved synthetic records to {metadata_path}")
     else:
-        print("Warning: no metadata columns found; synthetic_metadata.parquet not created")
+        print("Note: no synthetic records available; skipping synthetic_records.parquet")
 
     # Summary of extraction results
     summary_cols = [
@@ -239,6 +245,12 @@ def main():
         action="store_true",
         help="Enable timing output"
     )
+    parser.add_argument(
+        "--synthetic-records",
+        type=Path,
+        default=DEFAULT_SYNTHETIC_RECORDS_PATH,
+        help="Optional path to synthetic_records.parquet",
+    )
 
     args = parser.parse_args()
 
@@ -246,6 +258,7 @@ def main():
         input_path=args.input,
         output_path=args.output,
         enable_timing=args.timing,
+        synthetic_records_path=args.synthetic_records,
     )
 
 

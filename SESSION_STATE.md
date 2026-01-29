@@ -9,11 +9,20 @@
 
 **Instruction 010:** Implement synthetic metadata schema separation (ADR-010)
 
-The architecture and documentation are complete. Implementation is pending.
+Implementation complete; follow-up: regenerate artifacts and update any downstream notebooks/scripts.
 
 ---
 
 ## Completed This Session
+
+### Implemented ADR-010 Schema Separation
+
+- Added `src/difficulty/` module for ground-truth difficulty computation
+- Refactored synthetic pipeline outputs into core + synthetic metadata files
+- Added `gt_difficulty.parquet` post-hoc computation in synthetic pipeline
+- Updated preprocessing difficulty outputs to `inferred_*` with writer CLI
+- Updated preprocessing adapter to use new raw schema and synthetic_records passthrough
+- Updated tests and docs for new schema and prefixes
 
 ### Created ADR-010: Synthetic Metadata Separation
 
@@ -72,7 +81,7 @@ Resolved confusion about difficulty column provenance by establishing:
 
 ## Where I Left Off
 
-**Architecture complete, implementation pending.**
+**Implementation complete.** Pending: regenerate artifacts and validate downstream consumers.
 
 ADR-010 establishes the schema separation and naming conventions. Instruction 010 provides the implementation roadmap. Next step is to execute the instruction.
 
@@ -85,12 +94,12 @@ ADR-010 schema separation design        ✓ COMPLETE
         │
         ├──► Instruction 010 written    ✓ COMPLETE
         │
-        └──► Implementation             ← NEXT
+        └──► Implementation             ✓ COMPLETE
                 │
-                ├──► Refactor src/synthetic/pipeline.py outputs
-                ├──► Create src/difficulty/ground_truth.py
-                ├──► Update src/preprocessing/difficulty/ to inferred_ prefix
-                └──► Update downstream consumers
+                ├──► Refactor src/synthetic/pipeline.py outputs    ✓
+                ├──► Create src/difficulty/ground_truth.py         ✓
+                ├──► Update src/preprocessing/difficulty/ prefix   ✓
+                └──► Update downstream consumers/docs/tests        ✓
 ```
 
 ---
@@ -107,7 +116,7 @@ ADR-010 schema separation design        ✓ COMPLETE
 
 4. **Cross-branch collision handling:** Partially addressed. May need refinement with real examples.
 
-5. **Migration path for resolver code:** Existing code marked "complete" — refactoring strategy TBD.
+5. **Migration path for resolver code/notebooks:** Existing code marked "complete" — refactoring strategy TBD.
 
 ---
 
@@ -118,6 +127,7 @@ ADR-010 schema separation design        ✓ COMPLETE
 | ADR-010 | `docs/architecture/decisions/ADR-010-synthetic-metadata-separation.md` | ✓ Complete |
 | Instruction 010 | `instructions/010_separate_synthetic_metadata_schema.md` | ✓ Complete |
 | Session Extract | `.project_history/extracts/raw/2026-01-29_opus_synthetic-metadata-separation.md` | ✓ Complete |
+| Code Activity Log | `.project_history/code-activity/2026-01-29.md` | ✓ Complete |
 
 ## Artifacts from Previous Sessions (Still Relevant)
 
@@ -132,9 +142,10 @@ ADR-010 schema separation design        ✓ COMPLETE
 
 ## Next Steps
 
-1. **Execute Instruction 010** — Implement ADR-010 schema separation
-2. **sampling.py updates** — Add difficulty-based sampling (blocked on schema updates)
-3. **Resolver Phase 5 update** — Wire up to use pre-computed exclusion rules
+1. **Regenerate artifacts** — run synthetic pipeline and preprocessing to produce new files
+2. **Update downstream notebooks/scripts** — migrate any old schema usage
+3. **sampling.py updates** — add difficulty-based sampling
+4. **Resolver Phase 5 update** — wire up to use pre-computed exclusion rules
 
 ---
 

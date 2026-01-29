@@ -81,8 +81,11 @@ Synthetic Generator → raw.parquet → [Regex Preprocessing] → canonical.parq
 ```
 
 **Data artifacts:**
-- `data/synthetic/raw.parquet` — Generated records (v4.1: includes path_completeness, levels_provided, extraction_signals)
-- `data/synthetic/validation.parquet` — Ground truth with state_id, collision_severity, difficulty tier + complementarity + structural_resolvability
+- `data/synthetic/raw.parquet` — Generated records (source_id, soldier_id, raw_text)
+- `data/synthetic/validation.parquet` — Ground truth labels (state_id, post_path, level columns)
+- `data/synthetic/synthetic_records.parquet` — Per-record generation metadata
+- `data/synthetic/synthetic_soldiers.parquet` — Per-soldier generation metrics (gen_*)
+- `data/synthetic/gt_difficulty.parquet` — Ground-truth difficulty metrics (gt_*)
 - `data/synthetic/canonical.parquet` — Preprocessed with extraction columns
 - `config/hierarchies/structural_discriminators.json` — Pre-computed discrimination rules for difficulty model and resolver Phase 5
 - `config/resolvers/*.json` — Per-component resolvers (to be generated)

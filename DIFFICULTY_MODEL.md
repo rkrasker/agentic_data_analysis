@@ -59,7 +59,7 @@ Regex-parsed records with characterized and uncharacterized extractions:
 
 ```
 soldier_id: str
-state_id: str
+state_id: str (synthetic-only; absent in production)
 raw_text: str
 
 # Characterized extractions (regex recognized pattern + value)
