@@ -38,6 +38,7 @@ def assemble_resolver(
     pct_of_median: float,
     structure: ComponentStructure,
     phase_results: PhaseResults,
+    hard_cases: Optional[List[Any]] = None,
 ) -> Dict[str, Any]:
     """
     Assemble resolver JSON from all phase outputs.
@@ -62,6 +63,7 @@ def assemble_resolver(
             sample_size=sample_size,
             pct_of_median=pct_of_median,
             generation_mode=generation_mode,
+            hard_cases=hard_cases or [],
         ),
         "structure": _build_structure_section(structure),
         "patterns": _build_patterns_section(phase_results.patterns, tier),
@@ -83,9 +85,10 @@ def _build_meta_section(
     sample_size: int,
     pct_of_median: float,
     generation_mode: str,
+    hard_cases: Optional[List[Any]] = None,
 ) -> Dict[str, Any]:
     """Build the meta section of the resolver."""
-    return {
+    result = {
         "component_id": component_id,
         "generated_utc": datetime.utcnow().isoformat() + "Z",
         "tier": tier,
@@ -93,6 +96,17 @@ def _build_meta_section(
         "pct_of_median": round(pct_of_median, 1),
         "generation_mode": generation_mode,
     }
+    if hard_cases:
+        result["hard_cases_flagged"] = len(hard_cases)
+        result["hard_cases_by_layer"] = {
+            "collision_position": sum(1 for hc in hard_cases if getattr(hc, "layer", "") == "collision_position"),
+            "complementarity": sum(1 for hc in hard_cases if getattr(hc, "layer", "") == "complementarity"),
+            "structural_ambiguity": sum(1 for hc in hard_cases if getattr(hc, "layer", "") == "structural_ambiguity"),
+            "unknown": sum(1 for hc in hard_cases if getattr(hc, "layer", "") not in {
+                "collision_position", "complementarity", "structural_ambiguity"
+            }),
+        }
+    return result
 
 
 def _build_structure_section(structure: ComponentStructure) -> Dict[str, Any]:
@@ -209,17 +223,9 @@ def _build_vocabulary_section(
 def _build_exclusions_section(exclusions_result) -> Dict[str, Any]:
     """Build the exclusions section."""
     return {
-        "structural": {
-            "status": exclusions_result.structural_status,
-            "rules": exclusions_result.structural,
-        },
-        "value_based": {
-            "status": exclusions_result.value_based_status,
-            "rules": exclusions_result.value_based,
-        } if exclusions_result.value_based_status != "not_generated" else {
-            "status": "not_generated",
-            "reason": "insufficient_sample",
-        },
+        "status": exclusions_result.structural_status,
+        "source": "hierarchy_derived",
+        "rules": exclusions_result.structural,
     }
 
 

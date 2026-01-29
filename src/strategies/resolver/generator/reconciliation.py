@@ -64,6 +64,7 @@ class HardCaseAnalysis:
     """Analysis of a hard case soldier."""
     soldier_id: str
     flagged_in: str  # "both", "forward_only", "inverted_only"
+    layer: str  # "collision_position" | "complementarity" | "structural_ambiguity" | "unknown"
     reason: str
     notes: str = ""
 
@@ -75,6 +76,7 @@ class HardCaseAnalysis:
         return {
             "soldier_id": self.soldier_id,
             "flagged_in": self.flagged_in,
+            "layer": self.layer,
             "reason": self.reason,
             "notes": self.notes,
             "resolved_by_pattern": self.resolved_by_pattern,
@@ -96,6 +98,7 @@ class ReconciliationResult:
 
     # Hard case analysis
     hard_case_analyses: List[HardCaseAnalysis] = field(default_factory=list)
+    hard_case_layer_summary: Dict[str, Any] = field(default_factory=dict)
 
     # Token usage
     input_tokens: int = 0
@@ -145,7 +148,7 @@ class ReconciliationResult:
         ]
 
     def to_dict(self) -> Dict[str, Any]:
-        return {
+        result = {
             "component_id": self.component_id,
             "phase": self.phase,
             "counts": {
@@ -160,6 +163,9 @@ class ReconciliationResult:
                 "output": self.output_tokens,
             },
         }
+        if self.hard_case_layer_summary:
+            result["hard_cases_summary"] = self.hard_case_layer_summary
+        return result
 
 
 # =============================================================================
@@ -206,7 +212,7 @@ def build_reconciliation_prompt(
         records = hard_case_records.get(hc.soldier_id, [])
         records_preview = "\n      ".join(records[:5])  # First 5 records
         hard_case_strs.append(
-            f"  Soldier {hc.soldier_id} (flagged: {hc.flagged_in}, reason: {hc.reason}):\n"
+            f"  Soldier {hc.soldier_id} (flagged: {hc.flagged_in}, layer: {hc.layer}, reason: {hc.reason}):\n"
             f"      {records_preview}"
         )
 
@@ -263,6 +269,32 @@ Return JSON:
   "observations": "overall observations about pattern robustness"
 }}
 ```"""
+
+
+def analyze_hard_cases_by_layer(hard_cases: List[HardCase]) -> Dict[str, List[HardCase]]:
+    """Group hard cases by difficulty layer for analysis."""
+    by_layer = {
+        "collision_position": [],
+        "complementarity": [],
+        "structural_ambiguity": [],
+        "unknown": [],
+    }
+    for hc in hard_cases:
+        layer = hc.layer if hc.layer in by_layer else "unknown"
+        by_layer[layer].append(hc)
+    return by_layer
+
+
+def generate_reconciliation_summary(hard_cases: List[HardCase]) -> Dict[str, Any]:
+    """Generate summary including layer breakdown."""
+    by_layer = analyze_hard_cases_by_layer(hard_cases)
+    return {
+        "total_hard_cases": len(hard_cases),
+        "by_layer": {layer: len(cases) for layer, cases in by_layer.items()},
+        "collision_position_cases": [hc.soldier_id for hc in by_layer["collision_position"]],
+        "complementarity_cases": [hc.soldier_id for hc in by_layer["complementarity"]],
+        "structural_ambiguity_cases": [hc.soldier_id for hc in by_layer["structural_ambiguity"]],
+    }
 
 
 # =============================================================================
@@ -458,10 +490,12 @@ class Reconciler:
             result.hard_case_analyses.append(HardCaseAnalysis(
                 soldier_id=hc.soldier_id,
                 flagged_in=hc.flagged_in,
+                layer=hc.layer,
                 reason=hc.reason,
                 notes=hc.notes,
             ))
 
+        result.hard_case_layer_summary = generate_reconciliation_summary(hard_cases)
         return result
 
     def _build_result_from_llm(
@@ -525,12 +559,14 @@ class Reconciler:
             result.hard_case_analyses.append(HardCaseAnalysis(
                 soldier_id=hc.soldier_id,
                 flagged_in=hc.flagged_in,
+                layer=hc.layer,
                 reason=hc.reason,
                 notes=hc.notes,
                 resolved_by_pattern=llm_hca.get("resolved_by_pattern"),
                 resolution_notes=llm_hca.get("resolution_notes", ""),
             ))
 
+        result.hard_case_layer_summary = generate_reconciliation_summary(hard_cases)
         logger.info(f"  Reconciliation complete: {len(result.robust_patterns)} robust, "
                    f"{len(result.validated_patterns)} validated, "
                    f"{len(result.order_dependent_patterns)} order-dependent, "

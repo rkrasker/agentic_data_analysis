@@ -119,8 +119,8 @@ def tier_allows_vocabulary(tier: TierName) -> bool:
 
 
 def tier_allows_value_exclusions(tier: TierName) -> bool:
-    """Check if tier allows value-based exclusion mining."""
-    return tier in ("well_represented", "adequately_represented", "under_represented")
+    """Deprecated: value-based exclusion mining removed (ADR-009)."""
+    return False
 
 
 def get_generation_mode(tier: TierName) -> str:

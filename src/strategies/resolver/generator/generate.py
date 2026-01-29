@@ -20,7 +20,12 @@ from src.utils.llm.structured import extract_json_from_text
 from src.evaluation.split import StratifiedSplitter, SplitConfig, TrainTestSplit
 
 from .thresholds import compute_thresholds, ThresholdResult, TierName
-from .structure import extract_structure, StructureResult
+from .structure import (
+    extract_structure,
+    StructureResult,
+    load_structural_discriminators,
+    load_hierarchy_reference,
+)
 from .sampling import sample_collisions, ComponentSamples
 from .registry import (
     RegistryManager,
@@ -35,8 +40,8 @@ from .dual_run import (
     DualRunOrchestrator,
     DualRunResult,
     BatchExtractionResult,
-    HardCase,
     StatefulAccumulator,
+    parse_hard_cases,
     run_dual_extraction,
 )
 from .reconciliation import (
@@ -240,6 +245,10 @@ def generate_all_resolvers(
     logger.info(f"  Components in hierarchy: {len(structure_result.structures)}")
     logger.info(f"  Collision pairs: {len(structure_result.list_all_collision_pairs())}")
 
+    logger.info("  Loading hierarchy reference + structural discriminators...")
+    hierarchy = load_hierarchy_reference(hierarchy_path)
+    structural_discriminators = load_structural_discriminators()
+
     # Step 5: Sample collisions
     logger.info("\nStep 5: Sampling collisions...")
     if train_split_path and not stratify_by_difficulty:
@@ -310,6 +319,8 @@ def generate_all_resolvers(
                 all_samples=all_samples,
                 raw_df=raw_df,
                 structure_result=structure_result,
+                structural_discriminators=structural_discriminators,
+                hierarchy=hierarchy,
                 thresholds=thresholds,
                 llm=llm,
                 registry=registry,
@@ -379,6 +390,8 @@ def _generate_single_resolver(
     all_samples: Dict[str, ComponentSamples],
     raw_df: pd.DataFrame,
     structure_result: StructureResult,
+    structural_discriminators: Dict[str, Any],
+    hierarchy: Dict[str, Any],
     thresholds: ThresholdResult,
     llm: BaseLLMProvider,
     registry: ResolverRegistry,
@@ -424,7 +437,7 @@ def _generate_single_resolver(
 
     if config.use_dual_run:
         # Dual-run mode (ADR-002)
-        phase_results, dual_run_metrics = _run_dual_mode(
+        phase_results, dual_run_metrics, hard_cases = _run_dual_mode(
             component_id=component_id,
             component_samples=component_samples,
             raw_df=raw_df,
@@ -435,6 +448,8 @@ def _generate_single_resolver(
             llm=llm,
             tier=tier,
             config=config,
+            structural_discriminators=structural_discriminators,
+            hierarchy=hierarchy,
             progress_callback=progress_callback,
         )
         result["dual_run"] = dual_run_metrics
@@ -448,8 +463,11 @@ def _generate_single_resolver(
             llm=llm,
             tier=tier,
             thresholds_result=thresholds,
+            structural_discriminators=structural_discriminators,
+            hierarchy=hierarchy,
             progress_callback=progress_callback,
         )
+        hard_cases = []
 
     # Assemble resolver
     resolver = assemble_resolver(
@@ -459,6 +477,7 @@ def _generate_single_resolver(
         pct_of_median=pct_of_median,
         structure=structure,
         phase_results=phase_results,
+        hard_cases=hard_cases,
     )
 
     # Add dual-run metadata to resolver if applicable
@@ -505,6 +524,8 @@ def _run_dual_mode(
     llm: BaseLLMProvider,
     tier: TierName,
     config: GenerationConfig,
+    structural_discriminators: Dict[str, Any],
+    hierarchy: Dict[str, Any],
     progress_callback: Optional[callable] = None,
 ) -> tuple:
     """
@@ -556,16 +577,7 @@ def _run_dual_mode(
         result_json = extract_json_from_text(response.content)
 
         patterns = result_json.get("patterns", []) if result_json else []
-        hard_cases_raw = result_json.get("hard_cases", []) if result_json else []
-
-        hard_cases = [
-            HardCase(
-                soldier_id=hc.get("soldier_id", ""),
-                reason=hc.get("reason", "unknown"),
-                notes=hc.get("notes", ""),
-            )
-            for hc in hard_cases_raw
-        ]
+        hard_cases = parse_hard_cases(result_json or {}, "patterns")
 
         return BatchExtractionResult(
             batch_id=batch.batch_id,
@@ -625,6 +637,8 @@ def _run_dual_mode(
         llm=llm,
         tier=tier,
         thresholds_result=thresholds,
+        structural_discriminators=structural_discriminators,
+        hierarchy=hierarchy,
         progress_callback=progress_callback,
     )
 
@@ -638,7 +652,8 @@ def _run_dual_mode(
     phase_results.patterns.input_tokens += dual_result.total_input_tokens + reconciliation.input_tokens
     phase_results.patterns.output_tokens += dual_result.total_output_tokens + reconciliation.output_tokens
 
-    return phase_results, dual_run_metrics
+    hard_cases = dual_result.get_hard_cases_with_agreement()
+    return phase_results, dual_run_metrics, hard_cases
 
 
 def generate_single_component(

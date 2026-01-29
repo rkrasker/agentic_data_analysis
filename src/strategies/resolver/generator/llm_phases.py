@@ -20,17 +20,15 @@ from pydantic import BaseModel
 from src.utils.llm import create_provider, Message, LLMResponse, BaseLLMProvider
 from src.utils.llm.structured import extract_json_from_text
 
-from .thresholds import TierName, tier_allows_patterns, tier_allows_vocabulary, tier_allows_value_exclusions
-from .structure import ComponentStructure, get_structural_exclusions, get_invalid_designators
+from .thresholds import TierName, tier_allows_patterns, tier_allows_vocabulary
+from .structure import ComponentStructure, get_structural_exclusions, compute_exclusions
 from .sampling import ComponentSamples, CollisionSample
 from .prompts import (
     PATTERN_DISCOVERY_SYSTEM,
-    EXCLUSION_MINING_SYSTEM,
     VOCABULARY_DISCOVERY_SYSTEM,
     DIFFERENTIATOR_SYSTEM,
     TIER_ASSIGNMENT_SYSTEM,
     build_pattern_discovery_prompt,
-    build_exclusion_mining_prompt,
     build_vocabulary_discovery_prompt,
     build_differentiator_prompt,
     build_tier_assignment_prompt,
@@ -183,21 +181,16 @@ class ExclusionResult:
     structural: List[Dict[str, str]] = field(default_factory=list)
     value_based: List[Dict[str, str]] = field(default_factory=list)
     structural_status: str = "complete"
-    value_based_status: str = "complete"
+    value_based_status: str = "not_applicable"
     observations: str = ""
     input_tokens: int = 0
     output_tokens: int = 0
 
     def to_dict(self) -> Dict[str, Any]:
         return {
-            "structural": {
-                "status": self.structural_status,
-                "rules": self.structural
-            },
-            "value_based": {
-                "status": self.value_based_status,
-                "rules": self.value_based
-            }
+            "status": self.structural_status,
+            "source": "hierarchy_derived",
+            "rules": self.structural,
         }
 
 
@@ -498,87 +491,49 @@ def mine_exclusions(
     component_samples: ComponentSamples,
     llm: BaseLLMProvider,
     tier: TierName,
+    structural_discriminators: Dict[str, Any],
+    hierarchy: Dict[str, Any],
 ) -> ExclusionResult:
     """
-    Phase 5: Mine exclusion rules.
+    Phase 5: Compute exclusion rules deterministically.
 
-    Structural exclusions are always generated (from hierarchy).
-    Value-based exclusions require sufficient data.
+    NO LLM CALL. All rules derived from hierarchy structure.
 
     Args:
         component_id: Target component ID
         component_name: Canonical component name
         structure: Target component structure
         all_structures: All component structures
-        component_samples: Component samples
-        llm: LLM provider
-        tier: Component tier
+        component_samples: Component samples (unused)
+        llm: LLM provider (unused)
+        tier: Component tier (unused)
+        structural_discriminators: Precomputed discriminators
+        hierarchy: Loaded hierarchy reference
 
     Returns:
-        ExclusionResult with both structural and value-based exclusions
+        ExclusionResult with deterministic exclusions
     """
     # Structural exclusions (always generated)
     structural = get_structural_exclusions(component_id, structure, all_structures)
 
-    # Value-based exclusions (requires data)
-    value_based = []
-    value_status = "complete"
-    total_input = 0
-    total_output = 0
-    observations = ""
+    # Deterministic exclusions (replaces LLM-mined value_based)
+    deterministic = compute_exclusions(
+        component_id=component_id,
+        structure=structure,
+        structural_discriminators=structural_discriminators,
+        hierarchy=hierarchy,
+    )
 
-    if not tier_allows_value_exclusions(tier):
-        value_status = "not_generated"
-    else:
-        # Get invalid designators
-        invalid = get_invalid_designators(component_id, structure, all_structures)
-
-        # Get sample texts - exclude tier 1, limit tier 2
-        texts = []
-        if component_samples.all_records is not None:
-            filtered = _filter_records_by_quality(
-                component_samples.all_records, mode="differentiator", max_records=30
-            )
-            texts = filtered["raw_text"].tolist()
-            logger.debug(f"Exclusion mining using {len(texts)} records (quality-filtered)")
-
-        if texts:
-            prompt = build_exclusion_mining_prompt(
-                component_name=component_name,
-                component_id=component_id,
-                component_structure=structure.to_dict(),
-                all_texts=texts,
-                invalid_designators=invalid,
-            )
-
-            messages = [
-                Message(role="system", content=EXCLUSION_MINING_SYSTEM),
-                Message(role="human", content=prompt),
-            ]
-
-            try:
-                response = llm.invoke(messages)
-                total_input = response.input_tokens
-                total_output = response.output_tokens
-
-                result = extract_json_from_text(response.content)
-                if result:
-                    value_based = result.get("value_based_exclusions", [])
-                    observations = result.get("observations", "")
-
-            except Exception as e:
-                logger.error(f"Exclusion mining failed for {component_id}: {e}")
-                value_status = "limited"
-                observations = f"Error: {str(e)}"
+    all_rules = structural + deterministic
 
     return ExclusionResult(
-        structural=structural,
-        value_based=value_based,
+        structural=all_rules,
+        value_based=[],
         structural_status="complete",
-        value_based_status=value_status,
-        observations=observations,
-        input_tokens=total_input,
-        output_tokens=total_output,
+        value_based_status="not_applicable",
+        observations="",
+        input_tokens=0,
+        output_tokens=0,
     )
 
 
@@ -777,7 +732,7 @@ def generate_differentiators(
             collision_levels=collision_sample.collision_levels,
             component_patterns=patterns.patterns,
             rival_patterns=rival_pattern_list,
-            component_exclusions=exclusions.value_based,
+            component_exclusions=exclusions.structural,
             component_vocabulary=vocab_dict,
         )
 
@@ -1047,6 +1002,8 @@ def run_all_phases(
     llm: BaseLLMProvider,
     tier: TierName,
     thresholds_result: Any,
+    structural_discriminators: Dict[str, Any],
+    hierarchy: Dict[str, Any],
     progress_callback: Optional[callable] = None,
 ) -> PhaseResults:
     """
@@ -1098,6 +1055,8 @@ def run_all_phases(
         component_samples=component_samples,
         llm=llm,
         tier=tier,
+        structural_discriminators=structural_discriminators,
+        hierarchy=hierarchy,
     )
 
     # Phase 6: Vocabulary Discovery

@@ -3,7 +3,6 @@ Prompt templates for LLM phases in resolver generation.
 
 Contains prompts for:
 - Phase 4: Pattern Discovery
-- Phase 5: Exclusion Mining
 - Phase 6: Vocabulary Discovery
 - Phase 7: Differentiator Generation
 
@@ -51,20 +50,40 @@ CRITICAL INFERENCE PRINCIPLES:
 # =============================================================================
 
 HARD_CASE_INSTRUCTIONS = """
-HARD CASE FLAGGING:
-As you analyze the records, identify soldiers whose records are particularly difficult to classify.
-Flag a soldier as a "hard case" if:
-- Multiple component indicators are present (conflicting signals)
-- Key identifiers are missing or ambiguous
-- Unusual notation that doesn't match known patterns
-- Assignment is uncertain despite having records
-- Transfer indicators are present
-- Record contains only shared designators with no distinguishing features
+## Hard Cases (Three-Layer Difficulty Model)
 
-Include hard cases in your response:
-"hard_cases": [
-  {"soldier_id": "S123", "reason": "conflicting_signals|ambiguous_notation|missing_identifiers|transfer_detected|insufficient_evidence", "notes": "brief explanation"}
-]
+Flag a soldier as a "hard case" when disambiguation is structurally difficult.
+Use these specific criteria aligned with the three-layer model:
+
+### Layer 2: Collision Position
+Flag if the soldier's partial path is NON-UNIQUE across components.
+- Example: "Regiment 3" exists in both 82nd Airborne and 101st Airborne
+- Example: "Battalion A" is shared by multiple divisions
+- Key indicator: The path segment alone cannot determine the component
+
+### Layer 2: Complementarity (Non-Complementary Records)
+Flag if ALL records provide the SAME ambiguous partial path with no additional differentiation.
+- Example: Three records all say "3rd Regiment" with no battalion or company info
+- Example: Records repeat the same level without covering other levels
+- Key indicator: Records don't provide complementary path segments
+
+### Layer 3: Structural Ambiguity
+Flag if designators don't resolve structurally even with context.
+- Example: "3rd" could be battalion (numeric) or regiment (ordinal)
+- Example: Abbreviation matches multiple level types
+- Key indicator: Syntax/format doesn't distinguish the level
+
+### DO NOT Flag
+- Transfer indicators (that's state discovery, not component discrimination)
+- Low quality records (quality is orthogonal to difficulty)
+- Missing data alone (only flag if missing data creates structural ambiguity)
+
+### Output Format
+For each hard case, specify:
+- soldier_id: The soldier identifier
+- layer: One of "collision_position", "complementarity", "structural_ambiguity"
+- reason: Brief explanation of why this is hard
+- notes: Any additional context (optional)
 """
 
 # =============================================================================
@@ -161,6 +180,12 @@ For each pattern, provide:
 4. Provenance: "observed" if you can cite specific records, "inferred" if from general knowledge
 5. Example records where this pattern appears (if observed)
 {HARD_CASE_INSTRUCTIONS}
+When flagging hard cases, use this JSON format:
+{{
+  "hard_cases": [
+    {{"soldier_id": "...", "layer": "collision_position|complementarity|structural_ambiguity", "reason": "...", "notes": "..."}}
+  ]
+}}
 Respond in JSON format:
 {{
   "patterns": [
@@ -174,7 +199,7 @@ Respond in JSON format:
     }}
   ],
   "hard_cases": [
-    {{"soldier_id": "S123", "reason": "conflicting_signals", "notes": "brief explanation"}}
+    {{"soldier_id": "S123", "layer": "collision_position", "reason": "shared regiment number", "notes": "brief explanation"}}
   ],
   "ambiguous_patterns": [
     {{
@@ -183,111 +208,6 @@ Respond in JSON format:
     }}
   ],
   "observations": "brief summary of key distinguishing features"
-}}"""
-
-
-# =============================================================================
-# PHASE 5: EXCLUSION MINING
-# =============================================================================
-
-EXCLUSION_MINING_SYSTEM = """You are an expert at analyzing military organizational structures to identify exclusion rules. An exclusion rule definitively indicates that a record does NOT belong to a specific unit.
-
-IMPORTANT: Exclusion rules must be based on POSITIVE EVIDENCE of incompatibility, not absence.
-
-VALID exclusion signals (based on PRESENCE of conflicting evidence):
-- "Contains 'Marine' or 'USMC'" → exclude from Army units (positive branch conflict)
-- "Contains regiment '7'" → exclude from unit that only has regiments 1, 3, 6 (positive structural conflict)
-- "Contains 'Tank' or 'Armored'" → exclude from infantry unit (positive type conflict)
-
-INVALID exclusion signals (based on ABSENCE):
-- "Does not contain 'ABN'" → NOT a valid exclusion ❌
-- "Lacks airborne terminology" → NOT a valid exclusion ❌
-- "Missing division identifier" → NOT a valid exclusion ❌
-
-Focus on:
-1. Positive indicators of a DIFFERENT branch (Marine vs Army)
-2. Positive indicators of a DIFFERENT unit type (Armored vs Infantry)
-3. Structural impossibilities (regiment numbers that don't exist in this unit)
-4. Explicit identifiers for OTHER units
-
-Be conservative. Only identify exclusions based on positive conflicting evidence."""
-
-
-def build_exclusion_mining_prompt(
-    component_name: str,
-    component_id: str,
-    component_structure: Dict[str, Any],
-    all_texts: List[str],
-    invalid_designators: Dict[str, List[str]],
-) -> str:
-    """
-    Build prompt for value-based exclusion mining.
-
-    Args:
-        component_name: Canonical name of component
-        component_id: Component ID
-        component_structure: Structure dict with valid designators
-        all_texts: Sample of raw text records
-        invalid_designators: Dict of level -> invalid designator list
-
-    Returns:
-        Formatted prompt string
-    """
-    valid_info = []
-    if component_structure.get("valid_regiments"):
-        valid_info.append(f"Valid regiments: {component_structure['valid_regiments']}")
-    if component_structure.get("valid_battalions"):
-        valid_info.append(f"Valid battalions: {component_structure['valid_battalions']}")
-    if component_structure.get("valid_companies"):
-        valid_info.append(f"Valid companies: {component_structure['valid_companies']}")
-
-    valid_section = "\n".join(valid_info) if valid_info else "See hierarchy reference"
-
-    invalid_info = []
-    for level, designators in invalid_designators.items():
-        if designators:
-            invalid_info.append(f"Invalid {level}s: {designators[:10]}")
-
-    invalid_section = "\n".join(invalid_info) if invalid_info else "None pre-computed"
-
-    text_sample = "\n".join(f"- {t}" for t in all_texts[:20])
-
-    return f"""Analyze records to find exclusion rules for {component_name}.
-{GROUNDING_PRINCIPLES}
-COMPONENT STRUCTURE:
-{valid_section}
-
-KNOWN INVALID DESIGNATORS:
-{invalid_section}
-
-SAMPLE RECORDS (all confirmed as {component_name}):
-{text_sample}
-
-TASK:
-Identify patterns whose PRESENCE would EXCLUDE a record from being {component_name}.
-
-VALID exclusion patterns (positive evidence of conflict):
-- Specific regiment numbers that this division never had (e.g., "contains regiment 7")
-- Battalion designators incompatible with this unit's structure (e.g., "contains 'D Battalion'")
-- Branch-specific terms for OTHER branches (e.g., "contains 'Marine' or 'USMC'")
-- Explicit identifiers for other units (e.g., "contains '82nd' when this is 101st")
-
-INVALID exclusion patterns (do NOT include these):
-- "Does not contain X" ❌
-- "Lacks Y" ❌
-- "Missing Z" ❌
-
-Respond in JSON format:
-{{
-  "value_based_exclusions": [
-    {{
-      "if_contains": "the positive indicator that conflicts",
-      "then": "exclude",
-      "reason": "why this positively indicates a different unit",
-      "confidence": "high|medium"
-    }}
-  ],
-  "observations": "brief notes on exclusion logic"
 }}"""
 
 
@@ -380,6 +300,12 @@ IMPORTANT:
 - Inferred vocabulary (nicknames, campaigns you know about but don't see) should be clearly marked
 - Do NOT claim a term is "observed" unless you can point to a specific record containing it
 {HARD_CASE_INSTRUCTIONS}
+When flagging hard cases, use this JSON format:
+{{
+  "hard_cases": [
+    {{"soldier_id": "...", "layer": "collision_position|complementarity|structural_ambiguity", "reason": "...", "notes": "..."}}
+  ]
+}}
 Respond in JSON format:
 {{
   "vocabulary": {{
@@ -394,7 +320,7 @@ Respond in JSON format:
   }},
   "discovered_aliases": ["any new nicknames or abbreviations found IN THE RECORDS"],
   "hard_cases": [
-    {{"soldier_id": "S123", "reason": "conflicting_signals", "notes": "brief explanation"}}
+    {{"soldier_id": "S123", "layer": "complementarity", "reason": "all records repeat same partial path", "notes": "brief explanation"}}
   ],
   "observations": "notes on vocabulary patterns, including what was NOT found in the records"
 }}"""
@@ -630,13 +556,14 @@ HARD_CASE_SCHEMA = {
         "type": "object",
         "properties": {
             "soldier_id": {"type": "string"},
-            "reason": {
+            "layer": {
                 "type": "string",
-                "enum": ["conflicting_signals", "ambiguous_notation", "missing_identifiers", "transfer_detected", "insufficient_evidence", "low_confidence"]
+                "enum": ["collision_position", "complementarity", "structural_ambiguity"]
             },
+            "reason": {"type": "string"},
             "notes": {"type": "string"}
         },
-        "required": ["soldier_id", "reason"]
+        "required": ["soldier_id", "layer", "reason"]
     }
 }
 
@@ -672,27 +599,6 @@ PATTERN_DISCOVERY_SCHEMA = {
         "observations": {"type": "string"}
     },
     "required": ["patterns"]
-}
-
-EXCLUSION_MINING_SCHEMA = {
-    "type": "object",
-    "properties": {
-        "value_based_exclusions": {
-            "type": "array",
-            "items": {
-                "type": "object",
-                "properties": {
-                    "if_contains": {"type": "string"},
-                    "then": {"type": "string", "enum": ["exclude"]},
-                    "reason": {"type": "string"},
-                    "confidence": {"type": "string", "enum": ["high", "medium"]}
-                },
-                "required": ["if_contains", "then", "reason"]
-            }
-        },
-        "observations": {"type": "string"}
-    },
-    "required": ["value_based_exclusions"]
 }
 
 VOCABULARY_TERM_SCHEMA = {

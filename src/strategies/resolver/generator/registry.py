@@ -39,7 +39,7 @@ class RegistryEntry:
     patterns_status: str = "complete"
     vocabulary_status: str = "complete"
     exclusions_structural_status: str = "complete"
-    exclusions_value_based_status: str = "complete"
+    exclusions_value_based_status: str = "not_applicable"
     differentiators_status: str = "complete"
 
     # Rebuild triggers
@@ -91,7 +91,7 @@ class RegistryEntry:
             patterns_status=sections.get("patterns", "not_generated"),
             vocabulary_status=sections.get("vocabulary", "not_generated"),
             exclusions_structural_status=sections.get("exclusions_structural", "complete"),
-            exclusions_value_based_status=sections.get("exclusions_value_based", "not_generated"),
+            exclusions_value_based_status=sections.get("exclusions_value_based", "not_applicable"),
             differentiators_status=sections.get("differentiators", "not_generated"),
             rebuild_when_tier=rebuild.get("when_tier"),
             rebuild_when_sample_size=rebuild.get("when_sample_size"),
@@ -267,7 +267,7 @@ class RegistryManager:
             patterns_status=section_status.get("patterns", "not_generated"),
             vocabulary_status=section_status.get("vocabulary", "not_generated"),
             exclusions_structural_status=section_status.get("exclusions_structural", "complete"),
-            exclusions_value_based_status=section_status.get("exclusions_value_based", "not_generated"),
+            exclusions_value_based_status=section_status.get("exclusions_value_based", "not_applicable"),
             differentiators_status=section_status.get("differentiators", "not_generated"),
             rebuild_when_tier=rebuild_when_tier,
             rebuild_when_sample_size=rebuild_when_sample_size,
@@ -368,7 +368,7 @@ def create_entry_for_tier(
             "patterns": "complete",
             "vocabulary": "complete",
             "exclusions_structural": "complete",
-            "exclusions_value_based": "complete",
+            "exclusions_value_based": "not_applicable",
             "differentiators": "complete",
         }
     elif tier == "adequately_represented":
@@ -377,7 +377,7 @@ def create_entry_for_tier(
             "patterns": "complete",
             "vocabulary": "complete",  # May be thin
             "exclusions_structural": "complete",
-            "exclusions_value_based": "complete",
+            "exclusions_value_based": "not_applicable",
             "differentiators": "complete",
         }
     elif tier == "under_represented":
@@ -386,7 +386,7 @@ def create_entry_for_tier(
             "patterns": "limited",
             "vocabulary": "not_generated",
             "exclusions_structural": "complete",
-            "exclusions_value_based": "limited",
+            "exclusions_value_based": "not_applicable",
             "differentiators": "hierarchy_only",
         }
     else:  # sparse
@@ -395,7 +395,7 @@ def create_entry_for_tier(
             "patterns": "not_generated",
             "vocabulary": "not_generated",
             "exclusions_structural": "complete",
-            "exclusions_value_based": "not_generated",
+            "exclusions_value_based": "not_applicable",
             "differentiators": "hierarchy_only",
         }
 

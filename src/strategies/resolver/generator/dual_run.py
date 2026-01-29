@@ -20,8 +20,9 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class HardCase:
-    """A soldier flagged as difficult to classify."""
+    """A soldier flagged as difficult to disambiguate."""
     soldier_id: str
+    layer: str  # "collision_position" | "complementarity" | "structural_ambiguity" | "unknown"
     reason: str
     notes: str = ""
     flagged_in: str = ""  # "forward", "inverted", or "both"
@@ -29,10 +30,27 @@ class HardCase:
     def to_dict(self) -> Dict[str, Any]:
         return {
             "soldier_id": self.soldier_id,
+            "layer": self.layer,
             "reason": self.reason,
             "notes": self.notes,
             "flagged_in": self.flagged_in,
         }
+
+
+def parse_hard_cases(response: Dict[str, Any], phase_name: str) -> List[HardCase]:
+    """Parse hard cases from an LLM response."""
+    hard_cases = []
+    for hc in response.get("hard_cases", []):
+        layer = hc.get("layer") or "unknown"
+        if layer == "unknown":
+            logger.warning("Hard case missing layer field in %s; defaulting to 'unknown'", phase_name)
+        hard_cases.append(HardCase(
+            soldier_id=hc.get("soldier_id", ""),
+            layer=layer,
+            reason=hc.get("reason", ""),
+            notes=hc.get("notes", ""),
+        ))
+    return hard_cases
 
 
 @dataclass
@@ -120,6 +138,7 @@ class DualRunResult:
         for hc in self.forward_result.all_hard_cases:
             hc_copy = HardCase(
                 soldier_id=hc.soldier_id,
+                layer=hc.layer,
                 reason=hc.reason,
                 notes=hc.notes,
                 flagged_in=agreement.get(hc.soldier_id, "forward_only"),
@@ -132,6 +151,7 @@ class DualRunResult:
             if hc.soldier_id not in forward_ids:
                 hc_copy = HardCase(
                     soldier_id=hc.soldier_id,
+                    layer=hc.layer,
                     reason=hc.reason,
                     notes=hc.notes,
                     flagged_in="inverted_only",

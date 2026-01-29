@@ -161,6 +161,163 @@ def extract_structure(hierarchy_path: Path) -> StructureResult:
     )
 
 
+def load_hierarchy_reference(path: Path = None) -> Dict[str, Any]:
+    """Load hierarchy_reference.json for deterministic resolver logic."""
+    hierarchy_path = path or Path("config/hierarchies/hierarchy_reference.json")
+    with open(hierarchy_path) as f:
+        return json.load(f)
+
+
+def _parse_collision_key(raw_key: str) -> Optional[Tuple[str, str]]:
+    """Parse collision_index keys like '(level, \"value\")' into tuples."""
+    if not raw_key:
+        return None
+    key = raw_key.strip()
+    if key.startswith("(") and key.endswith(")"):
+        key = key[1:-1]
+    parts = [p.strip() for p in key.split(",", 1)]
+    if len(parts) != 2:
+        return None
+    level = parts[0].strip("'\"")
+    value = parts[1].strip().strip("'\"")
+    if not level or not value:
+        return None
+    return level, value
+
+
+def load_structural_discriminators(path: Path = None) -> Dict[str, Any]:
+    """Load precomputed structural discriminators from JSON."""
+    discriminators_path = path or Path("config/hierarchies/structural_discriminators.json")
+    with open(discriminators_path) as f:
+        data = json.load(f)
+
+    collision_index_raw = data.get("collision_index", {})
+    collision_index: Dict[Tuple[str, str], Set[str]] = {}
+    for raw_key, components in collision_index_raw.items():
+        key = _parse_collision_key(raw_key)
+        if not key:
+            continue
+        collision_index[key] = set(components) if isinstance(components, list) else set()
+
+    depth_by_branch: Dict[str, int] = {}
+    for depth_str, info in data.get("depth_discriminators", {}).items():
+        try:
+            depth_val = int(depth_str)
+        except (TypeError, ValueError):
+            continue
+        for branch in info.get("branches", []):
+            if branch not in depth_by_branch:
+                depth_by_branch[branch] = depth_val
+
+    return {
+        "collision_index": collision_index,
+        "branch_exclusion_rules": data.get("branch_exclusion_rules", {}),
+        "depth_by_branch": depth_by_branch,
+        "depth_discriminators": data.get("depth_discriminators", {}),
+        "level_name_discriminators": data.get("level_name_discriminators", {}),
+        "designator_discriminators": data.get("designator_discriminators", {}),
+    }
+
+
+def _resolve_component_branch(
+    component_id: str,
+    structure: ComponentStructure,
+    hierarchy: Dict[str, Any],
+) -> Optional[str]:
+    """Resolve the component's branch from hierarchy or structure."""
+    components = hierarchy.get("components", {})
+    if component_id in components:
+        return components.get(component_id, {}).get("service_branch") or components.get(component_id, {}).get("branch_id")
+
+    if structure.service_branch in hierarchy.get("branches", {}):
+        return structure.service_branch
+
+    if component_id in hierarchy.get("branches", {}):
+        return component_id
+
+    return None
+
+
+def _dedupe_rules(rules: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """Deduplicate rules by their key/value signature."""
+    seen = set()
+    unique = []
+    for rule in rules:
+        if "if_contains" in rule:
+            signature = ("if_contains", rule.get("if_contains"))
+        elif "if_depth" in rule:
+            signature = ("if_depth", rule.get("if_depth"))
+        elif "if_invalid_designator" in rule:
+            signature = ("if_invalid_designator", rule.get("if_invalid_designator"))
+        else:
+            signature = tuple(sorted(rule.items()))
+        if signature in seen:
+            continue
+        seen.add(signature)
+        unique.append(rule)
+    return unique
+
+
+def compute_exclusions(
+    component_id: str,
+    structure: ComponentStructure,
+    structural_discriminators: Dict[str, Any],
+    hierarchy: Dict[str, Any],
+) -> List[Dict[str, Any]]:
+    """
+    Derive exclusion rules deterministically from hierarchy.
+    No LLM required.
+    """
+    branch = _resolve_component_branch(component_id, structure, hierarchy)
+    if not branch:
+        return []
+
+    rules: List[Dict[str, Any]] = []
+
+    # Branch-unique terms
+    for term, info in structural_discriminators.get("level_name_discriminators", {}).items():
+        unique_to = info.get("unique_to")
+        if unique_to and unique_to != branch:
+            rules.append({
+                "if_contains": term,
+                "then": "exclude",
+                "reason": f"term unique to {unique_to}",
+            })
+
+    # Depth mismatches
+    branch_depth = hierarchy.get("branches", {}).get(branch, {}).get("depth")
+    if branch_depth is None:
+        branch_depth = structural_discriminators.get("depth_by_branch", {}).get(branch)
+    if branch_depth is not None:
+        for depth_str in structural_discriminators.get("depth_discriminators", {}).keys():
+            try:
+                depth_val = int(depth_str)
+            except (TypeError, ValueError):
+                continue
+            if depth_val != branch_depth:
+                rules.append({
+                    "if_depth": depth_val,
+                    "then": "exclude",
+                    "reason": f"branch depth is {branch_depth}",
+                })
+
+    # Invalid designators
+    for designator, info in structural_discriminators.get("designator_discriminators", {}).items():
+        valid_in = info.get("valid_in", {})
+        if branch not in valid_in:
+            unique_to = info.get("unique_to_branch")
+            reason = f"designator not valid in {branch}"
+            if unique_to and unique_to != branch:
+                reason = f"designator unique to {unique_to}"
+            rules.append({
+                "if_invalid_designator": designator,
+                "then": "exclude",
+                "reason": reason,
+            })
+
+    return _dedupe_rules(rules)
+
+
 def _extract_component_structure(component_id: str, comp_data: Dict) -> ComponentStructure:
     """Extract structure for a single component."""
     # Get aliases
