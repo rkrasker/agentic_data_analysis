@@ -6,8 +6,10 @@ Modifying data generation, adjusting soldier/record distributions, changing qual
 ## Always Load
 - CLAUDE.md (root)
 - docs/DISAMBIGUATION_MODEL.md
+- DIFFICULTY_MODEL.md (computation contexts)
 - docs/architecture/decisions/ADR-006_per-record-vs-per-soldier-difficulty.md (three-layer difficulty)
 - docs/architecture/decisions/ADR-007-synthetic-data-redesign.md (domain decontamination)
+- docs/architecture/decisions/ADR-010-synthetic-metadata-separation.md (schema separation)
 
 ## Core Context
 - docs/components/synthetic_data_generation/CURRENT.md
@@ -30,3 +32,5 @@ Modifying data generation, adjusting soldier/record distributions, changing qual
 - **Branches**: 4 branches with variable depth (3-5 levels)
 - **Difficulty**: Three layers (extraction, aggregation, structural)
 - **Collision zones**: Tagged at post selection time
+- **Schema separation** (ADR-010): Core data vs synthetic metadata vs computed difficulty
+- **Difficulty prefixes**: gen_ (generation control), gt_ (ground-truth), inferred_ (from raw only)

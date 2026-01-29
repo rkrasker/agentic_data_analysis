@@ -18,7 +18,9 @@ Resolve fragmented historical military records into **states**—latent segments
 2. **Which records belong to which state** (grouping/partitioning)
 3. **What post each state resolves to** (the component path)
 
-A **post** is the concrete unit assignment: `Division → Regiment → Battalion → Company`
+A **post** is the concrete unit assignment: `Sector → Fleet → Squadron → Wing → Element`
+
+**Note:** Development uses synthetic data in the fictional "Terraform Combine" domain (ADR-007) to prevent LLM training data leakage. Production targets real WWII records.
 
 ### Why It's Hard
 
@@ -26,9 +28,9 @@ A **post** is the concrete unit assignment: `Division → Regiment → Battalion
 |-----------|---------|
 | No temporal anchors | Cannot order records or states in time |
 | Unknown state count | Don't know if soldier had 1 post or 3 |
-| Abbreviated records | "E/2/116" not "Company E, 2nd Battalion, 116th Infantry Regiment, 29th Division" |
-| Missing unit types | "516" or "3rd" without specifying regiment/battalion/company |
-| Collisions | Both 82nd and 101st Airborne have "3rd Regiment" |
+| Abbreviated records | "Kestrel-3" not "Fleet Kestrel, 3rd Squadron, Wing A, Element 2" |
+| Missing unit types | "7" or "3rd" without specifying fleet/squadron/wing |
+| Collisions | Multiple branches share designators like "3" or "Alpha" |
 | Clerk variation | Different formats, abbreviations, detail levels |
 
 ## Architecture Summary
@@ -84,12 +86,33 @@ Current strategies (resolver implemented; others are stubs):
 
 ### Data Structures
 
+**Core files (production-equivalent):**
+
 | File | Purpose |
 |------|---------|
-| `validation.parquet` | Ground truth (one row per soldier, with state assignments) |
-| `raw.parquet` | Historical records (multiple rows per soldier) |
+| `raw.parquet` | Historical records (source_id, soldier_id, raw_text) |
+| `validation.parquet` | Ground truth labels (state assignments, post paths) |
 | `canonical.parquet` | Regex extraction output (routing/batching signals only) |
-| `hierarchy/{component}.json` | Per-component structure |
+
+**Synthetic-only metadata (ADR-010):**
+
+| File | Purpose |
+|------|---------|
+| `synthetic_records.parquet` | Per-record generation metadata (clerk_id, quality_tier, state_id linkage) |
+| `synthetic_soldiers.parquet` | Per-soldier generation metrics (gen_difficulty_tier, etc.) |
+
+**Difficulty computation (ADR-010):**
+
+| File | Purpose |
+|------|---------|
+| `gt_difficulty.parquet` | Ground-truth difficulty from validation labels (gt_* columns) |
+| `inferred_difficulty.parquet` | Inferred difficulty from raw records alone (inferred_* columns) |
+
+**Reference files:**
+
+| File | Purpose |
+|------|---------|
+| `hierarchy_reference.json` | Branch structures and valid designators |
 | `resolver/{component}_resolver.json` | LLM-generated disambiguation heuristics |
 
 ## Key Decisions in Effect
@@ -105,15 +128,20 @@ Current strategies (resolver implemented; others are stubs):
 
 These areas have working implementations but designs may shift:
 
-- **Difficulty modeling** — how to measure/predict state resolution difficulty per soldier
-- **Sampling strategy** — how to select training examples for resolver generation
+- **Schema implementation** — ADR-010 schema separation is designed but not yet implemented
 - **Routing decisions** — how preprocessing signals inform batching/strategy selection
+
+**Recently stabilized:**
+
+- **Difficulty modeling** — three-layer model (ADR-006), computation contexts (ADR-010)
+- **Sampling strategy** — sample by soldier difficulty, not record quality (ADR-009)
 
 ## Implementation Status
 
 ### Implemented
-- Synthetic data generation (`src/synthetic/`)
-- Preprocessing: regex extraction, glossary generation (`src/preprocessing/`)
+- Synthetic data generation v4.1 (`src/synthetic/`)
+- Preprocessing: regex extraction, glossary generation, structural discriminators (`src/preprocessing/`)
+- Difficulty model design (ADR-006, ADR-009, ADR-010)
 - Harness foundation: base strategy interface, train/test split, component batching
 - LLM infrastructure (`src/utils/llm/`)
 - Resolver strategy pre-build pipeline (`src/strategies/resolver/generator/`)
@@ -121,6 +149,7 @@ These areas have working implementations but designs may shift:
 ### Partially Implemented
 - Batching (component batching works; token-budget batching not wired end-to-end)
 - Evaluation (metrics exist; no automated evaluation pipeline)
+- ADR-010 schema separation (designed, not yet implemented)
 
 ### Not Yet Implemented
 - Resolver strategy execution runs (build pipeline exists, full dataset runs not built)
@@ -142,6 +171,7 @@ If resuming after a session timeout:
 | I need... | Go to... |
 |-----------|----------|
 | Disambiguation model deep-dive | `docs/DISAMBIGUATION_MODEL.md` |
+| Difficulty computation | `DIFFICULTY_MODEL.md` |
 | Strategy pitfalls/warnings | `docs/components/strategies/CLAUDE.md` |
 | Resolver-specific warnings | `docs/components/strategies/resolver/CLAUDE.md` |
 | Component design docs | `docs/components/[name]/CURRENT.md` |

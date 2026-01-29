@@ -89,5 +89,6 @@ See [docs/CODE_STYLE.md](docs/CODE_STYLE.md) for detailed guidance. Key principl
 | **ADR-007** | Domain decontamination: Terraform Combine fictional setting for synthetic data |
 | **ADR-008** | Preprocessing v4.1: hierarchy-aware preprocessing with structural discriminators |
 | **ADR-009** | Resolver generation alignment: sample by soldier difficulty, not record quality |
+| **ADR-010** | Synthetic metadata separation: distinguish gen_/gt_/inferred_ difficulty contexts |
 
 See [docs/ADR_INDEX.md](docs/ADR_INDEX.md) for full list.

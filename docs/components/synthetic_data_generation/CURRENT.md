@@ -298,6 +298,12 @@ extraction_signals: ["fleet_name_kestrel"]
 
 ## Output Schema (v4.1)
 
+> **Note:** ADR-010 specifies a schema refactoring to separate core data from synthetic metadata. The schemas below reflect the current (pre-ADR-010) implementation. After ADR-010 implementation:
+> - `raw.parquet` will contain only production-equivalent fields (source_id, soldier_id, raw_text)
+> - `validation.parquet` will contain only labels (no difficulty columns)
+> - New files: `synthetic_records.parquet`, `synthetic_soldiers.parquet`, `gt_difficulty.parquet`
+> - See `instructions/010_separate_synthetic_metadata_schema.md` for implementation details.
+
 ### raw.parquet
 
 | Column | Type | Description |

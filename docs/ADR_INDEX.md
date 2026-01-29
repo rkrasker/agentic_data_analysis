@@ -13,6 +13,7 @@ Quick reference to Architecture Decision Records.
 | ADR-007 | Synthetic data redesign | Domain decontamination via Terraform Combine; explicit states | `docs/architecture/decisions/ADR-007-synthetic-data-redesign.md` |
 | ADR-008 | Preprocessing v4.1 update | Hierarchy-aware preprocessing for Terraform Combine domain | `docs/architecture/decisions/ADR-008-preprocessing-v4.1-update.md` |
 | ADR-009 | Resolver generation alignment | Sample by soldier difficulty, not record quality; structural criteria | `docs/architecture/decisions/ADR-009_resolver-generation-alignment.md` |
+| ADR-010 | Synthetic metadata separation | Separate core data from generation artifacts; prefix convention for difficulty contexts | `docs/architecture/decisions/ADR-010-synthetic-metadata-separation.md` |
 
 ## When to Reference ADRs
 

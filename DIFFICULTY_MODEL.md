@@ -2,7 +2,35 @@
 
 This document specifies how to compute soldier-level difficulty for sampling, stratification, and evaluation. It operationalizes the three-layer framework from [DISAMBIGUATION_MODEL.md](DISAMBIGUATION_MODEL.md).
 
-**See also:** `DISAMBIGUATION_MODEL.md` for conceptual framework, `ADR-006` for the principle that record quality ≠ resolution difficulty, `ADR-009` for resolver generation alignment.
+**See also:** `DISAMBIGUATION_MODEL.md` for conceptual framework, `ADR-006` for the principle that record quality ≠ resolution difficulty, `ADR-009` for resolver generation alignment, `ADR-010` for synthetic metadata separation.
+
+---
+
+## Computation Contexts
+
+Difficulty metrics are computed in **three distinct contexts** with different inputs and purposes:
+
+| Context | Prefix | Ground Truth? | Purpose | Output File |
+|---------|--------|---------------|---------|-------------|
+| **Generation control** | `gen_` | Yes | Control synthetic difficulty distribution | `synthetic_soldiers.parquet` |
+| **Ground-truth** | `gt_` | Yes | Evaluation stratification | `gt_difficulty.parquet` |
+| **Inferred** | `inferred_` | No | Production routing/prioritization | `inferred_difficulty.parquet` |
+
+### When each is used
+
+- **gen_**: Computed during synthetic generation to hit target difficulty distributions. Stored in `synthetic_soldiers.parquet`. Only exists for synthetic data.
+
+- **gt_**: Computed post-hoc from validation labels (state/post assignments) + raw records. Used to stratify evaluation results. Works for both synthetic and production data (given labeled validation file).
+
+- **inferred_**: Computed from raw records alone, without ground-truth access. This is what the production system would use for routing decisions before resolution.
+
+### Relationship
+
+For synthetic data: `gen_*` values should equal `gt_*` values (same information, different timing).
+
+For evaluation: Compare `inferred_*` to `gt_*` to measure how well the system predicts difficulty without ground truth.
+
+See `ADR-010` for the full architectural rationale.
 
 ---
 

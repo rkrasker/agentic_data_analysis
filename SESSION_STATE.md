@@ -1,94 +1,96 @@
 # SESSION_STATE.md
 
-**Last Updated:** 2026-01-28
-**Session:** Opus 4.5 implementation session — Difficulty computation implemented
+**Last Updated:** 2026-01-29
+**Session:** Opus 4.5 architecture session — Synthetic metadata separation (ADR-010)
 
 ---
 
 ## Active Task
 
-None — `extract_structural_discriminators()` implementation complete. Ready for next task.
+**Instruction 010:** Implement synthetic metadata schema separation (ADR-010)
+
+The architecture and documentation are complete. Implementation is pending.
 
 ---
 
 ## Completed This Session
 
-### Implemented `extract_structural_discriminators()`
+### Created ADR-010: Synthetic Metadata Separation
 
-Built the utility that extracts structural discrimination rules from hierarchy reference:
+Resolved confusion about difficulty column provenance by establishing:
 
-**Location:** `src/preprocessing/hierarchy/structural_discriminators.py`
+**The Three Computation Contexts:**
 
-**Output:** `config/hierarchies/structural_discriminators.json`
+| Context | Prefix | Ground Truth? | Purpose |
+|---------|--------|---------------|---------|
+| Generation control | `gen_` | Yes | Control synthetic difficulty distribution |
+| Ground-truth | `gt_` | Yes | Evaluation stratification |
+| Inferred | `inferred_` | No | Production routing/prioritization |
 
-**Features:**
-- Level name discriminators (which terms are unique to which branches)
-- Designator discriminators (which values are valid in which branches/levels)
-- Depth discriminators (which depths are unique to which branches)
-- Branch exclusion rules (presence-based rules for excluding branches)
-- Collision index (which (level, value) pairs map to multiple components)
+**New Schema (pending implementation):**
 
-**Tests:** 19 unit tests in `tests/test_structural_discriminators.py` — all passing
+| File | Contents |
+|------|----------|
+| `raw.parquet` | Core only: source_id, soldier_id, raw_text |
+| `validation.parquet` | Labels only: state_id, post_path, branch, levels |
+| `synthetic_records.parquet` | Per-record generation metadata |
+| `synthetic_soldiers.parquet` | Per-soldier gen_* metrics |
+| `gt_difficulty.parquet` | Ground-truth difficulty (gt_* columns) |
+| `inferred_difficulty.parquet` | Inferred difficulty (inferred_* columns) |
+
+### Created Implementation Instruction
+
+**File:** `instructions/010_separate_synthetic_metadata_schema.md`
+
+- 5-phase implementation plan
+- Full schema specifications for all files
+- Acceptance criteria
 
 ### Updated Documentation
 
 | File | Update |
 |------|--------|
-| `DIFFICULTY_MODEL.md` | Updated collision index source to reference new module |
-| `CLAUDE.md` | Fixed broken links to DIFFICULTY_MODEL.md |
-| `docs/components/preprocessing/CURRENT.md` | Added hierarchy/ subdirectory, changelog entry |
-| `docs/components/strategies/resolver/CURRENT.md` | Updated Module 2 and Phase 5 to reference new module |
-| `docs/GLOSSARY.md` | Added "structural discriminator" term |
-| `docs/architecture/CURRENT.md` | Updated preprocessing status, added artifact |
+| `DIFFICULTY_MODEL.md` | Added "Computation Contexts" section |
+| `docs/components/synthetic_data_generation/CURRENT.md` | Added ADR-010 schema note |
+| `docs/components/preprocessing/CURRENT.md` | Added ADR-010 refs, difficulty submodule, inferred_ outputs |
+| `docs/ADR_INDEX.md` | Added ADR-010 entry |
+| `CLAUDE.md` | Added ADR-010 to Key ADRs table |
 
-### Moved Completed Instruction
+### Updated Context Packets
 
-`instructions/active/008extract_structural_discriminators.md` → `instructions/completed/`
+| File | Update |
+|------|--------|
+| `docs/context-packets/full-bootstrap.md` | Updated to Terraform Combine domain, new schema, difficulty stabilized |
+| `docs/context-packets/planning-synthetic.md` | Added ADR-010, DIFFICULTY_MODEL.md, schema separation concepts |
+| `docs/context-packets/planning-resolver.md` | Added ADR-009, DIFFICULTY_MODEL.md references |
 
-### Implemented `compute_soldier_difficulty()`
+### Created Session Extract
 
-Built the soldier-level difficulty computation module and batch helper:
-
-**Location:** `src/preprocessing/difficulty/`
-
-**Features:**
-- Collision position detection using precomputed collision index
-- Complementarity scoring with branch-aware aggregation
-- Structural resolvability via exclusion rules
-- Difficulty tier assignment (easy/moderate/hard/extreme)
-- Batch computation over canonical records
-
-**Tests:** `tests/test_difficulty_compute.py` — 8 unit tests passing
-
-### Added Synthetic Generation Notebook
-
-**Notebook:** `synthetic_generation_pipeline.ipynb`
-
-**Purpose:** End-to-end synthetic generation + preprocessing pipeline scaffold
+**File:** `.project_history/extracts/raw/2026-01-29_opus_synthetic-metadata-separation.md`
 
 ---
 
 ## Where I Left Off
 
-**Implementation complete.** The difficulty computation is now available for:
+**Architecture complete, implementation pending.**
 
-1. **Sampling workflows:** `compute_soldier_difficulty()` can be called from `sampling.py`
-2. **Difficulty stratification:** validation data can be enriched with computed tiers
+ADR-010 establishes the schema separation and naming conventions. Instruction 010 provides the implementation roadmap. Next step is to execute the instruction.
 
 ---
 
 ## Task Dependencies (Updated)
 
 ```
-extract_structural_discriminators()     ✓ COMPLETE
+ADR-010 schema separation design        ✓ COMPLETE
         │
-        ├──► compute_soldier_difficulty()   ✓ COMPLETE
-        │           │
-        │           └──► sampling.py updates [pending]
+        ├──► Instruction 010 written    ✓ COMPLETE
         │
-        └──► Phase 5 deterministic exclusions [unblocked - can use output]
-                    │
-                    └──► llm_phases.py updates
+        └──► Implementation             ← NEXT
+                │
+                ├──► Refactor src/synthetic/pipeline.py outputs
+                ├──► Create src/difficulty/ground_truth.py
+                ├──► Update src/preprocessing/difficulty/ to inferred_ prefix
+                └──► Update downstream consumers
 ```
 
 ---
@@ -97,46 +99,49 @@ extract_structural_discriminators()     ✓ COMPLETE
 
 ### Resolved This Session
 
-1. ~~**Complementarity formula**~~ → Sum of level confidences / min(branch_depth, 4)
-2. ~~**Difficulty tier thresholds**~~ → Fixed: 0.7 and 0.4
-3. ~~**Structural discriminator extraction**~~ → ✓ Implemented
+1. ~~**Where do difficulty columns come from?**~~ → Two implementations: synthetic (gen_) and preprocessing (inferred_)
+2. ~~**How to distinguish difficulty contexts?**~~ → Prefix convention: gen_, gt_, inferred_
+3. ~~**Where does state_id belong?**~~ → Not in raw.parquet; in synthetic_records.parquet and validation.parquet
 
 ### Still Open
 
-4. **Cross-branch collision handling:** Partially addressed (depth mismatch as exclusion signal). May need refinement when hitting real examples.
+4. **Cross-branch collision handling:** Partially addressed. May need refinement with real examples.
 
-5. **Migration path:** Existing resolver code marked "complete" — refactoring strategy TBD. Options: rewrite modules in place, or create v2 alongside.
-
-6. ~~**Minimum extraction threshold:** Should soldiers with zero extractions be excluded from sampling entirely, or left as Extreme?~~ → Implemented: zero extractions yield Extreme.
+5. **Migration path for resolver code:** Existing code marked "complete" — refactoring strategy TBD.
 
 ---
 
-## Artifacts Produced
+## Artifacts Produced This Session
+
+| Artifact | Location | Status |
+|----------|----------|--------|
+| ADR-010 | `docs/architecture/decisions/ADR-010-synthetic-metadata-separation.md` | ✓ Complete |
+| Instruction 010 | `instructions/010_separate_synthetic_metadata_schema.md` | ✓ Complete |
+| Session Extract | `.project_history/extracts/raw/2026-01-29_opus_synthetic-metadata-separation.md` | ✓ Complete |
+
+## Artifacts from Previous Sessions (Still Relevant)
 
 | Artifact | Location | Status |
 |----------|----------|--------|
 | Structural Discriminators Module | `src/preprocessing/hierarchy/structural_discriminators.py` | ✓ Complete |
 | Structural Discriminators Output | `config/hierarchies/structural_discriminators.json` | ✓ Generated |
-| Unit Tests | `tests/test_structural_discriminators.py` | ✓ 19 tests passing |
-| Test Fixtures | `tests/fixtures/test_hierarchy_*.json` | ✓ Complete |
-| Instruction (completed) | `instructions/completed/008extract_structural_discriminators.md` | ✓ Moved |
-| Difficulty Module | `src/preprocessing/difficulty/compute.py` | ✓ Complete |
-| Difficulty Loader | `src/preprocessing/difficulty/loader.py` | ✓ Complete |
-| Difficulty Tests | `tests/test_difficulty_compute.py` | ✓ 8 tests passing |
+| Difficulty Module | `src/preprocessing/difficulty/compute.py` | ✓ Complete (needs inferred_ prefix update) |
 | Synthetic Pipeline Notebook | `synthetic_generation_pipeline.ipynb` | ✓ Added |
 
 ---
 
 ## Next Steps
 
-1. **`sampling.py` updates** — Add difficulty-based sampling using new difficulty computation
-2. **Resolver Phase 5 update** — Wire up to use pre-computed exclusion rules
+1. **Execute Instruction 010** — Implement ADR-010 schema separation
+2. **sampling.py updates** — Add difficulty-based sampling (blocked on schema updates)
+3. **Resolver Phase 5 update** — Wire up to use pre-computed exclusion rules
 
 ---
 
 ## References
 
-- `DIFFICULTY_MODEL.md` — Operational difficulty computation
+- `ADR-010` — Synthetic metadata separation (this session's decision)
+- `ADR-006` — Three-layer difficulty model
+- `ADR-009` — Resolver generation alignment
+- `DIFFICULTY_MODEL.md` — Now includes computation contexts section
 - `docs/DISAMBIGUATION_MODEL.md` — Three-layer conceptual framework
-- `ADR-006` — Record quality ≠ resolution difficulty
-- `ADR-009` — Resolver generation alignment (Phase 5 deterministic exclusions)
