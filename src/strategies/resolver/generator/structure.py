@@ -13,66 +13,43 @@ from typing import Dict, List, Set, Tuple, Union, Any, Optional
 
 @dataclass
 class ComponentStructure:
-    """Structural information for a single component."""
+    """Structure information for a single component.
+
+    Supports heterogeneous branches with variable depths (ADR-009).
+    """
     component_id: str
-    component_type: str  # "division", "air_force", etc.
-    canonical_name: str
-    service_branch: str  # "army", "marines", "army_air_forces"
+    component_name: str
+    branch: str
+    depth: int
+    level_names: List[str]
+    valid_designators: Dict[str, List[Union[str, int]]]
+    structural_discriminators: List[Dict[str, str]]
+
+    # Legacy fields - kept for backward compatibility during transition
+    canonical_name: str = ""
     aliases: List[str] = field(default_factory=list)
-
-    # Valid designators at each level
-    valid_regiments: List[str] = field(default_factory=list)
-    valid_battalions: List[str] = field(default_factory=list)
-    valid_companies: List[str] = field(default_factory=list)
-
-    # For non-standard hierarchies (armored, air force)
-    valid_combat_commands: List[str] = field(default_factory=list)
-    valid_bomb_groups: List[str] = field(default_factory=list)
-    valid_squadrons: List[str] = field(default_factory=list)
-
-    # Designator type info
-    battalion_type: str = "numeric"  # "numeric", "alphabetic"
-    hierarchy_pattern: str = "division -> regiment -> battalion -> company"
+    battalion_designator_type: str = "unknown"
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for JSON serialization."""
         result = {
             "component_id": self.component_id,
-            "component_type": self.component_type,
-            "canonical_name": self.canonical_name,
-            "service_branch": self.service_branch,
-            "aliases": self.aliases,
-            "hierarchy_pattern": self.hierarchy_pattern,
-            "battalion_designator_type": self.battalion_type,
+            "component_name": self.component_name,
+            "branch": self.branch,
+            "depth": self.depth,
+            "levels": self.level_names,
+            "valid_designators": self.valid_designators,
+            "structural_discriminators": self.structural_discriminators,
         }
-
-        # Add non-empty designator lists
-        if self.valid_regiments:
-            result["valid_regiments"] = self.valid_regiments
-        if self.valid_battalions:
-            result["valid_battalions"] = self.valid_battalions
-        if self.valid_companies:
-            result["valid_companies"] = self.valid_companies
-        if self.valid_combat_commands:
-            result["valid_combat_commands"] = self.valid_combat_commands
-        if self.valid_bomb_groups:
-            result["valid_bomb_groups"] = self.valid_bomb_groups
-        if self.valid_squadrons:
-            result["valid_squadrons"] = self.valid_squadrons
-
+        if self.aliases:
+            result["aliases"] = self.aliases
+        if self.battalion_designator_type != "unknown":
+            result["battalion_designator_type"] = self.battalion_designator_type
         return result
 
     def get_level_designators(self, level: str) -> List[str]:
         """Get valid designators for a specific level."""
-        level_map = {
-            "regiment": self.valid_regiments,
-            "battalion": self.valid_battalions,
-            "company": self.valid_companies,
-            "combat_command": self.valid_combat_commands,
-            "bomb_group": self.valid_bomb_groups,
-            "squadron": self.valid_squadrons,
-        }
-        return level_map.get(level, [])
+        return self.valid_designators.get(level, [])
 
 
 @dataclass
@@ -80,6 +57,7 @@ class StructureResult:
     """Result of structure extraction."""
     structures: Dict[str, ComponentStructure]  # component_id -> structure
     collisions: Dict[Tuple[str, str], Set[str]]  # (level, value) -> {component_ids}
+    branches: Dict[str, Dict] = field(default_factory=dict)
 
     # Pre-computed collision pairs for sampling
     collision_pairs: Dict[Tuple[str, str], Set[Tuple[str, str]]] = field(default_factory=dict)
@@ -114,11 +92,7 @@ class StructureResult:
 
 def extract_structure(hierarchy_path: Path) -> StructureResult:
     """
-    Extract valid designators and collision map from hierarchy.
-
-    This implements Phases 1-2 of resolver generation:
-    - Phase 1: Extract structural rules (valid designators per component)
-    - Phase 2: Collision detection (which components share which designators)
+    Extract branch-aware structure and collision map from hierarchy.
 
     Args:
         hierarchy_path: Path to hierarchy_reference.json
@@ -126,24 +100,18 @@ def extract_structure(hierarchy_path: Path) -> StructureResult:
     Returns:
         StructureResult with structures and collision maps
     """
-    with open(hierarchy_path) as f:
-        hierarchy = json.load(f)
-
-    components = hierarchy.get("components", {})
-    collision_index = hierarchy.get("collision_index", {})
+    hierarchy = load_hierarchy_reference(hierarchy_path)
+    discriminators = load_structural_discriminators()
 
     structures: Dict[str, ComponentStructure] = {}
-    collisions: Dict[Tuple[str, str], Set[str]] = {}
+    for component_id in _get_component_ids(hierarchy):
+        structures[component_id] = _extract_component_structure(
+            component_id=component_id,
+            hierarchy=hierarchy,
+            structural_discriminators=discriminators,
+        )
 
-    # Extract structure for each component
-    for component_id, comp_data in components.items():
-        structure = _extract_component_structure(component_id, comp_data)
-        structures[component_id] = structure
-
-    # Build collision map from collision_index
-    collisions = _build_collision_map(collision_index)
-
-    # Also detect collisions from structure data (in case index is incomplete)
+    collisions = discriminators.get("collision_index", {})
     structure_collisions = _detect_collisions_from_structures(structures)
     for key, comps in structure_collisions.items():
         if key in collisions:
@@ -151,13 +119,13 @@ def extract_structure(hierarchy_path: Path) -> StructureResult:
         else:
             collisions[key] = comps
 
-    # Pre-compute collision pairs
     collision_pairs = _compute_collision_pairs(collisions)
 
     return StructureResult(
         structures=structures,
         collisions=collisions,
         collision_pairs=collision_pairs,
+        branches=hierarchy.get("branches", {}),
     )
 
 
@@ -197,7 +165,14 @@ def load_structural_discriminators(path: Path = None) -> Dict[str, Any]:
         key = _parse_collision_key(raw_key)
         if not key:
             continue
-        collision_index[key] = set(components) if isinstance(components, list) else set()
+        mapped_components = set()
+        if isinstance(components, list):
+            for comp in components:
+                if isinstance(comp, str) and "." in comp:
+                    mapped_components.add(comp.split(".", 1)[0])
+                elif comp:
+                    mapped_components.add(str(comp))
+        collision_index[key] = mapped_components
 
     depth_by_branch: Dict[str, int] = {}
     for depth_str, info in data.get("depth_discriminators", {}).items():
@@ -227,10 +202,10 @@ def _resolve_component_branch(
     """Resolve the component's branch from hierarchy or structure."""
     components = hierarchy.get("components", {})
     if component_id in components:
-        return components.get(component_id, {}).get("service_branch") or components.get(component_id, {}).get("branch_id")
+        return components.get(component_id, {}).get("branch") or components.get(component_id, {}).get("service_branch")
 
-    if structure.service_branch in hierarchy.get("branches", {}):
-        return structure.service_branch
+    if structure.branch in hierarchy.get("branches", {}):
+        return structure.branch
 
     if component_id in hierarchy.get("branches", {}):
         return component_id
@@ -318,94 +293,166 @@ def compute_exclusions(
     return _dedupe_rules(rules)
 
 
-def _extract_component_structure(component_id: str, comp_data: Dict) -> ComponentStructure:
-    """Extract structure for a single component."""
-    # Get aliases
-    aliases = []
-    for alias_entry in comp_data.get("aliases", []):
-        if isinstance(alias_entry, dict):
-            aliases.append(alias_entry.get("alias_name", ""))
-        else:
-            aliases.append(str(alias_entry))
-    aliases = [a for a in aliases if a]  # Filter empty
+def _get_component_ids(hierarchy: Dict[str, Any]) -> List[str]:
+    """Get all component IDs from hierarchy, falling back to branch IDs."""
+    components = hierarchy.get("components", {})
+    if isinstance(components, dict) and components:
+        return sorted(components.keys())
+    return sorted(hierarchy.get("branches", {}).keys())
 
-    # Get organizational structure
-    org_structure = comp_data.get("organizational_structure", {})
-    hierarchy_pattern = org_structure.get("hierarchy_pattern", "")
+
+def _find_component_data(component_id: str, hierarchy: Dict[str, Any]) -> Dict[str, Any]:
+    """Find component data in hierarchy (supports branch-only hierarchies)."""
+    components = hierarchy.get("components", {})
+    if isinstance(components, dict) and component_id in components:
+        return components[component_id]
+    # Fallback: treat branch as component
+    return hierarchy.get("branches", {}).get(component_id, {})
+
+
+def _extract_valid_values_for_level(
+    component_data: Dict[str, Any],
+    branch_data: Dict[str, Any],
+    level_name: str,
+) -> List[Union[str, int]]:
+    """Extract valid designators for a specific level."""
+    # Branch-aware format: values live under branch level_config
+    level_config = branch_data.get("level_config", {}).get(level_name, {})
+    if "values" in level_config:
+        return _normalize_designator_values(level_config.get("values", []))
+
+    # Legacy format: component organizational_structure -> levels -> designators
+    org_structure = component_data.get("organizational_structure", {})
     levels = org_structure.get("levels", {})
+    level_data = levels.get(level_name, {})
+    return _normalize_designator_values(level_data.get("designators", []))
 
-    # Extract designators for each level
-    valid_regiments = _get_designators(levels, "regiment")
-    valid_battalions = _get_designators(levels, "battalion")
-    valid_companies = _get_designators(levels, "company")
-    valid_combat_commands = _get_designators(levels, "combat_command")
-    valid_bomb_groups = _get_designators(levels, "bomb_group")
-    valid_squadrons = _get_designators(levels, "squadron")
 
-    # Determine battalion type
-    battalion_level = levels.get("battalion", {})
-    battalion_convention = battalion_level.get("designator_convention", "numeric_sequential")
-    battalion_type = "alphabetic" if "alpha" in battalion_convention else "numeric"
+def _collect_branch_discriminators(
+    hierarchy: Dict[str, Any],
+    discriminators: Dict[str, Any],
+    branch: str,
+) -> List[Dict[str, str]]:
+    """Collect structural discriminator terms for a branch."""
+    results: List[Dict[str, str]] = []
+
+    # From hierarchy structural signals
+    branch_terms = hierarchy.get("structural_signals", {}).get("branch_unique_terms", {})
+    for term, implied in branch_terms.items():
+        if implied == branch:
+            results.append({
+                "term": term,
+                "implies_branch": implied,
+                "strength": "definitive",
+            })
+
+    # From structural discriminators (scan for implies_branch)
+    for rules in discriminators.get("branch_exclusion_rules", {}).values():
+        for rule in rules:
+            if rule.get("implies_branch") != branch:
+                continue
+            term = _parse_discriminator_term(rule.get("condition", ""))
+            if not term:
+                continue
+            results.append({
+                "term": term,
+                "implies_branch": branch,
+                "strength": rule.get("strength", "definitive"),
+            })
+
+    # Deduplicate by term
+    seen = set()
+    unique = []
+    for entry in results:
+        term = entry.get("term")
+        if not term or term in seen:
+            continue
+        seen.add(term)
+        unique.append(entry)
+    return unique
+
+
+def _parse_discriminator_term(condition: str) -> Optional[str]:
+    """Extract the term/designator from a discriminator condition string."""
+    if "'" not in condition:
+        return None
+    parts = condition.split("'")
+    if len(parts) < 2:
+        return None
+    return parts[1].strip()
+
+
+def _normalize_designator_values(values: List[Any]) -> List[Union[str, int]]:
+    """Normalize designators into stable primitives."""
+    normalized: List[Union[str, int]] = []
+    for value in values:
+        if isinstance(value, int):
+            normalized.append(value)
+            continue
+        if isinstance(value, str):
+            stripped = value.strip()
+            if stripped.isdigit():
+                normalized.append(int(stripped))
+            else:
+                normalized.append(stripped)
+            continue
+        normalized.append(str(value))
+    return normalized
+
+
+def _extract_component_structure(
+    component_id: str,
+    hierarchy: Dict[str, Any],
+    structural_discriminators: Dict[str, Any],
+) -> ComponentStructure:
+    """Extract branch-aware structure for a component."""
+    component_data = _find_component_data(component_id, hierarchy)
+
+    # Determine branch
+    branch = component_data.get("branch") or component_data.get("service_branch") or component_id
+    if branch not in hierarchy.get("branches", {}):
+        # Fallback: use component_id as branch if we don't recognize it
+        branch = component_id
+
+    branch_data = hierarchy.get("branches", {}).get(branch, {})
+    level_names = branch_data.get("levels", [])
+    depth = int(branch_data.get("depth", len(level_names)))
+
+    if not level_names:
+        # Legacy component-level structure
+        org_structure = component_data.get("organizational_structure", {})
+        level_names = list(org_structure.get("levels", {}).keys())
+        depth = len(level_names)
+
+    valid_designators = {
+        level_name: _extract_valid_values_for_level(component_data, branch_data, level_name)
+        for level_name in level_names
+    }
+
+    component_name = component_data.get("canonical_name") or component_data.get("name") or component_id
+    aliases = component_data.get("aliases", [])
+    if isinstance(aliases, list):
+        aliases = [a.get("alias_name", a) if isinstance(a, dict) else a for a in aliases]
+        aliases = [str(a) for a in aliases if a]
+    else:
+        aliases = []
+    if not aliases:
+        branch_aliases = branch_data.get("unique_identifiers", [])
+        if isinstance(branch_aliases, list):
+            aliases = [str(a) for a in branch_aliases if a]
 
     return ComponentStructure(
         component_id=component_id,
-        component_type=comp_data.get("component_type", "division"),
-        canonical_name=comp_data.get("canonical_name", component_id),
-        service_branch=comp_data.get("service_branch", "army"),
+        component_name=component_name,
+        branch=branch,
+        depth=depth,
+        level_names=level_names,
+        valid_designators=valid_designators,
+        structural_discriminators=_collect_branch_discriminators(hierarchy, structural_discriminators, branch),
+        canonical_name=component_name,
         aliases=aliases,
-        valid_regiments=valid_regiments,
-        valid_battalions=valid_battalions,
-        valid_companies=valid_companies,
-        valid_combat_commands=valid_combat_commands,
-        valid_bomb_groups=valid_bomb_groups,
-        valid_squadrons=valid_squadrons,
-        battalion_type=battalion_type,
-        hierarchy_pattern=hierarchy_pattern,
+        battalion_designator_type=component_data.get("battalion_designator_type", "unknown"),
     )
-
-
-def _get_designators(levels: Dict, level_name: str) -> List[str]:
-    """Extract designators for a specific level."""
-    level_data = levels.get(level_name, {})
-    designators = level_data.get("designators", [])
-    # Convert all to strings for consistency
-    return [str(d) for d in designators]
-
-
-def _build_collision_map(collision_index: Dict) -> Dict[Tuple[str, str], Set[str]]:
-    """Build collision map from hierarchy collision_index."""
-    collisions: Dict[Tuple[str, str], Set[str]] = {}
-
-    # Regiment collisions
-    for designator, components in collision_index.get("regiment_collisions", {}).items():
-        key = ("regiment", str(designator))
-        collisions[key] = set(components)
-
-    # Battalion collisions
-    for designator, components in collision_index.get("battalion_collisions", {}).items():
-        key = ("battalion", str(designator))
-        collisions[key] = set(components)
-
-    # Cross-branch collisions (extract component lists)
-    for collision_name, branch_data in collision_index.get("cross_branch_collisions", {}).items():
-        if isinstance(branch_data, dict):
-            # Collect all components from all branches
-            all_components = set()
-            for branch, comps in branch_data.items():
-                if isinstance(comps, list):
-                    all_components.update(comps)
-            if len(all_components) > 1:
-                # Extract level and value from collision name (e.g., "regiment_1")
-                parts = collision_name.rsplit("_", 1)
-                if len(parts) == 2:
-                    level, value = parts
-                    key = (level, value)
-                    if key in collisions:
-                        collisions[key].update(all_components)
-                    else:
-                        collisions[key] = all_components
-
-    return collisions
 
 
 def _detect_collisions_from_structures(
@@ -413,21 +460,20 @@ def _detect_collisions_from_structures(
 ) -> Dict[Tuple[str, str], Set[str]]:
     """Detect collisions by comparing structure designators."""
     collisions: Dict[Tuple[str, str], Set[str]] = {}
+    levels_to_check: Set[str] = set()
+    for structure in structures.values():
+        levels_to_check.update(structure.level_names)
 
-    levels_to_check = ["regiment", "battalion", "company", "combat_command", "bomb_group"]
-
-    for level in levels_to_check:
-        # Build value -> components map
+    for level in sorted(levels_to_check):
         value_to_components: Dict[str, Set[str]] = {}
-
         for comp_id, structure in structures.items():
             designators = structure.get_level_designators(level)
             for value in designators:
-                if value not in value_to_components:
-                    value_to_components[value] = set()
-                value_to_components[value].add(comp_id)
+                value_str = str(value)
+                if value_str not in value_to_components:
+                    value_to_components[value_str] = set()
+                value_to_components[value_str].add(comp_id)
 
-        # Add collisions (values shared by 2+ components)
         for value, components in value_to_components.items():
             if len(components) > 1:
                 key = (level, value)
@@ -464,62 +510,44 @@ def get_structural_exclusions(
     """
     Generate structural exclusion rules for a component.
 
-    These are hierarchy-derived rules that definitively exclude this component.
-    For example, "contains 'PIR' or 'parachute'" excludes infantry divisions.
-
     Args:
         component_id: Target component
         structure: Target component's structure
         all_structures: All component structures
 
     Returns:
-        List of exclusion rule dicts with 'if' and 'then' keys
+        List of exclusion rule dicts
     """
-    exclusions = []
+    exclusions: List[Dict[str, str]] = []
 
-    # Service branch exclusions
-    if structure.service_branch == "army":
-        exclusions.append({
-            "if": "contains 'Marine' or 'USMC' or 'MarDiv'",
-            "then": "exclude",
-            "source": "branch_mismatch"
-        })
-
-    if structure.service_branch == "marines":
-        exclusions.append({
-            "if": "contains 'Airborne' or 'PIR' or 'Parachute'",
-            "then": "exclude",
-            "source": "branch_mismatch"
-        })
-        exclusions.append({
-            "if": "contains 'Armored' or 'Tank Battalion' (without Marine context)",
-            "then": "exclude",
-            "source": "branch_mismatch"
-        })
-
-    # Component type exclusions
-    if structure.component_type == "division":
-        if "infantry" in component_id and "airborne" not in component_id:
+    # Branch-unique term exclusions
+    for other_struct in all_structures.values():
+        if other_struct.branch == structure.branch:
+            continue
+        for disc in other_struct.structural_discriminators:
+            term = disc.get("term")
+            if not term:
+                continue
             exclusions.append({
-                "if": "contains 'PIR' or 'parachute' or 'airborne' or 'glider'",
+                "if_contains": term,
                 "then": "exclude",
-                "source": "unit_type_mismatch"
-            })
-        if "armored" not in component_id:
-            exclusions.append({
-                "if": "contains 'Combat Command' or 'CCA' or 'CCB' or 'CCR'",
-                "then": "exclude",
-                "source": "unit_type_mismatch"
+                "reason": f"term unique to {other_struct.branch}",
             })
 
-    if structure.component_type == "air_force":
+    # Depth mismatch exclusions
+    other_depths = {
+        other_struct.depth
+        for other_struct in all_structures.values()
+        if other_struct.depth != structure.depth
+    }
+    for depth in sorted(other_depths):
         exclusions.append({
-            "if": "contains 'Infantry' or 'Regiment' (ground unit context)",
+            "if_depth": depth,
             "then": "exclude",
-            "source": "unit_type_mismatch"
+            "reason": f"branch depth is {structure.depth}",
         })
 
-    return exclusions
+    return _dedupe_rules(exclusions)
 
 
 def get_invalid_designators(
@@ -539,31 +567,16 @@ def get_invalid_designators(
         Dict mapping level -> list of invalid designators
     """
     invalid: Dict[str, List[str]] = {}
+    # Collect all valid designators across all components per level
+    all_by_level: Dict[str, Set[str]] = {}
+    for comp_structure in all_structures.values():
+        for level, values in comp_structure.valid_designators.items():
+            all_by_level.setdefault(level, set()).update(str(v) for v in values)
 
-    # Collect all valid designators across all components
-    all_regiments: Set[str] = set()
-    all_battalions: Set[str] = set()
-
-    for comp_id, comp_structure in all_structures.items():
-        all_regiments.update(comp_structure.valid_regiments)
-        all_battalions.update(comp_structure.valid_battalions)
-
-    # Invalid regiments for this component
-    valid_regiments = set(structure.valid_regiments)
-    invalid_regiments = sorted(all_regiments - valid_regiments, key=lambda x: (len(x), x))
-    if invalid_regiments:
-        invalid["regiment"] = invalid_regiments
-
-    # Invalid battalions (only if component uses standard battalion designators)
-    if structure.valid_battalions:
-        valid_battalions = set(structure.valid_battalions)
-        # Only compare within same type (numeric vs alphabetic)
-        same_type_battalions = {
-            b for b in all_battalions
-            if (b.isalpha() == structure.valid_battalions[0].isalpha())
-        }
-        invalid_battalions = sorted(same_type_battalions - valid_battalions)
-        if invalid_battalions:
-            invalid["battalion"] = invalid_battalions
+    for level, all_values in all_by_level.items():
+        valid_values = set(str(v) for v in structure.valid_designators.get(level, []))
+        invalid_values = sorted(all_values - valid_values)
+        if invalid_values:
+            invalid[level] = invalid_values
 
     return invalid

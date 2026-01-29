@@ -110,33 +110,15 @@ def _build_meta_section(
 
 
 def _build_structure_section(structure: ComponentStructure) -> Dict[str, Any]:
-    """Build the structure section from component structure."""
-    result = {
+    """Build the structure section for resolver JSON."""
+    return {
         "status": "complete",
-        "battalion_designator_type": structure.battalion_type,
+        "branch": structure.branch,
+        "depth": structure.depth,
+        "levels": structure.level_names,
+        "valid_designators": structure.valid_designators,
+        "structural_discriminators": structure.structural_discriminators,
     }
-
-    # Add non-empty designator lists
-    if structure.valid_regiments:
-        result["valid_regiments"] = [_try_int(r) for r in structure.valid_regiments]
-
-    if structure.valid_battalions:
-        result["valid_battalions"] = [_try_int(b) for b in structure.valid_battalions]
-
-    if structure.valid_companies:
-        result["valid_companies"] = structure.valid_companies
-
-    # For non-standard hierarchies
-    if structure.valid_combat_commands:
-        result["valid_combat_commands"] = structure.valid_combat_commands
-
-    if structure.valid_bomb_groups:
-        result["valid_bomb_groups"] = [_try_int(g) for g in structure.valid_bomb_groups]
-
-    if structure.valid_squadrons:
-        result["valid_squadrons"] = [_try_int(s) for s in structure.valid_squadrons]
-
-    return result
 
 
 def _build_patterns_section(patterns_result, tier: TierName) -> Dict[str, Any]:

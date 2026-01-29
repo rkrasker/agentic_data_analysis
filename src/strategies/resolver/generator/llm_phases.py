@@ -846,67 +846,56 @@ def _generate_hierarchy_rules(
     if not struct_a or not struct_b:
         return rules
 
-    # Regiment-based rules
-    regs_a = set(struct_a.valid_regiments)
-    regs_b = set(struct_b.valid_regiments)
+    # Branch-unique term rules
+    if struct_a.branch != struct_b.branch:
+        for disc in struct_a.structural_discriminators:
+            term = disc.get("term")
+            if term:
+                rules.append({
+                    "if_contains": term,
+                    "then": "identifies",
+                    "target": comp_a_name,
+                    "strength": disc.get("strength", "strong"),
+                    "note": "Branch-unique terminology"
+                })
+        for disc in struct_b.structural_discriminators:
+            term = disc.get("term")
+            if term:
+                rules.append({
+                    "if_contains": term,
+                    "then": "identifies",
+                    "target": comp_b_name,
+                    "strength": disc.get("strength", "strong"),
+                    "note": "Branch-unique terminology"
+                })
 
-    unique_to_a = regs_a - regs_b
-    unique_to_b = regs_b - regs_a
+    # Level-based unique designators
+    all_levels = set(struct_a.level_names) | set(struct_b.level_names)
+    for level in sorted(all_levels):
+        a_vals = set(str(v) for v in struct_a.valid_designators.get(level, []))
+        b_vals = set(str(v) for v in struct_b.valid_designators.get(level, []))
 
-    if unique_to_a:
-        regs = sorted(unique_to_a)
-        rules.append({
-            "if_contains": f"Regiment {' or '.join(regs)}",
-            "then": "identifies",
-            "target": comp_a_name,
-            "strength": "strong",
-            "note": "Unique regiment designation"
-        })
+        unique_to_a = a_vals - b_vals
+        unique_to_b = b_vals - a_vals
 
-    if unique_to_b:
-        regs = sorted(unique_to_b)
-        rules.append({
-            "if_contains": f"Regiment {' or '.join(regs)}",
-            "then": "identifies",
-            "target": comp_b_name,
-            "strength": "strong",
-            "note": "Unique regiment designation"
-        })
-
-    # Service branch rules
-    if struct_a.service_branch != struct_b.service_branch:
-        if struct_a.service_branch == "marines":
+        if unique_to_a:
+            vals = sorted(unique_to_a)
             rules.append({
-                "if_contains": "Marine or USMC",
+                "if_contains": f"{level} {' or '.join(vals)}",
                 "then": "identifies",
                 "target": comp_a_name,
                 "strength": "strong",
-                "note": "Branch-specific terminology"
+                "note": f"Unique {level} designator"
             })
-        elif struct_b.service_branch == "marines":
+
+        if unique_to_b:
+            vals = sorted(unique_to_b)
             rules.append({
-                "if_contains": "Marine or USMC",
+                "if_contains": f"{level} {' or '.join(vals)}",
                 "then": "identifies",
                 "target": comp_b_name,
                 "strength": "strong",
-                "note": "Branch-specific terminology"
-            })
-
-        if "airborne" in comp_a_id:
-            rules.append({
-                "if_contains": "Airborne or PIR or ABN",
-                "then": "increase_confidence",
-                "target": comp_a_name,
-                "strength": "strong",
-                "note": "Unit type indicator (but may be abbreviated in some records)"
-            })
-        elif "airborne" in comp_b_id:
-            rules.append({
-                "if_contains": "Airborne or PIR or ABN",
-                "then": "increase_confidence",
-                "target": comp_b_name,
-                "strength": "strong",
-                "note": "Unit type indicator (but may be abbreviated in some records)"
+                "note": f"Unique {level} designator"
             })
 
     return rules

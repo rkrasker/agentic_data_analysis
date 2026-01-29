@@ -1,32 +1,27 @@
 # SESSION_STATE.md
 
 **Last Updated:** 2026-01-29
-**Session:** Opus 4.5 architecture session — ADR-009 Resolver Pipeline Completion
+**Session:** Codex (GPT-5) — ADR-009 Resolver Pipeline Completion
 
 ---
 
 ## Active Task
 
-**Instructions 012-014:** Complete ADR-009 resolver generation alignment
-
-Three instructions queued for implementation:
-- 012: Deterministic Phase 5 exclusions (remove LLM call)
-- 013: Branch-aware structural encoding (structure.py rewrite)
-- 014: Three-layer hard case criteria (prompts update)
+ADR-009 resolver generation alignment completed (Instructions 012-014).
 
 ---
 
 ## Completed This Session
 
-### Created Instructions 012-014
+### ADR-009 Resolver Alignment (012-014)
 
-Analyzed resolver generation pipeline to determine remaining ADR-009 work. Created three Sonnet-executable instructions:
+Implemented all three instructions:
 
-| Instruction | Scope | Priority |
-|-------------|-------|----------|
-| 012 | Phase 5 deterministic exclusions | HIGH (smallest, cleanest) |
-| 013 | Branch-aware structure.py rewrite | CRITICAL (largest scope) |
-| 014 | Three-layer hard case prompts | MEDIUM (independent) |
+| Instruction | Outcome |
+|-------------|---------|
+| 012 | Deterministic Phase 5 exclusions (no LLM; hierarchy-derived rules) |
+| 013 | Branch-aware structure encoding with variable depths/levels |
+| 014 | Three-layer hard case criteria + layer-aware parsing/analysis |
 
 ### Prior Session Work (Still Relevant)
 
@@ -38,12 +33,7 @@ Analyzed resolver generation pipeline to determine remaining ADR-009 work. Creat
 
 ## Where I Left Off
 
-**Planning complete. Ready for Sonnet execution.**
-
-Recommended order: 012 → 014 → 013
-
-- 012 and 014 are independent (can be parallelized if desired)
-- 013 depends on nothing but is largest—do last
+ADR-009 resolver alignment complete. Next is validation/regeneration of sample resolvers.
 
 ---
 
@@ -69,10 +59,7 @@ ADR-009 Decisions
 ### New This Session
 
 3. **Should `_filter_records_by_quality()` be removed?** It exists in llm_phases.py but may be dead code after stratified sampling. Not in scope for current instructions—monitor during implementation.
-
-4. **Do prompts reference regiment/battalion/company terminology?** If so, may need updates after 013. Not included in 014 scope.
-
-5. **hierarchy_reference.json format:** Instruction 013 assumes a specific structure. Verify before implementing.
+4. **Do prompts reference regiment/battalion/company terminology?** Prompts still use legacy examples; consider updating to branch-aware terms.
 
 ---
 
@@ -99,11 +86,9 @@ ADR-009 Decisions
 
 ## Next Steps
 
-1. **Implement Instruction 012** — Deterministic Phase 5 (Sonnet)
-2. **Implement Instruction 014** — Three-layer hard cases (Sonnet, can parallel)
-3. **Implement Instruction 013** — Branch-aware structure (Sonnet, after 012)
-4. **Verify** — Regenerate sample resolvers, validate output schema
-5. **Cleanup** — Consider removing `_filter_records_by_quality()` if dead
+1. **Verify** — Regenerate sample resolvers, validate output schema
+2. **Cleanup** — Consider removing `_filter_records_by_quality()` if dead
+3. **Follow-up** — Update prompt examples to branch-aware terms if needed
 
 ---
 
