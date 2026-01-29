@@ -311,6 +311,13 @@ def _to_list(value: Any) -> List[Any]:
         return []
     if isinstance(value, list):
         return value
+    if isinstance(value, tuple):
+        return list(value)
+    if hasattr(value, "tolist"):
+        converted = value.tolist()
+        if isinstance(converted, list):
+            return converted
+        return [converted]
     return [value]
 
 
@@ -348,6 +355,11 @@ def _map_unchar_to_levels(
 
 
 def _normalize_unchar_value(value: Any) -> Optional[Any]:
+    if hasattr(value, "item") and not isinstance(value, (str, bytes, list, tuple, dict, set)):
+        try:
+            return _normalize_unchar_value(value.item())
+        except Exception:
+            pass
     if isinstance(value, int):
         return value
     if isinstance(value, str):

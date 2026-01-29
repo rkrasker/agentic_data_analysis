@@ -28,7 +28,7 @@ Number sequentially. Gaps are fine (after completion/removal).
 
 | # | Task | Status | Component |
 |---|------|--------|-----------|
-| — | (none) | — | — |
+| 011 | Difficulty-Based Sampling | active | preprocessing/splits, strategies/resolver/generator |
 
 ## Recently Completed
 

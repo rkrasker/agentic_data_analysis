@@ -7,7 +7,7 @@ Samples soldiers from both sides of a collision for LLM analysis.
 
 import logging
 from dataclasses import dataclass, field
-from typing import Dict, List, Set, Tuple, Optional
+from typing import Dict, List, Tuple, Optional
 
 import numpy as np
 import pandas as pd
@@ -16,6 +16,13 @@ logger = logging.getLogger(__name__)
 
 from .thresholds import ThresholdResult, TierName
 from .structure import StructureResult
+
+DEFAULT_TIER_WEIGHTS = {
+    "extreme": 0.35,
+    "hard": 0.35,
+    "moderate": 0.20,
+    "easy": 0.10,
+}
 
 
 @dataclass
@@ -112,6 +119,8 @@ def sample_collisions(
     thresholds: ThresholdResult,
     samples_per_side: int = 20,
     random_seed: int = 42,
+    stratify_by_difficulty: bool = False,
+    tier_weights: Optional[Dict[str, float]] = None,
 ) -> Dict[str, ComponentSamples]:
     """
     Sample soldiers for collision analysis.
@@ -126,6 +135,8 @@ def sample_collisions(
         thresholds: Tier thresholds for undersampling detection
         samples_per_side: Target number of soldiers per side
         random_seed: Random seed for reproducibility
+        stratify_by_difficulty: Whether to stratify sampling by difficulty tier
+        tier_weights: Optional weights for difficulty tiers
 
     Returns:
         Dict mapping component_id -> ComponentSamples
@@ -145,6 +156,27 @@ def sample_collisions(
     component_soldiers: Dict[str, List[str]] = {}
     for component_id, group in train.groupby("component_id"):
         component_soldiers[component_id] = group["soldier_id"].unique().tolist()
+
+    soldier_tiers: Optional[Dict[str, str]] = None
+    weights = tier_weights or DEFAULT_TIER_WEIGHTS
+    if stratify_by_difficulty:
+        if "gt_difficulty_tier" not in train.columns:
+            logger.warning(
+                "Difficulty stratification requested but 'gt_difficulty_tier' is missing. "
+                "Falling back to random sampling."
+            )
+            stratify_by_difficulty = False
+        else:
+            tier_series = train.dropna(subset=["gt_difficulty_tier"]).drop_duplicates("soldier_id")
+            soldier_tiers = (
+                tier_series.set_index("soldier_id")["gt_difficulty_tier"].to_dict()
+            )
+            if not soldier_tiers:
+                logger.warning(
+                    "Difficulty stratification requested but no tier labels were found. "
+                    "Falling back to random sampling."
+                )
+                stratify_by_difficulty = False
 
     # Get all collision pairs
     all_pairs = structure_result.list_all_collision_pairs()
@@ -207,10 +239,18 @@ def sample_collisions(
 
             # Sample from filtered soldiers
             sample_a, undersampled_a = _sample_soldiers(
-                soldiers_in_collision_a, samples_per_side, rng
+                soldiers_in_collision_a,
+                samples_per_side,
+                rng,
+                soldier_tiers=soldier_tiers if stratify_by_difficulty else None,
+                tier_weights=weights if stratify_by_difficulty else None,
             )
             sample_b, undersampled_b = _sample_soldiers(
-                soldiers_in_collision_b, samples_per_side, rng
+                soldiers_in_collision_b,
+                samples_per_side,
+                rng,
+                soldier_tiers=soldier_tiers if stratify_by_difficulty else None,
+                tier_weights=weights if stratify_by_difficulty else None,
             )
 
             # Get raw records for samples
@@ -240,6 +280,8 @@ def _sample_soldiers(
     soldiers: List[str],
     target_size: int,
     rng: np.random.RandomState,
+    soldier_tiers: Optional[Dict[str, str]] = None,
+    tier_weights: Optional[Dict[str, float]] = None,
 ) -> Tuple[List[str], bool]:
     """
     Sample soldiers, detecting undersampling.
@@ -258,9 +300,115 @@ def _sample_soldiers(
         # Use all available - undersampled
         return list(soldiers), True
 
-    # Random sample
-    indices = rng.choice(available, size=target_size, replace=False)
-    sampled = [soldiers[i] for i in indices]
+    if not soldier_tiers or not tier_weights:
+        # Random sample
+        indices = rng.choice(available, size=target_size, replace=False)
+        sampled = [soldiers[i] for i in indices]
+        return sampled, False
+
+    soldiers_by_tier: Dict[str, List[str]] = {tier: [] for tier in tier_weights.keys()}
+    unassigned: List[str] = []
+    for soldier_id in soldiers:
+        tier = soldier_tiers.get(soldier_id)
+        if tier in soldiers_by_tier:
+            soldiers_by_tier[tier].append(soldier_id)
+        else:
+            unassigned.append(soldier_id)
+
+    sampled, _ = _stratified_sample(
+        soldiers_by_tier=soldiers_by_tier,
+        target_size=target_size,
+        tier_weights=tier_weights,
+        rng=rng,
+    )
+
+    if len(sampled) < target_size and unassigned:
+        remaining = target_size - len(sampled)
+        if len(unassigned) <= remaining:
+            sampled.extend(unassigned)
+        else:
+            indices = rng.choice(len(unassigned), size=remaining, replace=False)
+            sampled.extend([unassigned[i] for i in indices])
+
+    return sampled, False
+
+
+def _stratified_sample(
+    soldiers_by_tier: Dict[str, List[str]],
+    target_size: int,
+    tier_weights: Dict[str, float],
+    rng: np.random.RandomState,
+) -> Tuple[List[str], bool]:
+    """Perform stratified sampling across difficulty tiers."""
+    all_soldiers = [s for soldiers in soldiers_by_tier.values() for s in soldiers]
+    total_available = len(all_soldiers)
+
+    if total_available <= target_size:
+        return list(all_soldiers), True
+
+    weights = {tier: weight for tier, weight in tier_weights.items() if weight > 0}
+    if not weights:
+        indices = rng.choice(total_available, size=target_size, replace=False)
+        sampled = [all_soldiers[i] for i in indices]
+        return sampled, False
+
+    available_by_tier = {
+        tier: len(soldiers_by_tier.get(tier, [])) for tier in weights.keys()
+    }
+    allocations = {tier: 0 for tier in weights.keys()}
+    remaining = target_size
+    active_tiers = {tier for tier, cap in available_by_tier.items() if cap > 0}
+
+    while remaining > 0 and active_tiers:
+        total_weight = sum(weights[tier] for tier in active_tiers)
+        if total_weight <= 0:
+            break
+
+        raw = {
+            tier: remaining * (weights[tier] / total_weight) for tier in active_tiers
+        }
+        base = {tier: int(raw[tier]) for tier in active_tiers}
+        allocated = sum(base.values())
+        leftover = remaining - allocated
+
+        if leftover > 0:
+            for tier in sorted(
+                active_tiers,
+                key=lambda t: (raw[t] - base[t], t),
+                reverse=True,
+            ):
+                if leftover <= 0:
+                    break
+                base[tier] += 1
+                leftover -= 1
+
+        next_active = set(active_tiers)
+        for tier in list(active_tiers):
+            capacity = available_by_tier[tier] - allocations[tier]
+            if capacity <= 0:
+                next_active.discard(tier)
+                continue
+
+            take = min(base.get(tier, 0), capacity)
+            allocations[tier] += take
+            remaining -= take
+
+            if allocations[tier] >= available_by_tier[tier]:
+                next_active.discard(tier)
+
+        active_tiers = next_active
+
+    sampled: List[str] = []
+    for tier, count in allocations.items():
+        if count <= 0:
+            continue
+        pool = soldiers_by_tier.get(tier, [])
+        if count >= len(pool):
+            sampled.extend(pool)
+        else:
+            indices = rng.choice(len(pool), size=count, replace=False)
+            sampled.extend([pool[i] for i in indices])
+
     return sampled, False
 
 

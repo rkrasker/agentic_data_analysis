@@ -136,6 +136,9 @@ def generate_all_resolvers(
     hierarchy_path: Path,
     output_dir: Path,
     split_path: Optional[Path] = None,
+    train_split_path: Optional[Path] = None,
+    stratify_by_difficulty: bool = True,
+    tier_weights: Optional[Dict[str, float]] = None,
     model_name: str = "gemini-2.5-pro",
     components_filter: Optional[List[str]] = None,
     rebuild_existing: bool = False,
@@ -153,6 +156,9 @@ def generate_all_resolvers(
         hierarchy_path: Path to hierarchy_reference.json
         output_dir: Output directory for resolver JSONs
         split_path: Optional path to existing train/test split JSON
+        train_split_path: Optional path to precomputed train split parquet
+        stratify_by_difficulty: Whether to stratify sampling by difficulty tier
+        tier_weights: Optional weights for difficulty tiers
         model_name: LLM model to use
         components_filter: Optional list of component IDs to process
         rebuild_existing: If True, regenerate all resolvers
@@ -193,18 +199,28 @@ def generate_all_resolvers(
 
     # Step 2: Create or load split
     logger.info("\nStep 2: Train/test split...")
-    splitter = StratifiedSplitter(SplitConfig())
-
-    if split_path and split_path.exists():
-        logger.info(f"  Loading existing split from {split_path}")
-        splits = splitter.load_split(split_path)
-    else:
-        logger.info("  Creating new stratified split")
-        splits = splitter.split(validation_df)
+    if train_split_path:
         if split_path:
-            splitter.save_split(splits, split_path, str(validation_path))
+            logger.warning(
+                "Both train_split_path and split_path provided; "
+                "using train_split_path for training data."
+            )
+        logger.info(f"  Loading precomputed train split from {train_split_path}")
+        train_df = pd.read_parquet(train_split_path)
+    else:
+        splitter = StratifiedSplitter(SplitConfig())
 
-    train_df = splitter.get_train_df(validation_df, splits)
+        if split_path and split_path.exists():
+            logger.info(f"  Loading existing split from {split_path}")
+            splits = splitter.load_split(split_path)
+        else:
+            logger.info("  Creating new stratified split")
+            splits = splitter.split(validation_df)
+            if split_path:
+                splitter.save_split(splits, split_path, str(validation_path))
+
+        train_df = splitter.get_train_df(validation_df, splits)
+
     logger.info(f"  Training soldiers: {len(train_df)}")
 
     # Step 3: Compute thresholds
@@ -226,11 +242,19 @@ def generate_all_resolvers(
 
     # Step 5: Sample collisions
     logger.info("\nStep 5: Sampling collisions...")
+    if train_split_path and not stratify_by_difficulty:
+        logger.warning(
+            "train_split_path provided but stratify_by_difficulty disabled; "
+            "sampling will be random."
+        )
+
     all_samples = sample_collisions(
         train_df=train_df,
         raw_df=raw_df,
         structure_result=structure_result,
         thresholds=thresholds,
+        stratify_by_difficulty=stratify_by_difficulty if not train_split_path else True,
+        tier_weights=tier_weights,
     )
     logger.info(f"  Components with samples: {len(all_samples)}")
 

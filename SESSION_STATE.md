@@ -1,19 +1,33 @@
 # SESSION_STATE.md
 
 **Last Updated:** 2026-01-29
-**Session:** Opus 4.5 architecture session — Synthetic metadata separation (ADR-010)
+**Session:** Opus 4.5 architecture session — Difficulty-based sampling (Instruction 011)
 
 ---
 
 ## Active Task
 
-**Instruction 010:** Implement synthetic metadata schema separation (ADR-010)
+**Instruction 011:** Difficulty-Based Sampling for Resolver Generation
 
-Implementation complete; follow-up: regenerate artifacts and update any downstream notebooks/scripts.
+Implementation complete (preprocessing split + stratified sampling + generator wiring).
 
 ---
 
 ## Completed This Session
+
+### Implemented Instruction 011: Difficulty-Based Sampling
+
+- Added preprocessing split module to emit train/test with difficulty labels
+- Added stratified difficulty sampling with quota redistribution and fallbacks
+- Updated resolver generation to consume precomputed train split
+- Added tests for split prep and stratified sampling
+
+### Created Instruction 011: Difficulty-Based Sampling
+
+- Wrote instruction for stratified sampling by difficulty tier
+- Covers: preprocessing split module, sampling.py updates, generate.py integration
+- Default tier weights: 35% extreme, 35% hard, 20% moderate, 10% easy
+- Location: `instructions/active/011_difficulty-based-sampling.md`
 
 ### Implemented ADR-010 Schema Separation
 
@@ -21,8 +35,11 @@ Implementation complete; follow-up: regenerate artifacts and update any downstre
 - Refactored synthetic pipeline outputs into core + synthetic metadata files
 - Added `gt_difficulty.parquet` post-hoc computation in synthetic pipeline
 - Updated preprocessing difficulty outputs to `inferred_*` with writer CLI
+- Fixed inferred difficulty preprocessing to handle numpy array values
 - Updated preprocessing adapter to use new raw schema and synthetic_records passthrough
 - Updated tests and docs for new schema and prefixes
+- Regenerated artifacts: raw/validation/canonical + synthetic_* + gt_difficulty + inferred_difficulty
+- Updated downstream notebook: `synthetic_generation_pipeline.ipynb`
 
 ### Created ADR-010: Synthetic Metadata Separation
 
@@ -36,7 +53,7 @@ Resolved confusion about difficulty column provenance by establishing:
 | Ground-truth | `gt_` | Yes | Evaluation stratification |
 | Inferred | `inferred_` | No | Production routing/prioritization |
 
-**New Schema (pending implementation):**
+**New Schema (implemented):**
 
 | File | Contents |
 |------|----------|
@@ -59,19 +76,16 @@ Resolved confusion about difficulty column provenance by establishing:
 
 | File | Update |
 |------|--------|
-| `DIFFICULTY_MODEL.md` | Added "Computation Contexts" section |
-| `docs/components/synthetic_data_generation/CURRENT.md` | Added ADR-010 schema note |
-| `docs/components/preprocessing/CURRENT.md` | Added ADR-010 refs, difficulty submodule, inferred_ outputs |
-| `docs/ADR_INDEX.md` | Added ADR-010 entry |
-| `CLAUDE.md` | Added ADR-010 to Key ADRs table |
+| `DIFFICULTY_MODEL.md` | Clarified canonical schema note |
+| `docs/components/synthetic_data_generation/CURRENT.md` | Updated schema sections and changelog |
+| `docs/components/preprocessing/CURRENT.md` | Updated I/O contract and inferred outputs |
+| `docs/architecture/CURRENT.md` | Updated data artifacts list |
 
-### Updated Context Packets
+### Updated Notebook
 
 | File | Update |
 |------|--------|
-| `docs/context-packets/full-bootstrap.md` | Updated to Terraform Combine domain, new schema, difficulty stabilized |
-| `docs/context-packets/planning-synthetic.md` | Added ADR-010, DIFFICULTY_MODEL.md, schema separation concepts |
-| `docs/context-packets/planning-resolver.md` | Added ADR-009, DIFFICULTY_MODEL.md references |
+| `synthetic_generation_pipeline.ipynb` | Updated references to synthetic_records.parquet |
 
 ### Created Session Extract
 
@@ -81,9 +95,7 @@ Resolved confusion about difficulty column provenance by establishing:
 
 ## Where I Left Off
 
-**Implementation complete.** Pending: regenerate artifacts and validate downstream consumers.
-
-ADR-010 establishes the schema separation and naming conventions. Instruction 010 provides the implementation roadmap. Next step is to execute the instruction.
+**Implementation complete.** Artifacts regenerated; inferred difficulty computed; notebook updated.
 
 ---
 
@@ -124,8 +136,11 @@ ADR-010 schema separation design        ✓ COMPLETE
 
 | Artifact | Location | Status |
 |----------|----------|--------|
+| Instruction 011 | `instructions/active/011_difficulty-based-sampling.md` | ✓ Implemented |
+| Difficulty-based sampling implementation | `src/preprocessing/splits/`, `src/strategies/resolver/generator/` | ✓ Complete |
+| Tests for Instruction 011 | `tests/preprocessing/`, `tests/strategies/resolver/generator/` | ✓ Complete |
 | ADR-010 | `docs/architecture/decisions/ADR-010-synthetic-metadata-separation.md` | ✓ Complete |
-| Instruction 010 | `instructions/010_separate_synthetic_metadata_schema.md` | ✓ Complete |
+| Instruction 010 | `instructions/completed/010_separate_synthetic_metadata_schema.md` | ✓ Complete |
 | Session Extract | `.project_history/extracts/raw/2026-01-29_opus_synthetic-metadata-separation.md` | ✓ Complete |
 | Code Activity Log | `.project_history/code-activity/2026-01-29.md` | ✓ Complete |
 
@@ -135,17 +150,14 @@ ADR-010 schema separation design        ✓ COMPLETE
 |----------|----------|--------|
 | Structural Discriminators Module | `src/preprocessing/hierarchy/structural_discriminators.py` | ✓ Complete |
 | Structural Discriminators Output | `config/hierarchies/structural_discriminators.json` | ✓ Generated |
-| Difficulty Module | `src/preprocessing/difficulty/compute.py` | ✓ Complete (needs inferred_ prefix update) |
+| Difficulty Module | `src/preprocessing/difficulty/compute.py` | ✓ Complete (inferred_ prefixes) |
 | Synthetic Pipeline Notebook | `synthetic_generation_pipeline.ipynb` | ✓ Added |
 
 ---
 
 ## Next Steps
 
-1. **Regenerate artifacts** — run synthetic pipeline and preprocessing to produce new files
-2. **Update downstream notebooks/scripts** — migrate any old schema usage
-3. **sampling.py updates** — add difficulty-based sampling
-4. **Resolver Phase 5 update** — wire up to use pre-computed exclusion rules
+1. **Resolver Phase 5 update** — wire up to use pre-computed exclusion rules
 
 ---
 
