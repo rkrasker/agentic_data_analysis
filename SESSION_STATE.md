@@ -28,9 +28,12 @@ First resolver generated (`colonial_administration_resolver.json`) has critical 
 
 ## Where I Left Off
 
-Root cause analysis complete. Fixes designed but not implemented.
+Instruction files created for all four fixes:
 
-**Next concrete step:** Create instruction files for the four fixes, prioritizing Issue 2 (pattern hallucination).
+- [instructions/active/015_assembler_quality_fixes.md](instructions/active/015_assembler_quality_fixes.md) — Issues 2, 3, 4 (pattern validation, ambiguous_when, structured schema)
+- [instructions/active/016_tier_classification_guard.md](instructions/active/016_tier_classification_guard.md) — Issue 1 (tier classification guard)
+
+**Next concrete step:** Implement fixes following the instruction files, starting with 015 (critical pattern hallucination fix).
 
 ---
 
@@ -64,6 +67,8 @@ Replace legacy `.rules`/`.hierarchy_rules` string properties with structured `po
 | Quality assessment | `landing_zone/resolver_quality_assessment.md` | Reference |
 | Bug analysis extract | `.project_history/extracts/raw/2026-01-29_opus_resolver-quality-bugs.md` | Complete |
 | Buggy resolver | `config/resolvers/colonial_administration_resolver.json` | Do not use |
+| Instruction: assembler fixes | `instructions/active/015_assembler_quality_fixes.md` | Ready |
+| Instruction: tier guard | `instructions/active/016_tier_classification_guard.md` | Ready |
 
 ---
 
