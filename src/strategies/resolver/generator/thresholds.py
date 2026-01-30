@@ -92,11 +92,13 @@ def compute_thresholds(validation_df: pd.DataFrame) -> ThresholdResult:
     # Assign tiers
     component_tiers: Dict[str, TierName] = {}
     for component_id, count in component_counts.items():
+        pct_of_median = (count / median * 100) if median > 0 else 0
+
         if count >= p75:
             component_tiers[component_id] = "well_represented"
         elif count >= median:
             component_tiers[component_id] = "adequately_represented"
-        elif count >= p25:
+        elif count >= p25 or pct_of_median >= 75:
             component_tiers[component_id] = "under_represented"
         else:
             component_tiers[component_id] = "sparse"
