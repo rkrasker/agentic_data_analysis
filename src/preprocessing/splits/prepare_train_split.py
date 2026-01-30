@@ -17,6 +17,7 @@ def prepare_train_test_split(
     output_dir: Path,
     train_ratio: float = 0.7,
     random_seed: int = 42,
+    component_id_col: str = "component_id",
 ) -> Tuple[Path, Path]:
     """
     Create train/test splits with difficulty labels joined.
@@ -24,8 +25,17 @@ def prepare_train_test_split(
     Steps:
     1. Load validation.parquet and gt_difficulty.parquet
     2. Join on soldier_id (left join from validation to difficulty)
-    3. Create stratified train/test split (stratify by component_id)
+    3. Create stratified train/test split (stratify by component_id_col)
     4. Write train_with_difficulty.parquet and test_with_difficulty.parquet
+
+    Args:
+        validation_path: Path to validation.parquet
+        difficulty_path: Path to gt_difficulty.parquet
+        output_dir: Output directory for train/test parquet files
+        train_ratio: Fraction of data for training (default: 0.7)
+        random_seed: Random seed for reproducibility (default: 42)
+        component_id_col: Column to use as component identifier. Use 'branch'
+            for Terraform Combine synthetic data, 'component_id' for WWII data.
 
     Returns:
         Tuple of (train_path, test_path)
@@ -41,8 +51,12 @@ def prepare_train_test_split(
 
     if "soldier_id" not in validation_df.columns:
         raise ValueError("validation data must include soldier_id")
-    if "component_id" not in validation_df.columns:
-        raise ValueError("validation data must include component_id")
+    if component_id_col not in validation_df.columns:
+        raise ValueError(f"validation data must include '{component_id_col}' column")
+
+    # Normalize to component_id for internal processing
+    if component_id_col != "component_id":
+        validation_df = validation_df.rename(columns={component_id_col: "component_id"})
 
     difficulty_df = difficulty_df.drop_duplicates(subset=["soldier_id"])
     merged = validation_df.merge(difficulty_df, on="soldier_id", how="left")
@@ -148,6 +162,12 @@ def _parse_args() -> argparse.Namespace:
         default=42,
         help="Random seed (default: 42)",
     )
+    parser.add_argument(
+        "--component-id-col",
+        type=str,
+        default="component_id",
+        help="Column to use as component identifier (default: component_id, use 'branch' for Terraform Combine)",
+    )
     return parser.parse_args()
 
 
@@ -160,6 +180,7 @@ def main() -> None:
         output_dir=args.output_dir,
         train_ratio=args.train_ratio,
         random_seed=args.random_seed,
+        component_id_col=args.component_id_col,
     )
 
 

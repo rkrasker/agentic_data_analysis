@@ -19,6 +19,9 @@ from src.utils.llm import create_provider, BaseLLMProvider, TokenBatcher, TokenB
 from src.utils.llm.structured import extract_json_from_text
 from src.evaluation.split import StratifiedSplitter, SplitConfig, TrainTestSplit
 
+# Default stratification column - 'sector' is shared across all branches in Terraform Combine
+DEFAULT_STRATIFY_BY = "sector"
+
 from .thresholds import compute_thresholds, ThresholdResult, TierName
 from .structure import (
     extract_structure,
@@ -149,6 +152,8 @@ def generate_all_resolvers(
     rebuild_existing: bool = False,
     config: Optional[GenerationConfig] = None,
     progress_callback: Optional[callable] = None,
+    component_id_col: str = "component_id",
+    split_config: Optional[SplitConfig] = None,
 ) -> GenerationSummary:
     """
     Generate resolvers for all components.
@@ -169,6 +174,9 @@ def generate_all_resolvers(
         rebuild_existing: If True, regenerate all resolvers
         config: Generation configuration (uses defaults if None)
         progress_callback: Optional callback(phase_name: str) to report progress
+        component_id_col: Column name to treat as component_id (default: component_id)
+        split_config: Optional SplitConfig for train/test splitting. If None, uses
+            default config with stratify_by='sector' (appropriate for Terraform Combine).
 
     Returns:
         GenerationSummary with results
@@ -202,6 +210,13 @@ def generate_all_resolvers(
     logger.info(f"  Validation records: {len(validation_df)}")
     logger.info(f"  Raw records: {len(raw_df)}")
 
+    if component_id_col != "component_id":
+        if component_id_col not in validation_df.columns:
+            raise ValueError(
+                f"validation_df missing component column '{component_id_col}'"
+            )
+        validation_df = validation_df.rename(columns={component_id_col: "component_id"})
+
     # Step 2: Create or load split
     logger.info("\nStep 2: Train/test split...")
     if train_split_path:
@@ -213,7 +228,10 @@ def generate_all_resolvers(
         logger.info(f"  Loading precomputed train split from {train_split_path}")
         train_df = pd.read_parquet(train_split_path)
     else:
-        splitter = StratifiedSplitter(SplitConfig())
+        # Use provided split_config or create default with 'sector' stratification
+        effective_split_config = split_config or SplitConfig(stratify_by=DEFAULT_STRATIFY_BY)
+        logger.info(f"  Stratifying by: {effective_split_config.stratify_by}")
+        splitter = StratifiedSplitter(effective_split_config)
 
         if split_path and split_path.exists():
             logger.info(f"  Loading existing split from {split_path}")
@@ -664,6 +682,7 @@ def generate_single_component(
     output_dir: Path,
     model_name: str = "gemini-2.5-pro",
     progress_callback: Optional[callable] = None,
+    component_id_col: str = "component_id",
 ) -> Dict[str, Any]:
     """
     Generate resolver for a single component.
@@ -691,6 +710,7 @@ def generate_single_component(
         components_filter=[component_id],
         rebuild_existing=True,
         progress_callback=progress_callback,
+        component_id_col=component_id_col,
     )
 
     if summary.failed > 0:
@@ -758,6 +778,12 @@ def main():
         help="Specific components to process (default: all)",
     )
     parser.add_argument(
+        "--component-id-col",
+        type=str,
+        default="component_id",
+        help="Validation column to treat as component_id (default: component_id)",
+    )
+    parser.add_argument(
         "--rebuild",
         action="store_true",
         help="Rebuild all resolvers regardless of registry state",
@@ -805,6 +831,7 @@ def main():
         components_filter=args.components,
         rebuild_existing=args.rebuild,
         config=config,
+        component_id_col=args.component_id_col,
     )
 
     # Print summary

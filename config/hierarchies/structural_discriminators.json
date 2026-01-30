@@ -1,7 +1,7 @@
 {
   "metadata": {
     "generated_from": "hierarchy_reference.json",
-    "generated_at": "2026-01-28T16:15:07.282940+00:00",
+    "generated_at": "2026-01-29T22:36:09.318159+00:00",
     "branches_analyzed": [
       "colonial_administration",
       "defense_command",
@@ -10,6 +10,12 @@
     ]
   },
   "level_name_discriminators": {
+    "colony": {
+      "unique_to": "colonial_administration",
+      "appears_in": [
+        "colonial_administration"
+      ]
+    },
     "sector": {
       "unique_to": null,
       "appears_in": [
@@ -17,12 +23,6 @@
         "defense_command",
         "expeditionary_corps",
         "resource_directorate"
-      ]
-    },
-    "colony": {
-      "unique_to": "colonial_administration",
-      "appears_in": [
-        "colonial_administration"
       ]
     },
     "district": {
@@ -37,13 +37,13 @@
         "colonial_administration"
       ]
     },
-    "wing": {
+    "element": {
       "unique_to": "defense_command",
       "appears_in": [
         "defense_command"
       ]
     },
-    "element": {
+    "wing": {
       "unique_to": "defense_command",
       "appears_in": [
         "defense_command"
@@ -61,13 +61,13 @@
         "defense_command"
       ]
     },
-    "team": {
+    "expedition": {
       "unique_to": "expeditionary_corps",
       "appears_in": [
         "expeditionary_corps"
       ]
     },
-    "expedition": {
+    "team": {
       "unique_to": "expeditionary_corps",
       "appears_in": [
         "expeditionary_corps"
@@ -79,13 +79,13 @@
         "resource_directorate"
       ]
     },
-    "facility": {
+    "operation": {
       "unique_to": "resource_directorate",
       "appears_in": [
         "resource_directorate"
       ]
     },
-    "operation": {
+    "facility": {
       "unique_to": "resource_directorate",
       "appears_in": [
         "resource_directorate"
@@ -1198,14 +1198,14 @@
     "colonial_administration": [
       {
         "rule_type": "term_presence",
-        "condition": "contains term 'wing'",
+        "condition": "contains term 'element'",
         "excludes_branch": "colonial_administration",
         "implies_branch": "defense_command",
         "strength": "definitive"
       },
       {
         "rule_type": "term_presence",
-        "condition": "contains term 'element'",
+        "condition": "contains term 'wing'",
         "excludes_branch": "colonial_administration",
         "implies_branch": "defense_command",
         "strength": "definitive"
@@ -1226,14 +1226,14 @@
       },
       {
         "rule_type": "term_presence",
-        "condition": "contains term 'team'",
+        "condition": "contains term 'expedition'",
         "excludes_branch": "colonial_administration",
         "implies_branch": "expeditionary_corps",
         "strength": "definitive"
       },
       {
         "rule_type": "term_presence",
-        "condition": "contains term 'expedition'",
+        "condition": "contains term 'team'",
         "excludes_branch": "colonial_administration",
         "implies_branch": "expeditionary_corps",
         "strength": "definitive"
@@ -1247,14 +1247,14 @@
       },
       {
         "rule_type": "term_presence",
-        "condition": "contains term 'facility'",
+        "condition": "contains term 'operation'",
         "excludes_branch": "colonial_administration",
         "implies_branch": "resource_directorate",
         "strength": "definitive"
       },
       {
         "rule_type": "term_presence",
-        "condition": "contains term 'operation'",
+        "condition": "contains term 'facility'",
         "excludes_branch": "colonial_administration",
         "implies_branch": "resource_directorate",
         "strength": "definitive"
@@ -1356,14 +1356,14 @@
       },
       {
         "rule_type": "term_presence",
-        "condition": "contains term 'team'",
+        "condition": "contains term 'expedition'",
         "excludes_branch": "defense_command",
         "implies_branch": "expeditionary_corps",
         "strength": "definitive"
       },
       {
         "rule_type": "term_presence",
-        "condition": "contains term 'expedition'",
+        "condition": "contains term 'team'",
         "excludes_branch": "defense_command",
         "implies_branch": "expeditionary_corps",
         "strength": "definitive"
@@ -1377,14 +1377,14 @@
       },
       {
         "rule_type": "term_presence",
-        "condition": "contains term 'facility'",
+        "condition": "contains term 'operation'",
         "excludes_branch": "defense_command",
         "implies_branch": "resource_directorate",
         "strength": "definitive"
       },
       {
         "rule_type": "term_presence",
-        "condition": "contains term 'operation'",
+        "condition": "contains term 'facility'",
         "excludes_branch": "defense_command",
         "implies_branch": "resource_directorate",
         "strength": "definitive"
@@ -1491,14 +1491,14 @@
       },
       {
         "rule_type": "term_presence",
-        "condition": "contains term 'wing'",
+        "condition": "contains term 'element'",
         "excludes_branch": "expeditionary_corps",
         "implies_branch": "defense_command",
         "strength": "definitive"
       },
       {
         "rule_type": "term_presence",
-        "condition": "contains term 'element'",
+        "condition": "contains term 'wing'",
         "excludes_branch": "expeditionary_corps",
         "implies_branch": "defense_command",
         "strength": "definitive"
@@ -1526,14 +1526,14 @@
       },
       {
         "rule_type": "term_presence",
-        "condition": "contains term 'facility'",
+        "condition": "contains term 'operation'",
         "excludes_branch": "expeditionary_corps",
         "implies_branch": "resource_directorate",
         "strength": "definitive"
       },
       {
         "rule_type": "term_presence",
-        "condition": "contains term 'operation'",
+        "condition": "contains term 'facility'",
         "excludes_branch": "expeditionary_corps",
         "implies_branch": "resource_directorate",
         "strength": "definitive"
@@ -1673,14 +1673,14 @@
       },
       {
         "rule_type": "term_presence",
-        "condition": "contains term 'wing'",
+        "condition": "contains term 'element'",
         "excludes_branch": "resource_directorate",
         "implies_branch": "defense_command",
         "strength": "definitive"
       },
       {
         "rule_type": "term_presence",
-        "condition": "contains term 'element'",
+        "condition": "contains term 'wing'",
         "excludes_branch": "resource_directorate",
         "implies_branch": "defense_command",
         "strength": "definitive"
@@ -1701,14 +1701,14 @@
       },
       {
         "rule_type": "term_presence",
-        "condition": "contains term 'team'",
+        "condition": "contains term 'expedition'",
         "excludes_branch": "resource_directorate",
         "implies_branch": "expeditionary_corps",
         "strength": "definitive"
       },
       {
         "rule_type": "term_presence",
-        "condition": "contains term 'expedition'",
+        "condition": "contains term 'team'",
         "excludes_branch": "resource_directorate",
         "implies_branch": "expeditionary_corps",
         "strength": "definitive"

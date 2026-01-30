@@ -1,9 +1,9 @@
 """
 Train/test splitting with stratification for resolver generation and evaluation.
 
-Implements stratified splitting by regiment within each component to ensure
-representative samples for both training (resolver generation) and testing
-(evaluation).
+Implements stratified splitting by a configurable subcomponent level (e.g., sector)
+within each component to ensure representative samples for both training
+(resolver generation) and testing (evaluation).
 """
 
 import json
@@ -21,10 +21,10 @@ class SplitConfig:
     """Configuration for train/test split."""
     train_ratio: float = 0.75
     test_ratio: float = 0.25
-    stratify_by: str = "regiment"  # Column to stratify on within each component
+    stratify_by: str = "sector"  # Column to stratify on within each component
     random_seed: int = 42
     min_test_per_component: int = 10
-    min_test_per_stratum: int = 1  # At least 1 test per regiment (if regiment has >=4 total)
+    min_test_per_stratum: int = 1  # At least 1 test per stratum (if stratum has >=4 total)
     min_stratum_size_for_split: int = 4  # Don't split strata smaller than this
 
     def __post_init__(self):
@@ -69,9 +69,9 @@ class StratifiedSplitter:
     """
     Stratified train/test splitter for validation data.
 
-    Splits soldiers by component, stratifying on regiment (or other subcomponent)
-    to ensure both train and test sets have representative samples from each
-    regiment.
+    Splits soldiers by component, stratifying on a configurable subcomponent level
+    (e.g., sector) to ensure both train and test sets have representative samples
+    from each stratum.
 
     Handles sparse components gracefully:
     - Very small components: No split, all data available for resolver/evaluation
@@ -99,7 +99,7 @@ class StratifiedSplitter:
             validation_df: DataFrame with columns:
                 - primary_id (or soldier_id): Unique soldier identifier
                 - component_id: Component identifier
-                - regiment: Regiment number (or other stratum column)
+                - [stratify_by column]: Column to stratify on (default: sector)
 
         Returns:
             Dict mapping component_id -> TrainTestSplit

@@ -1,0 +1,582 @@
+{
+  "meta": {
+    "component_id": "colonial_administration",
+    "generated_utc": "2026-01-29T23:50:37.343464Z",
+    "tier": "sparse",
+    "sample_size": 623,
+    "pct_of_median": 97.0,
+    "generation_mode": "hierarchy_only",
+    "hard_cases_flagged": 4,
+    "hard_cases_by_layer": {
+      "collision_position": 0,
+      "complementarity": 1,
+      "structural_ambiguity": 3,
+      "unknown": 0
+    },
+    "validation_mode": "dual_run_reconciliation"
+  },
+  "structure": {
+    "status": "complete",
+    "branch": "colonial_administration",
+    "depth": 4,
+    "levels": [
+      "sector",
+      "colony",
+      "district",
+      "settlement"
+    ],
+    "valid_designators": {
+      "sector": [
+        "Alpha",
+        "Beta",
+        "Gamma",
+        "Delta"
+      ],
+      "colony": [
+        "Verdant",
+        "Amber",
+        "Kestrel",
+        "Thornmark",
+        "Waystation"
+      ],
+      "district": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8
+      ],
+      "settlement": [
+        "Haven",
+        "Prospect",
+        "Landfall",
+        "Waypoint",
+        "Horizon"
+      ]
+    },
+    "structural_discriminators": [
+      {
+        "term": "Colony",
+        "implies_branch": "colonial_administration",
+        "strength": "definitive"
+      },
+      {
+        "term": "District",
+        "implies_branch": "colonial_administration",
+        "strength": "definitive"
+      },
+      {
+        "term": "Settlement",
+        "implies_branch": "colonial_administration",
+        "strength": "definitive"
+      },
+      {
+        "term": "colony",
+        "implies_branch": "colonial_administration",
+        "strength": "definitive"
+      },
+      {
+        "term": "district",
+        "implies_branch": "colonial_administration",
+        "strength": "definitive"
+      },
+      {
+        "term": "settlement",
+        "implies_branch": "colonial_administration",
+        "strength": "definitive"
+      },
+      {
+        "term": "Thornmark",
+        "implies_branch": "colonial_administration",
+        "strength": "definitive"
+      },
+      {
+        "term": "Waystation",
+        "implies_branch": "colonial_administration",
+        "strength": "definitive"
+      },
+      {
+        "term": "Haven",
+        "implies_branch": "colonial_administration",
+        "strength": "definitive"
+      },
+      {
+        "term": "Prospect",
+        "implies_branch": "colonial_administration",
+        "strength": "definitive"
+      },
+      {
+        "term": "Landfall",
+        "implies_branch": "colonial_administration",
+        "strength": "definitive"
+      },
+      {
+        "term": "Waypoint",
+        "implies_branch": "colonial_administration",
+        "strength": "definitive"
+      }
+    ]
+  },
+  "patterns": {
+    "status": "complete",
+    "entries": {
+      "-CA": {
+        "means": "Indicates the record pertains to the Colonial Administration unit. Appears as a suffix.",
+        "tier": "robust"
+      },
+      "FOUNDING | CHARTER": {
+        "means": "Mission status keywords indicating the establishment or formalization of a new colonial area.",
+        "tier": "moderate"
+      },
+      "Haven | Kestrel | Palisade | Prospect | Verdant | Landfall": {
+        "means": "Vocabulary of specific location names or sub-units within the Colonial Administration.",
+        "tier": "strong"
+      },
+      "Sq | Wg | El": {
+        "means": "Unit designators likely corresponding to Squadron (Sq), Wing (Wg), and Element (El). This indicates a hierarchical structure different from the geographic Sector/Colony/District model.",
+        "tier": "strong"
+      },
+      "-CA | CA": {
+        "means": "A suffix indicating the top-level component, likely standing for 'Colonial Administration' or a specific administrative region.",
+        "tier": "robust"
+      },
+      "-DC": {
+        "means": "A suffix indicating a specific branch or directorate of the Colonial Administration, distinct from the more common '-CA'.",
+        "tier": "robust"
+      },
+      "Sector | Colony | Col | District | Dist | Settlement | Set": {
+        "means": "These keywords describe a formal organizational hierarchy within the colonial_administration.",
+        "tier": "strong"
+      }
+    }
+  },
+  "vocabulary": {
+    "status": "not_generated",
+    "reason": "insufficient_sample",
+    "known_aliases": [
+      "Colony",
+      "District",
+      "Settlement"
+    ],
+    "alias_source": "hierarchy_reference (not validated from data)"
+  },
+  "exclusions": {
+    "status": "complete",
+    "source": "hierarchy_derived",
+    "rules": [
+      {
+        "if_contains": "Squadron",
+        "then": "exclude",
+        "reason": "term unique to defense_command"
+      },
+      {
+        "if_contains": "Wing",
+        "then": "exclude",
+        "reason": "term unique to defense_command"
+      },
+      {
+        "if_contains": "Element",
+        "then": "exclude",
+        "reason": "term unique to defense_command"
+      },
+      {
+        "if_contains": "element",
+        "then": "exclude",
+        "reason": "term unique to defense_command"
+      },
+      {
+        "if_contains": "wing",
+        "then": "exclude",
+        "reason": "term unique to defense_command"
+      },
+      {
+        "if_contains": "fleet",
+        "then": "exclude",
+        "reason": "term unique to defense_command"
+      },
+      {
+        "if_contains": "squadron",
+        "then": "exclude",
+        "reason": "term unique to defense_command"
+      },
+      {
+        "if_contains": "Talon",
+        "then": "exclude",
+        "reason": "term unique to defense_command"
+      },
+      {
+        "if_contains": "Vanguard",
+        "then": "exclude",
+        "reason": "term unique to defense_command"
+      },
+      {
+        "if_contains": "Aegis",
+        "then": "exclude",
+        "reason": "term unique to defense_command"
+      },
+      {
+        "if_contains": "Sable",
+        "then": "exclude",
+        "reason": "term unique to defense_command"
+      },
+      {
+        "if_contains": "Expedition",
+        "then": "exclude",
+        "reason": "term unique to expeditionary_corps"
+      },
+      {
+        "if_contains": "Team",
+        "then": "exclude",
+        "reason": "term unique to expeditionary_corps"
+      },
+      {
+        "if_contains": "expedition",
+        "then": "exclude",
+        "reason": "term unique to expeditionary_corps"
+      },
+      {
+        "if_contains": "team",
+        "then": "exclude",
+        "reason": "term unique to expeditionary_corps"
+      },
+      {
+        "if_contains": "Pioneer",
+        "then": "exclude",
+        "reason": "term unique to expeditionary_corps"
+      },
+      {
+        "if_contains": "Beacon",
+        "then": "exclude",
+        "reason": "term unique to expeditionary_corps"
+      },
+      {
+        "if_contains": "Operation",
+        "then": "exclude",
+        "reason": "term unique to resource_directorate"
+      },
+      {
+        "if_contains": "Facility",
+        "then": "exclude",
+        "reason": "term unique to resource_directorate"
+      },
+      {
+        "if_contains": "Crew",
+        "then": "exclude",
+        "reason": "term unique to resource_directorate"
+      },
+      {
+        "if_contains": "crew",
+        "then": "exclude",
+        "reason": "term unique to resource_directorate"
+      },
+      {
+        "if_contains": "operation",
+        "then": "exclude",
+        "reason": "term unique to resource_directorate"
+      },
+      {
+        "if_contains": "facility",
+        "then": "exclude",
+        "reason": "term unique to resource_directorate"
+      },
+      {
+        "if_contains": "Forge",
+        "then": "exclude",
+        "reason": "term unique to resource_directorate"
+      },
+      {
+        "if_contains": "Helix",
+        "then": "exclude",
+        "reason": "term unique to resource_directorate"
+      },
+      {
+        "if_contains": "Palisade",
+        "then": "exclude",
+        "reason": "term unique to resource_directorate"
+      },
+      {
+        "if_depth": 3,
+        "then": "exclude",
+        "reason": "branch depth is 4"
+      },
+      {
+        "if_depth": 5,
+        "then": "exclude",
+        "reason": "branch depth is 4"
+      },
+      {
+        "if_contains": "element",
+        "then": "exclude",
+        "reason": "term unique to defense_command"
+      },
+      {
+        "if_contains": "wing",
+        "then": "exclude",
+        "reason": "term unique to defense_command"
+      },
+      {
+        "if_contains": "fleet",
+        "then": "exclude",
+        "reason": "term unique to defense_command"
+      },
+      {
+        "if_contains": "squadron",
+        "then": "exclude",
+        "reason": "term unique to defense_command"
+      },
+      {
+        "if_contains": "expedition",
+        "then": "exclude",
+        "reason": "term unique to expeditionary_corps"
+      },
+      {
+        "if_contains": "team",
+        "then": "exclude",
+        "reason": "term unique to expeditionary_corps"
+      },
+      {
+        "if_contains": "crew",
+        "then": "exclude",
+        "reason": "term unique to resource_directorate"
+      },
+      {
+        "if_contains": "operation",
+        "then": "exclude",
+        "reason": "term unique to resource_directorate"
+      },
+      {
+        "if_contains": "facility",
+        "then": "exclude",
+        "reason": "term unique to resource_directorate"
+      },
+      {
+        "if_depth": 5,
+        "then": "exclude",
+        "reason": "branch depth is 4"
+      },
+      {
+        "if_depth": 3,
+        "then": "exclude",
+        "reason": "branch depth is 4"
+      },
+      {
+        "if_invalid_designator": "Talon",
+        "then": "exclude",
+        "reason": "designator unique to defense_command"
+      },
+      {
+        "if_invalid_designator": "Vanguard",
+        "then": "exclude",
+        "reason": "designator unique to defense_command"
+      },
+      {
+        "if_invalid_designator": "Aegis",
+        "then": "exclude",
+        "reason": "designator unique to defense_command"
+      },
+      {
+        "if_invalid_designator": "Sable",
+        "then": "exclude",
+        "reason": "designator unique to defense_command"
+      },
+      {
+        "if_invalid_designator": "9",
+        "then": "exclude",
+        "reason": "designator not valid in colonial_administration"
+      },
+      {
+        "if_invalid_designator": "10",
+        "then": "exclude",
+        "reason": "designator not valid in colonial_administration"
+      },
+      {
+        "if_invalid_designator": "11",
+        "then": "exclude",
+        "reason": "designator not valid in colonial_administration"
+      },
+      {
+        "if_invalid_designator": "12",
+        "then": "exclude",
+        "reason": "designator not valid in colonial_administration"
+      },
+      {
+        "if_invalid_designator": "A",
+        "then": "exclude",
+        "reason": "designator not valid in colonial_administration"
+      },
+      {
+        "if_invalid_designator": "B",
+        "then": "exclude",
+        "reason": "designator not valid in colonial_administration"
+      },
+      {
+        "if_invalid_designator": "C",
+        "then": "exclude",
+        "reason": "designator not valid in colonial_administration"
+      },
+      {
+        "if_invalid_designator": "D",
+        "then": "exclude",
+        "reason": "designator not valid in colonial_administration"
+      },
+      {
+        "if_invalid_designator": "E",
+        "then": "exclude",
+        "reason": "designator not valid in colonial_administration"
+      },
+      {
+        "if_invalid_designator": "F",
+        "then": "exclude",
+        "reason": "designator not valid in colonial_administration"
+      },
+      {
+        "if_invalid_designator": "Pioneer",
+        "then": "exclude",
+        "reason": "designator unique to expeditionary_corps"
+      },
+      {
+        "if_invalid_designator": "Beacon",
+        "then": "exclude",
+        "reason": "designator unique to expeditionary_corps"
+      },
+      {
+        "if_invalid_designator": "Forge",
+        "then": "exclude",
+        "reason": "designator unique to resource_directorate"
+      },
+      {
+        "if_invalid_designator": "Helix",
+        "then": "exclude",
+        "reason": "designator unique to resource_directorate"
+      },
+      {
+        "if_invalid_designator": "Palisade",
+        "then": "exclude",
+        "reason": "designator unique to resource_directorate"
+      }
+    ]
+  },
+  "differentiators": {
+    "vs_resource_directorate": {
+      "status": "hierarchy_only",
+      "rival_sample_size": 20,
+      "rival_tier": "under_represented",
+      "rules": [
+        "Contains 'Colony' -> colonial_administration",
+        "Contains 'District' -> colonial_administration",
+        "Contains 'Settlement' -> colonial_administration",
+        "Contains 'colony' -> colonial_administration",
+        "Contains 'district' -> colonial_administration",
+        "Contains 'settlement' -> colonial_administration",
+        "Contains 'Thornmark' -> colonial_administration",
+        "Contains 'Waystation' -> colonial_administration",
+        "Contains 'Haven' -> colonial_administration",
+        "Contains 'Prospect' -> colonial_administration",
+        "Contains 'Landfall' -> colonial_administration",
+        "Contains 'Waypoint' -> colonial_administration",
+        "Contains 'Operation' -> resource_directorate",
+        "Contains 'Facility' -> resource_directorate",
+        "Contains 'Crew' -> resource_directorate",
+        "Contains 'crew' -> resource_directorate",
+        "Contains 'operation' -> resource_directorate",
+        "Contains 'facility' -> resource_directorate",
+        "Contains 'Forge' -> resource_directorate",
+        "Contains 'Helix' -> resource_directorate",
+        "Contains 'Palisade' -> resource_directorate",
+        "Contains 'colony Amber or Kestrel or Thornmark or Verdant or Waystation' -> colonial_administration",
+        "Contains 'crew A or B or C or D or E or F' -> resource_directorate",
+        "Contains 'district 1 or 2 or 3 or 4 or 5 or 6 or 7 or 8' -> colonial_administration",
+        "Contains 'facility 1 or 10 or 11 or 12 or 2 or 3 or 4 or 5 or 6 or 7 or 8 or 9' -> resource_directorate",
+        "Contains 'operation Amber or Forge or Helix or Kestrel or Palisade' -> resource_directorate",
+        "Contains 'settlement Haven or Horizon or Landfall or Prospect or Waypoint' -> colonial_administration"
+      ],
+      "not_generated": [
+        "vocabulary-based differentiators",
+        "pattern-based rules"
+      ]
+    },
+    "vs_expeditionary_corps": {
+      "status": "hierarchy_only",
+      "rival_sample_size": 20,
+      "rival_tier": "well_represented",
+      "rules": [
+        "Contains 'Colony' -> colonial_administration",
+        "Contains 'District' -> colonial_administration",
+        "Contains 'Settlement' -> colonial_administration",
+        "Contains 'colony' -> colonial_administration",
+        "Contains 'district' -> colonial_administration",
+        "Contains 'settlement' -> colonial_administration",
+        "Contains 'Thornmark' -> colonial_administration",
+        "Contains 'Waystation' -> colonial_administration",
+        "Contains 'Haven' -> colonial_administration",
+        "Contains 'Prospect' -> colonial_administration",
+        "Contains 'Landfall' -> colonial_administration",
+        "Contains 'Waypoint' -> colonial_administration",
+        "Contains 'Expedition' -> expeditionary_corps",
+        "Contains 'Team' -> expeditionary_corps",
+        "Contains 'expedition' -> expeditionary_corps",
+        "Contains 'team' -> expeditionary_corps",
+        "Contains 'Pioneer' -> expeditionary_corps",
+        "Contains 'Beacon' -> expeditionary_corps",
+        "Contains 'colony Amber or Kestrel or Thornmark or Verdant or Waystation' -> colonial_administration",
+        "Contains 'district 1 or 2 or 3 or 4 or 5 or 6 or 7 or 8' -> colonial_administration",
+        "Contains 'expedition Beacon or Horizon or Kestrel or Pioneer or Verdant' -> expeditionary_corps",
+        "Contains 'settlement Haven or Horizon or Landfall or Prospect or Waypoint' -> colonial_administration",
+        "Contains 'team 1 or 10 or 11 or 12 or 2 or 3 or 4 or 5 or 6 or 7 or 8 or 9 or A or B or C or D or E or F' -> expeditionary_corps"
+      ],
+      "not_generated": [
+        "vocabulary-based differentiators",
+        "pattern-based rules"
+      ]
+    },
+    "vs_defense_command": {
+      "status": "hierarchy_only",
+      "rival_sample_size": 20,
+      "rival_tier": "adequately_represented",
+      "rules": [
+        "Contains 'Colony' -> colonial_administration",
+        "Contains 'District' -> colonial_administration",
+        "Contains 'Settlement' -> colonial_administration",
+        "Contains 'colony' -> colonial_administration",
+        "Contains 'district' -> colonial_administration",
+        "Contains 'settlement' -> colonial_administration",
+        "Contains 'Thornmark' -> colonial_administration",
+        "Contains 'Waystation' -> colonial_administration",
+        "Contains 'Haven' -> colonial_administration",
+        "Contains 'Prospect' -> colonial_administration",
+        "Contains 'Landfall' -> colonial_administration",
+        "Contains 'Waypoint' -> colonial_administration",
+        "Contains 'Squadron' -> defense_command",
+        "Contains 'Wing' -> defense_command",
+        "Contains 'Element' -> defense_command",
+        "Contains 'element' -> defense_command",
+        "Contains 'wing' -> defense_command",
+        "Contains 'fleet' -> defense_command",
+        "Contains 'squadron' -> defense_command",
+        "Contains 'Talon' -> defense_command",
+        "Contains 'Vanguard' -> defense_command",
+        "Contains 'Aegis' -> defense_command",
+        "Contains 'Sable' -> defense_command",
+        "Contains 'colony Amber or Kestrel or Thornmark or Verdant or Waystation' -> colonial_administration",
+        "Contains 'district 1 or 2 or 3 or 4 or 5 or 6 or 7 or 8' -> colonial_administration",
+        "Contains 'element A or B or C or D or E or F' -> defense_command",
+        "Contains 'fleet Aegis or Kestrel or Sable or Talon or Vanguard' -> defense_command",
+        "Contains 'settlement Haven or Horizon or Landfall or Prospect or Waypoint' -> colonial_administration",
+        "Contains 'squadron 1 or 10 or 11 or 12 or 2 or 3 or 4 or 5 or 6 or 7 or 8 or 9' -> defense_command",
+        "Contains 'wing A or B or C or D or E or F' -> defense_command"
+      ],
+      "not_generated": [
+        "vocabulary-based differentiators",
+        "pattern-based rules"
+      ]
+    }
+  },
+  "quality_notes": [
+    "Sample size below p25 threshold - limited heuristics available",
+    "Recommend using zero-shot or few-shot strategy",
+    "Vocabulary discovery not performed due to insufficient data"
+  ]
+}

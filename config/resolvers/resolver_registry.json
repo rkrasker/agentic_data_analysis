@@ -1,49 +1,56 @@
 {
   "meta": {
-    "generated_utc": "2026-01-18T05:32:57.045470Z",
+    "generated_utc": "2026-01-29T23:46:12.073934Z",
     "validation_source": "data/synthetic/validation.parquet",
     "model_used": "gemini-2.5-pro"
   },
   "thresholds": {
-    "p25": 152.25,
-    "median": 235.0,
-    "p75": 270.5
+    "p25": 633.5,
+    "median": 642.0,
+    "p75": 648.25
   },
   "components": {
-    "101st_airborne_division": {
-      "tier": "well_represented",
-      "sample_size": 314,
-      "pct_of_median": 133.6,
-      "generated_utc": "2026-01-18T05:42:56.532816Z",
-      "generation_mode": "full",
+    "colonial_administration": {
+      "tier": "sparse",
+      "sample_size": 623,
+      "pct_of_median": 97.0,
+      "generated_utc": "2026-01-29T23:50:37.344689Z",
+      "generation_mode": "hierarchy_only",
       "sections": {
         "structure": "complete",
-        "patterns": "complete",
-        "vocabulary": "complete",
+        "patterns": "not_generated",
+        "vocabulary": "not_generated",
         "exclusions_structural": "complete",
-        "exclusions_value_based": "complete",
-        "differentiators": "complete"
+        "exclusions_value_based": "not_applicable",
+        "differentiators": "hierarchy_only"
       },
       "rebuild_triggers": {
-        "when_tier": null,
-        "when_sample_size": null
+        "when_tier": "under_represented",
+        "when_sample_size": 633
       },
-      "warnings": [],
-      "recommendations": []
+      "warnings": [
+        "Sample size is only 97.0% of median",
+        "Pattern discovery not performed due to insufficient data"
+      ],
+      "recommendations": [
+        "Consider using zero-shot or few-shot strategy for this component",
+        "Resolver provides hierarchy-only guidance",
+        "High collision risk with similar components"
+      ]
     }
   },
   "summary": {
     "total_components": 1,
     "by_tier": {
-      "well_represented": 1,
+      "well_represented": 0,
       "adequately_represented": 0,
       "under_represented": 0,
-      "sparse": 0
+      "sparse": 1
     },
     "by_generation_mode": {
-      "full": 1,
+      "full": 0,
       "limited": 0,
-      "hierarchy_only": 0
+      "hierarchy_only": 1
     }
   }
 }

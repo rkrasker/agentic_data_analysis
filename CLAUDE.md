@@ -81,6 +81,11 @@ See [docs/CODE_STYLE.md](docs/CODE_STYLE.md) for detailed guidance. Key principl
 
 **What's in flux**: Strategy optimization and resolver generation workflows.
 
+**Known bugs in resolver generation** (see `.project_history/extracts/raw/2026-01-29_opus_resolver-quality-bugs.md`):
+- `assembler.py` doesn't validate patterns against exclusion rules (LLM can hallucinate rival-branch terms)
+- `assembler.py` uses legacy string-based differentiator format instead of structured schema
+- `thresholds.py` tier classification fails with small N (4 components → 1 per tier regardless of counts)
+
 ## Key ADRs
 
 | ADR | Decision |

@@ -12,7 +12,7 @@ from typing import Dict
 import pandas as pd
 
 
-PROJECT_ROOT = Path(__file__).parent.parent.parent
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
 DEFAULT_CANONICAL_PATH = PROJECT_ROOT / "data" / "synthetic" / "canonical.parquet"
 DEFAULT_STRUCTURAL_PATH = (
     PROJECT_ROOT / "config" / "hierarchies" / "structural_discriminators.json"
